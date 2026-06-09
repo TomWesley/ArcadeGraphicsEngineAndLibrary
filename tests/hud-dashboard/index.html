@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcade Graphics Engine - HUD Command Center</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Press Start 2P', monospace;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="hud"></canvas>
+  <script type="module">
+    // ── Inline engine for standalone test ──
+    function rgba(r, g, b, a = 1) { return [r, g, b, a]; }
+    function withAlpha(c, a) { return [c[0], c[1], c[2], a]; }
+    function css(c) { return `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`; }
+    function lerpColor(a, b, t) {
+      return [
+        Math.round(a[0] + (b[0] - a[0]) * t),
+        Math.round(a[1] + (b[1] - a[1]) * t),
+        Math.round(a[2] + (b[2] - a[2]) * t),
+        a[3] + (b[3] - a[3]) * t,
+      ];
+    }
+    function hslToRgba(h, s, l, a = 1) {
+      s /= 100; l /= 100;
+      const c = (1 - Math.abs(2 * l - 1)) * s;
+      const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+      const m = l - c / 2;
+      let r = 0, g = 0, b = 0;
+      if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; }
+      else if (h < 180) { g = c; b = x; } else if (h < 240) { g = x; b = c; }
+      else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
+      return [Math.round((r+m)*255), Math.round((g+m)*255), Math.round((b+m)*255), a];
+    }
+    function neonColor(name, hue, sat=100, lit=60) {
+      return {
+        name, core: hslToRgba(hue, sat, lit),
+        glow: hslToRgba(hue, sat, lit + 15, 0.6),
+        dim: hslToRgba(hue, sat - 30, lit - 35),
+      };
+    }
+
+    // Theme
+    const theme = {
+      primary: neonColor('Cyan', 195, 100, 65),
+      secondary: neonColor('Magenta', 300, 100, 60),
+      tertiary: neonColor('Amber', 35, 100, 55),
+      danger: neonColor('Red', 0, 100, 50),
+      success: neonColor('Green', 140, 100, 50),
+      glow: { passes: 3, innerRadius: 2, outerRadius: 12, intensity: 0.7 },
+    };
+
+    // ── Canvas setup ──
+    const canvas = document.getElementById('hud');
+    const ctx = canvas.getContext('2d');
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ── Simulated data generators ──
+    const stockData = Array.from({length: 60}, () => 0.3 + Math.random() * 0.4);
+    const cpuData = Array.from({length: 40}, () => 0.2 + Math.random() * 0.5);
+    const networkData = Array.from({length: 40}, () => Math.random() * 0.8);
+    let frameCount = 0;
+    let radarAngle = 0;
+
+    function pushData(arr, maxLen) {
+      const last = arr[arr.length - 1];
+      const next = Math.max(0.05, Math.min(0.95, last + (Math.random() - 0.5) * 0.15));
+      arr.push(next);
+      if (arr.length > maxLen) arr.shift();
+    }
+
+    // ── Drawing functions (reimplemented from components for standalone test) ──
+
+    function drawPanel(x, y, w, h, color, title, opts = {}) {
+      const cs = opts.cornerSize || 12;
+      const bg = opts.bgOpacity || 0.04;
+      const gl = theme.glow;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x + cs, y);
+      ctx.lineTo(x + w - cs, y);
+      ctx.lineTo(x + w, y + cs);
+      ctx.lineTo(x + w, y + h - cs);
+      ctx.lineTo(x + w - cs, y + h);
+      ctx.lineTo(x + cs, y + h);
+      ctx.lineTo(x, y + h - cs);
+      ctx.lineTo(x, y + cs);
+      ctx.closePath();
+
+      ctx.fillStyle = css(withAlpha(color, bg));
+      ctx.fill();
+
+      ctx.shadowColor = css(withAlpha(color, gl.intensity * 0.5));
+      ctx.shadowBlur = gl.outerRadius;
+      ctx.strokeStyle = css(withAlpha(color, 0.5));
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Corner accents
+      ctx.strokeStyle = css(withAlpha(color, 0.8));
+      ctx.shadowBlur = gl.innerRadius;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, y + cs); ctx.lineTo(x + cs, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + w - cs, y); ctx.lineTo(x + w, y + cs); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + w, y + h - cs); ctx.lineTo(x + w - cs, y + h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + cs, y + h); ctx.lineTo(x, y + h - cs); ctx.stroke();
+
+      // Scan lines
+      if (opts.scanLines) {
+        ctx.globalAlpha = 0.02;
+        for (let sy = y; sy < y + h; sy += 3) {
+          ctx.fillStyle = css(color);
+          ctx.fillRect(x, sy, w, 1);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      // Title bar
+      if (title) {
+        ctx.fillStyle = css(withAlpha(color, 0.08));
+        ctx.fillRect(x + 1, y + 1, w - 2, 22);
+        ctx.beginPath(); ctx.moveTo(x, y + 22); ctx.lineTo(x + w, y + 22);
+        ctx.strokeStyle = css(withAlpha(color, 0.3));
+        ctx.lineWidth = 1; ctx.shadowBlur = 2; ctx.stroke();
+
+        ctx.font = '8px "Press Start 2P", monospace';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = css(withAlpha(color, 0.9));
+        ctx.shadowColor = css(withAlpha(color, gl.intensity));
+        ctx.shadowBlur = gl.innerRadius;
+        ctx.fillText(title.toUpperCase(), x + cs + 4, y + 12);
+
+        // Status dot
+        ctx.beginPath(); ctx.arc(x + w - 12, y + 12, 3, 0, Math.PI * 2);
+        ctx.fillStyle = css(theme.success.core);
+        ctx.shadowColor = css(withAlpha(theme.success.core, 0.8));
+        ctx.shadowBlur = 6; ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawBarGauge(x, y, w, h, value, color, label, valueStr) {
+      ctx.save();
+      ctx.fillStyle = css(withAlpha(color, 0.05));
+      ctx.fillRect(x, y, w, h);
+      ctx.shadowColor = css(withAlpha(color, 0.3));
+      ctx.shadowBlur = 4;
+      ctx.strokeStyle = css(withAlpha(color, 0.3));
+      ctx.strokeRect(x, y, w, h);
+
+      const fw = w * Math.max(0, Math.min(1, value));
+      if (fw > 0) {
+        ctx.shadowColor = css(withAlpha(color, theme.glow.intensity));
+        ctx.shadowBlur = theme.glow.outerRadius;
+        const grad = ctx.createLinearGradient(x, y, x + fw, y);
+        grad.addColorStop(0, css(withAlpha(color, 0.6)));
+        grad.addColorStop(0.5, css(color));
+        grad.addColorStop(1, css(withAlpha(color, 0.8)));
+        ctx.fillStyle = grad;
+        ctx.fillRect(x + 1, y + 1, fw - 2, h - 2);
+        ctx.fillStyle = css(withAlpha(color, 1));
+        ctx.fillRect(x + fw - 2, y + 1, 2, h - 2);
+      }
+
+      ctx.font = `${Math.max(7, h * 0.45)}px "Press Start 2P", monospace`;
+      ctx.shadowColor = css(withAlpha(color, 0.5));
+      ctx.shadowBlur = 4;
+      ctx.fillStyle = css(color);
+      if (label) { ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(label, x + 4, y + h/2); }
+      if (valueStr) { ctx.textAlign = 'right'; ctx.fillText(valueStr, x + w - 4, y + h/2); }
+      ctx.restore();
+    }
+
+    function drawRadialGauge(cx, cy, r, value, color, label, valueStr) {
+      const startA = -Math.PI * 0.75;
+      const endA = Math.PI * 0.75;
+      const totalA = endA - startA;
+      const thick = r * 0.15;
+
+      ctx.save();
+      // Track
+      ctx.beginPath(); ctx.arc(cx, cy, r, startA, endA);
+      ctx.strokeStyle = css(withAlpha(color, 0.1));
+      ctx.lineWidth = thick; ctx.lineCap = 'round'; ctx.stroke();
+
+      // Value arc
+      const va = startA + totalA * Math.max(0, Math.min(1, value));
+      ctx.shadowColor = css(withAlpha(color, theme.glow.intensity));
+      ctx.shadowBlur = theme.glow.outerRadius;
+      ctx.beginPath(); ctx.arc(cx, cy, r, startA, va);
+      ctx.strokeStyle = css(color);
+      ctx.lineWidth = thick; ctx.lineCap = 'round'; ctx.stroke();
+
+      // Ticks
+      for (let i = 0; i <= 10; i++) {
+        const ta = startA + totalA * i / 10;
+        const inner = r - thick * 1.2;
+        const outer = r - thick * 0.3;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(ta) * inner, cy + Math.sin(ta) * inner);
+        ctx.lineTo(cx + Math.cos(ta) * outer, cy + Math.sin(ta) * outer);
+        ctx.strokeStyle = css(i / 10 <= value ? withAlpha(color, 0.8) : withAlpha(color, 0.15));
+        ctx.lineWidth = i % 5 === 0 ? 2 : 1;
+        ctx.shadowBlur = i / 10 <= value ? 4 : 0;
+        ctx.stroke();
+      }
+
+      // Needle
+      const na = startA + totalA * value;
+      ctx.beginPath(); ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(na) * r * 0.7, cy + Math.sin(na) * r * 0.7);
+      ctx.strokeStyle = css(color); ctx.lineWidth = 2;
+      ctx.shadowColor = css(withAlpha(color, theme.glow.intensity));
+      ctx.shadowBlur = theme.glow.outerRadius; ctx.stroke();
+
+      ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+      ctx.fillStyle = css(color); ctx.fill();
+
+      if (label) {
+        ctx.font = `${Math.max(7, r*0.13)}px "Press Start 2P", monospace`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillStyle = css(withAlpha(color, 0.8));
+        ctx.shadowBlur = 4;
+        ctx.fillText(label, cx, cy + r * 0.3);
+      }
+      if (valueStr) {
+        ctx.font = `${Math.max(10, r*0.25)}px "Press Start 2P", monospace`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = css(color);
+        ctx.shadowColor = css(withAlpha(color, theme.glow.intensity));
+        ctx.shadowBlur = theme.glow.outerRadius;
+        ctx.fillText(valueStr, cx, cy - r * 0.1);
+      }
+      ctx.restore();
+    }
+
+    function drawLineChart(x, y, w, h, data, color, label, filled = true) {
+      if (data.length < 2) return;
+      ctx.save();
+
+      // Grid
+      ctx.strokeStyle = css(withAlpha(color, 0.06));
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const gy = y + h * i / 4;
+        ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x + w, gy); ctx.stroke();
+      }
+      for (let i = 0; i <= 6; i++) {
+        const gx = x + w * i / 6;
+        ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx, y + h); ctx.stroke();
+      }
+      ctx.strokeStyle = css(withAlpha(color, 0.2));
+      ctx.strokeRect(x, y, w, h);
+
+      const step = w / (data.length - 1);
+
+      // Fill
+      if (filled) {
+        ctx.beginPath(); ctx.moveTo(x, y + h);
+        for (let i = 0; i < data.length; i++) ctx.lineTo(x + i * step, y + h - data[i] * h);
+        ctx.lineTo(x + w, y + h); ctx.closePath();
+        const grad = ctx.createLinearGradient(x, y, x, y + h);
+        grad.addColorStop(0, css(withAlpha(color, 0.15)));
+        grad.addColorStop(1, css(withAlpha(color, 0)));
+        ctx.fillStyle = grad; ctx.fill();
+      }
+
+      // Line
+      ctx.beginPath();
+      for (let i = 0; i < data.length; i++) {
+        const px = x + i * step, py = y + h - data[i] * h;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = css(color); ctx.lineWidth = 2;
+      ctx.shadowColor = css(withAlpha(color, theme.glow.intensity));
+      ctx.shadowBlur = theme.glow.outerRadius; ctx.stroke();
+
+      // Last point highlight
+      const lastX = x + (data.length - 1) * step;
+      const lastY = y + h - data[data.length - 1] * h;
+      ctx.beginPath(); ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+      ctx.fillStyle = css(color); ctx.fill();
+
+      if (label) {
+        ctx.font = `8px "Press Start 2P", monospace`;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.fillStyle = css(withAlpha(color, 0.8));
+        ctx.shadowBlur = 4; ctx.fillText(label, x + 4, y + 4);
+      }
+      ctx.restore();
+    }
+
+    function drawRadar(x, y, size, blips, color, label) {
+      const cx = x + size/2, cy = y + size/2, r = size/2;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
+
+      ctx.fillStyle = css(withAlpha(color, 0.02));
+      ctx.fillRect(x, y, size, size);
+
+      // Rings
+      for (let i = 1; i <= 3; i++) {
+        ctx.beginPath(); ctx.arc(cx, cy, r * i / 3, 0, Math.PI * 2);
+        ctx.strokeStyle = css(withAlpha(color, 0.1));
+        ctx.lineWidth = 1; ctx.stroke();
+      }
+      // Crosshairs
+      ctx.beginPath();
+      ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy);
+      ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r);
+      ctx.strokeStyle = css(withAlpha(color, 0.08)); ctx.stroke();
+
+      // Sweep
+      const sweepGrad = ctx.createConicGradient(radarAngle, cx, cy);
+      sweepGrad.addColorStop(0, css(withAlpha(color, 0.25)));
+      sweepGrad.addColorStop(0.12, css(withAlpha(color, 0)));
+      sweepGrad.addColorStop(1, css(withAlpha(color, 0)));
+      ctx.fillStyle = sweepGrad;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+
+      // Blips
+      for (const blip of blips) {
+        ctx.shadowColor = css(withAlpha(blip.color, 0.8));
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = css(blip.color);
+        ctx.beginPath();
+        ctx.arc(cx + blip.x * r, cy + blip.y * r, blip.size || 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Outer ring
+      ctx.save();
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = css(withAlpha(color, 0.5));
+      ctx.shadowColor = css(withAlpha(color, 0.5));
+      ctx.shadowBlur = theme.glow.outerRadius;
+      ctx.lineWidth = 2; ctx.stroke();
+      ctx.restore();
+
+      if (label) {
+        ctx.save();
+        ctx.font = '8px "Press Start 2P", monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillStyle = css(withAlpha(color, 0.8));
+        ctx.shadowColor = css(withAlpha(color, 0.5));
+        ctx.shadowBlur = 4;
+        ctx.fillText(label, cx, y - 4);
+        ctx.restore();
+      }
+    }
+
+    function drawSegmentDisplay(x, y, w, h, value, color, label) {
+      ctx.save();
+      ctx.fillStyle = css(withAlpha(color, 0.03));
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = css(withAlpha(color, 0.2));
+      ctx.strokeRect(x, y, w, h);
+
+      ctx.font = `${Math.max(12, h * 0.5)}px "Press Start 2P", monospace`;
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.shadowColor = css(withAlpha(color, theme.glow.intensity));
+      ctx.shadowBlur = theme.glow.outerRadius;
+      ctx.fillStyle = css(color);
+      ctx.fillText(value, x + w - 8, y + h / 2);
+
+      if (label) {
+        ctx.font = `${Math.max(6, h * 0.2)}px "Press Start 2P", monospace`;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.shadowBlur = 2;
+        ctx.fillStyle = css(withAlpha(color, 0.6));
+        ctx.fillText(label, x + 4, y + 4);
+      }
+      ctx.restore();
+    }
+
+    function drawGrid(x, y, w, h, cellSize, color) {
+      ctx.save();
+      ctx.strokeStyle = css(withAlpha(color, 0.03));
+      ctx.lineWidth = 1;
+      for (let gx = x; gx <= x + w; gx += cellSize) {
+        ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx, y + h); ctx.stroke();
+      }
+      for (let gy = y; gy <= y + h; gy += cellSize) {
+        ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x + w, gy); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawDivider(x, y, w, color) {
+      ctx.save();
+      const grad = ctx.createLinearGradient(x, y, x + w, y);
+      grad.addColorStop(0, css(withAlpha(color, 0)));
+      grad.addColorStop(0.2, css(withAlpha(color, 0.4)));
+      grad.addColorStop(0.5, css(withAlpha(color, 0.6)));
+      grad.addColorStop(0.8, css(withAlpha(color, 0.4)));
+      grad.addColorStop(1, css(withAlpha(color, 0)));
+      ctx.strokeStyle = grad; ctx.lineWidth = 1;
+      ctx.shadowColor = css(withAlpha(color, 0.3));
+      ctx.shadowBlur = 4;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + w, y); ctx.stroke();
+      ctx.restore();
+    }
+
+    // ── Main render loop ──
+    function render() {
+      const W = canvas.width;
+      const H = canvas.height;
+
+      // Margins and layout
+      const margin = 15;
+      const topBarH = 50;
+      const col1W = W * 0.35;
+      const col2W = W * 0.3;
+      const col3W = W * 0.35;
+
+      // Clear
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(5, 2, 12, 1)';
+      ctx.fillRect(0, 0, W, H);
+
+      // Background grid
+      drawGrid(0, 0, W, H, 40, theme.primary.core);
+
+      // ── TOP BAR ──
+      drawPanel(margin, margin, W - margin*2, topBarH, theme.primary.core, 'COMMAND CENTER', {scanLines: true});
+
+      // Clock
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', {hour12: false});
+      ctx.save();
+      ctx.font = '14px "Press Start 2P", monospace';
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = css(theme.primary.core);
+      ctx.shadowColor = css(withAlpha(theme.primary.core, 0.8));
+      ctx.shadowBlur = 10;
+      ctx.fillText(timeStr, W - margin - 20, margin + topBarH/2);
+      ctx.restore();
+
+      // Status indicators
+      const statuses = ['SYS:OK', 'NET:UP', 'GPU:72C', 'MEM:64%'];
+      ctx.save();
+      ctx.font = '7px "Press Start 2P", monospace';
+      ctx.textBaseline = 'middle';
+      statuses.forEach((s, i) => {
+        const sx = margin + 180 + i * 120;
+        ctx.fillStyle = css(withAlpha(theme.success.core, 0.8));
+        ctx.shadowColor = css(withAlpha(theme.success.core, 0.6));
+        ctx.shadowBlur = 4;
+        ctx.textAlign = 'left';
+        ctx.fillText(s, sx, margin + topBarH/2);
+      });
+      ctx.restore();
+
+      const contentY = margin + topBarH + margin;
+      const contentH = H - contentY - margin;
+
+      // ── LEFT COLUMN: Stock & Weather ──
+      const lx = margin;
+      const lw = col1W - margin;
+      drawPanel(lx, contentY, lw, contentH * 0.45, theme.tertiary.core, 'MARKET DATA', {scanLines: true});
+      drawLineChart(lx + 15, contentY + 35, lw - 30, contentH * 0.25,
+        stockData, theme.tertiary.core, 'NSDQ:AAPL');
+
+      // Mini stock tickers
+      const tickerY = contentY + contentH * 0.25 + 50;
+      const tickers = [
+        {name: 'BTC', val: 0.72, color: theme.success.core},
+        {name: 'ETH', val: 0.45, color: theme.danger.core},
+        {name: 'SOL', val: 0.88, color: theme.success.core},
+      ];
+      tickers.forEach((t, i) => {
+        drawBarGauge(lx + 15, tickerY + i * 22, lw - 30, 16, t.val, t.color, t.name,
+          t.val > 0.5 ? `+${(t.val * 10).toFixed(1)}%` : `${((t.val - 0.5) * 10).toFixed(1)}%`);
+      });
+
+      // Weather panel
+      const weatherY = contentY + contentH * 0.48;
+      drawPanel(lx, weatherY, lw, contentH * 0.52, theme.secondary.core, 'WEATHER SYS', {scanLines: true});
+
+      const tempVal = 0.65 + Math.sin(frameCount * 0.02) * 0.05;
+      const humidVal = 0.42 + Math.sin(frameCount * 0.015 + 1) * 0.08;
+      const windVal = 0.3 + Math.sin(frameCount * 0.03 + 2) * 0.15;
+      const pressVal = 0.78 + Math.sin(frameCount * 0.01 + 3) * 0.03;
+
+      drawRadialGauge(lx + lw * 0.28, weatherY + contentH * 0.25 + 10, Math.min(60, lw * 0.2),
+        tempVal, theme.tertiary.core, 'TEMP', `${Math.round(tempVal * 120)}F`);
+      drawRadialGauge(lx + lw * 0.72, weatherY + contentH * 0.25 + 10, Math.min(60, lw * 0.2),
+        humidVal, theme.secondary.core, 'HUMID', `${Math.round(humidVal * 100)}%`);
+
+      const wBarY = weatherY + contentH * 0.43;
+      drawBarGauge(lx + 15, wBarY, lw - 30, 18, windVal, theme.primary.core, 'WIND', `${Math.round(windVal * 50)}MPH`);
+      drawBarGauge(lx + 15, wBarY + 24, lw - 30, 18, pressVal, theme.secondary.core, 'PRESS', `${(pressVal * 31 + 29).toFixed(1)}"`);
+
+      // ── CENTER COLUMN: System metrics ──
+      const cx = margin + col1W;
+      const cw = col2W;
+
+      drawPanel(cx, contentY, cw, contentH * 0.5, theme.primary.core, 'SYSTEM MONITOR', {scanLines: true});
+
+      // CPU gauge
+      const cpuVal = cpuData[cpuData.length - 1];
+      drawRadialGauge(cx + cw * 0.5, contentY + contentH * 0.2, Math.min(80, cw * 0.3),
+        cpuVal, cpuVal > 0.8 ? theme.danger.core : theme.primary.core, 'CPU', `${Math.round(cpuVal * 100)}%`);
+
+      // CPU history
+      drawLineChart(cx + 15, contentY + contentH * 0.35, cw - 30, contentH * 0.12,
+        cpuData, theme.primary.core, 'CPU HISTORY');
+
+      // Network panel
+      const netY = contentY + contentH * 0.53;
+      drawPanel(cx, netY, cw, contentH * 0.47, theme.success.core, 'NETWORK', {scanLines: true});
+      drawLineChart(cx + 15, netY + 30, cw - 30, contentH * 0.2,
+        networkData, theme.success.core, 'BANDWIDTH');
+
+      // Network stats
+      const netStatY = netY + contentH * 0.25 + 35;
+      drawSegmentDisplay(cx + 10, netStatY, cw/2 - 15, 35, '128.4', theme.success.core, 'DL MB/s');
+      drawSegmentDisplay(cx + cw/2 + 5, netStatY, cw/2 - 15, 35, '42.1', theme.primary.core, 'UL MB/s');
+      drawSegmentDisplay(cx + 10, netStatY + 40, cw/2 - 15, 35, '12ms', theme.success.core, 'PING');
+      drawSegmentDisplay(cx + cw/2 + 5, netStatY + 40, cw/2 - 15, 35, '99.9%', theme.tertiary.core, 'UPTIME');
+
+      // ── RIGHT COLUMN: Radar & more ──
+      const rx = margin + col1W + col2W;
+      const rw = col3W - margin;
+
+      drawPanel(rx, contentY, rw, contentH * 0.55, theme.secondary.core, 'THREAT RADAR', {scanLines: true});
+
+      // Radar
+      const radarSize = Math.min(rw - 40, contentH * 0.4);
+      const radarBlips = [
+        {x: 0.3, y: -0.4, color: theme.danger.core, size: 4},
+        {x: -0.6, y: 0.2, color: theme.tertiary.core, size: 3},
+        {x: 0.1, y: 0.7, color: theme.success.core, size: 3},
+        {x: -0.3, y: -0.6, color: theme.danger.core, size: 5},
+        {x: 0.5, y: 0.3, color: theme.secondary.core, size: 2},
+      ];
+      drawRadar(rx + (rw - radarSize) / 2, contentY + 30, radarSize, radarBlips, theme.secondary.core, 'SCAN AREA');
+
+      // Threat level bars
+      const threatY = contentY + radarSize + 45;
+      drawBarGauge(rx + 15, threatY, rw - 30, 16, 0.3, theme.danger.core, 'THREAT', 'LOW');
+      drawBarGauge(rx + 15, threatY + 22, rw - 30, 16, 0.85, theme.secondary.core, 'SHIELD', '85%');
+
+      // Score panel
+      const scoreY = contentY + contentH * 0.58;
+      drawPanel(rx, scoreY, rw, contentH * 0.42, theme.tertiary.core, 'GAME STATS', {scanLines: true});
+
+      const scores = [
+        {label: 'SCORE', value: String(Math.floor(frameCount * 17) % 999999).padStart(6, '0')},
+        {label: 'HI-SCORE', value: '847291'},
+        {label: 'LEVEL', value: String(Math.floor(frameCount / 600) % 99 + 1).padStart(2, '0')},
+        {label: 'LIVES', value: '03'},
+      ];
+      scores.forEach((s, i) => {
+        drawSegmentDisplay(rx + 10, scoreY + 28 + i * 40, rw - 20, 34, s.value, theme.tertiary.core, s.label);
+      });
+
+      // ── Post-process bloom ──
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.filter = 'blur(16px)';
+      ctx.globalAlpha = 0.08;
+      ctx.drawImage(canvas, 0, 0);
+      ctx.restore();
+
+      // ── Update sim data ──
+      frameCount++;
+      radarAngle += 0.03;
+      if (frameCount % 3 === 0) {
+        pushData(stockData, 60);
+        pushData(cpuData, 40);
+        pushData(networkData, 40);
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    render();
+  </script>
+</body>
+</html>
