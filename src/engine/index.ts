@@ -3,3 +3,4 @@ export * from './canvas-adapter';
 export * from './particles';
 export * from './sprites';
 export * from './analysis';
+export * from './pixelart';

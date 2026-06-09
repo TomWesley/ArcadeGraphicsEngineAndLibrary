@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcade Engine - Pixel Art Pipeline Test</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#000;color:#fff;font-family:'Press Start 2P',monospace;padding:16px}
+    h1{font-size:12px;color:#ff44ff;text-shadow:0 0 10px #ff44ff;text-align:center;margin-bottom:4px}
+    .sub{font-size:7px;color:#555;text-align:center;margin-bottom:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+    .card{background:rgba(255,255,255,0.02);border:1px solid #181818;padding:8px;text-align:center}
+    .card h3{font-size:7px;color:#666;margin-bottom:6px}
+    .card canvas{border:1px solid #0a0a0a;image-rendering:pixelated;display:block;margin:0 auto 4px}
+    .card .label{font-size:5px;color:#444;margin-bottom:3px}
+    .controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+    .ctrl{display:flex;flex-direction:column;align-items:center;gap:2px}
+    .ctrl label{font-size:5px;color:#444}
+    input[type=range]{width:80px;accent-color:#ff44ff}
+    .palette-row{display:flex;gap:6px;justify-content:center;margin-bottom:12px}
+    .pbtn{background:transparent;border:1px solid #333;color:#888;font-family:'Press Start 2P',monospace;font-size:6px;padding:4px 8px;cursor:pointer}
+    .pbtn:hover,.pbtn.active{border-color:currentColor;text-shadow:0 0 6px currentColor}
+    #info{font-size:6px;color:#44ff44;text-shadow:0 0 4px #44ff44;text-align:center;margin:8px 0}
+  </style>
+</head>
+<body>
+  <h1>PIXEL ART PIPELINE TEST</h1>
+  <p class="sub">Source at low res -> Quantize to N shades -> Dither -> 1px outlines -> Scale up (nearest) -> Glow at display res</p>
+
+  <div class="palette-row">
+    <button class="pbtn active" data-p="inferno" style="color:#ff44ff">INFERNO</button>
+    <button class="pbtn" data-p="ocean" style="color:#4488ff">OCEAN</button>
+    <button class="pbtn" data-p="jungle" style="color:#44ff44">JUNGLE</button>
+    <button class="pbtn" data-p="solar" style="color:#ff8844">SOLAR</button>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl"><label>SHADES</label><input type="range" id="shades" min="3" max="7" value="5"><span id="shadesVal" style="font-size:6px;color:#666">5</span></div>
+    <div class="ctrl"><label>DITHER</label><input type="range" id="dither" min="0" max="100" value="40"><span id="ditherVal" style="font-size:6px;color:#666">0.40</span></div>
+    <div class="ctrl"><label>SCALE</label><input type="range" id="scale" min="2" max="6" value="4"><span id="scaleVal" style="font-size:6px;color:#666">4x</span></div>
+    <div class="ctrl"><label>INNER LINES</label><input type="range" id="innerSens" min="20" max="120" value="50"><span id="innerVal" style="font-size:6px;color:#666">50</span></div>
+  </div>
+
+  <div class="row" id="output"></div>
+  <p id="info">Rendering...</p>
+
+  <script>
+    // ── Minimal engine (inlined for standalone test) ──
+    function rgba(r,g,b,a=1){return[r,g,b,a]}
+    function lerpC(a,b,t){return[Math.round(a[0]+(b[0]-a[0])*t),Math.round(a[1]+(b[1]-a[1])*t),Math.round(a[2]+(b[2]-a[2])*t),a[3]+(b[3]-a[3])*t]}
+    function hsl2rgba(h,s,l,a=1){s/=100;l/=100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return[Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255),a]}
+    function neonC(n,h,s=100,l=60){return{name:n,core:hsl2rgba(h,s,l),glow:hsl2rgba(h,s,l+15,0.6),dim:hsl2rgba(h,Math.max(0,s-30),Math.max(0,l-35))}}
+
+    const PAL={
+      inferno:{pri:neonC('Magenta',300),sec:neonC('Cyan',195,100,65)},
+      ocean:{pri:neonC('Blue',220),sec:neonC('Seafoam',160,90,55)},
+      jungle:{pri:neonC('Green',120,100,55),sec:neonC('Violet',270,90,60)},
+      solar:{pri:neonC('Orange',25,100,58),sec:neonC('Blue',210)},
+    };
+
+    function mkBuf(w,h){return{w,h,d:new Uint8ClampedArray(w*h*4)}}
+    function gPx(b,x,y){const i=(y*b.w+x)*4;return[b.d[i],b.d[i+1],b.d[i+2],b.d[i+3]]}
+    function sPx(b,x,y,c){if(x<0||x>=b.w||y<0||y>=b.h)return;const i=(y*b.w+x)*4;b.d[i]=c[0];b.d[i+1]=c[1];b.d[i+2]=c[2];b.d[i+3]=Math.round((c[3]??1)*255)}
+    function fromImg(d){return{w:d.width,h:d.height,d:new Uint8ClampedArray(d.data)}}
+
+    // Gaussian blur
+    function gk(r){const s=r*2+1,k=new Float64Array(s),sig=Math.max(r/3,0.5),s2=2*sig*sig;let sum=0;for(let i=0;i<s;i++){const x=i-r;k[i]=Math.exp(-(x*x)/s2);sum+=k[i]}for(let i=0;i<s;i++)k[i]/=sum;return k}
+    function gblur(src,radius){if(radius<1){const c=mkBuf(src.w,src.h);c.d.set(src.d);return c}const r=Math.round(radius),k=gk(r),w=src.w,h=src.h;const t=new Float64Array(w*h*4),o=new Float64Array(w*h*4);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let rr=0,gg=0,bb=0,aa=0;for(let j=-r;j<=r;j++){const sx=Math.max(0,Math.min(w-1,x+j)),si=(y*w+sx)*4,wt=k[j+r];rr+=src.d[si]*wt;gg+=src.d[si+1]*wt;bb+=src.d[si+2]*wt;aa+=src.d[si+3]*wt}const di=(y*w+x)*4;t[di]=rr;t[di+1]=gg;t[di+2]=bb;t[di+3]=aa}for(let x=0;x<w;x++)for(let y=0;y<h;y++){let rr=0,gg=0,bb=0,aa=0;for(let j=-r;j<=r;j++){const sy=Math.max(0,Math.min(h-1,y+j)),si=(sy*w+x)*4,wt=k[j+r];rr+=t[si]*wt;gg+=t[si+1]*wt;bb+=t[si+2]*wt;aa+=t[si+3]*wt}const di=(y*w+x)*4;o[di]=rr;o[di+1]=gg;o[di+2]=bb;o[di+3]=aa}const dst=mkBuf(w,h);for(let i=0;i<dst.d.length;i++)dst.d[i]=Math.max(0,Math.min(255,Math.round(o[i])));return dst}
+
+    // Shade generation
+    function genShades(neon, n) {
+      const sh = [];
+      for (let i = 0; i < n; i++) {
+        const t = i / (n - 1);
+        if (t < 0.1) sh.push([Math.round(neon.dim[0]*0.08),Math.round(neon.dim[1]*0.08),Math.round(neon.dim[2]*0.08),1]);
+        else if (t < 0.3) { const s=(t-0.1)/0.2; sh.push([Math.round(neon.dim[0]*(0.15+s*0.35)),Math.round(neon.dim[1]*(0.15+s*0.35)),Math.round(neon.dim[2]*(0.15+s*0.35)),1]); }
+        else if (t < 0.65) { const s=(t-0.3)/0.35; sh.push(lerpC(neon.dim,neon.core,s*0.5)); }
+        else if (t < 0.9) { const s=(t-0.65)/0.25; sh.push(lerpC(neon.dim,neon.core,0.5+s*0.5)); }
+        else sh.push([Math.min(255,neon.core[0]+90),Math.min(255,neon.core[1]+90),Math.min(255,neon.core[2]+90),1]);
+      }
+      return sh;
+    }
+
+    // Bayer 4x4
+    const B4=[[0/16,8/16,2/16,10/16],[12/16,4/16,14/16,6/16],[3/16,11/16,1/16,9/16],[15/16,7/16,13/16,5/16]];
+
+    // Outline extraction
+    function outline(src,thr=10){const dst=mkBuf(src.w,src.h);for(let y=0;y<src.h;y++)for(let x=0;x<src.w;x++){const i=(y*src.w+x)*4;if(src.d[i+3]<thr)continue;let e=false;const nb=[[0,-1],[0,1],[-1,0],[1,0]];for(const[dx,dy]of nb){const nx=x+dx,ny=y+dy;if(nx<0||nx>=src.w||ny<0||ny>=src.h){e=true;break}if(src.d[(ny*src.w+nx)*4+3]<thr){e=true;break}}if(e){dst.d[i]=255;dst.d[i+1]=255;dst.d[i+2]=255;dst.d[i+3]=255}}return dst}
+
+    // Inner line extraction
+    function innerLines(src,sens=50){const dst=mkBuf(src.w,src.h);for(let y=1;y<src.h-1;y++)for(let x=1;x<src.w-1;x++){const i=(y*src.w+x)*4;if(src.d[i+3]<10)continue;const l=src.d[i]*0.299+src.d[i+1]*0.587+src.d[i+2]*0.114;let md=0;const nb=[[-1,0],[1,0],[0,-1],[0,1]];for(const[dx,dy]of nb){const ni=((y+dy)*src.w+(x+dx))*4;if(src.d[ni+3]<10)continue;const nl=src.d[ni]*0.299+src.d[ni+1]*0.587+src.d[ni+2]*0.114;md=Math.max(md,Math.abs(l-nl))}if(md>sens){dst.d[i]=Math.min(255,md);dst.d[i+1]=dst.d[i];dst.d[i+2]=dst.d[i];dst.d[i+3]=255}}return dst}
+
+    // Full pixel art pipeline
+    function pipeline(src, neon, opts) {
+      const shades = genShades(neon, opts.shadeCount);
+      const w = src.w, h = src.h;
+      const ol = outline(src, 15);
+      const il = innerLines(src, opts.innerSens);
+
+      // Quantize with dithering
+      const art = mkBuf(w, h);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const i = (y*w+x)*4;
+        if (src.d[i+3] < 15) continue;
+        const isOL = ol.d[i] > 128;
+        const ilStr = il.d[i] / 255;
+
+        if (isOL) {
+          const c = shades[shades.length - 2];
+          art.d[i]=c[0]; art.d[i+1]=c[1]; art.d[i+2]=c[2]; art.d[i+3]=255;
+        } else if (ilStr > 0.3) {
+          const idx = Math.max(1, Math.min(shades.length-2, Math.round((shades.length-1)*0.55)));
+          const c = shades[idx];
+          art.d[i]=c[0]; art.d[i+1]=c[1]; art.d[i+2]=c[2]; art.d[i+3]=255;
+        } else {
+          const bri = (src.d[i]*0.299+src.d[i+1]*0.587+src.d[i+2]*0.114)/255 * (src.d[i+3]/255);
+          const thr = B4[y%4][x%4];
+          const adj = bri + (thr-0.5)*opts.dither/shades.length;
+          const idx = Math.max(0,Math.min(shades.length-1,Math.round(adj*(shades.length-1))));
+          const c = shades[idx];
+          art.d[i]=c[0]; art.d[i+1]=c[1]; art.d[i+2]=c[2]; art.d[i+3]=src.d[i+3];
+        }
+      }
+
+      // Scale up (nearest neighbor)
+      const sc = opts.scale;
+      const sw = w*sc, sh = h*sc;
+      const scaled = mkBuf(sw, sh);
+      for (let y=0;y<sh;y++){const sy=Math.floor(y/sc);for(let x=0;x<sw;x++){const sx=Math.floor(x/sc);const si=(sy*w+sx)*4,di=(y*sw+x)*4;scaled.d[di]=art.d[si];scaled.d[di+1]=art.d[si+1];scaled.d[di+2]=art.d[si+2];scaled.d[di+3]=art.d[si+3]}}
+
+      // Glow at display resolution
+      const result = mkBuf(sw, sh);
+      result.d.set(scaled.d);
+      const bright = mkBuf(sw,sh);
+      for(let i=0;i<scaled.d.length;i+=4){const l=scaled.d[i]*0.299+scaled.d[i+1]*0.587+scaled.d[i+2]*0.114;if(l>50){bright.d[i]=scaled.d[i];bright.d[i+1]=scaled.d[i+1];bright.d[i+2]=scaled.d[i+2];bright.d[i+3]=scaled.d[i+3]}}
+      const g1=gblur(gblur(bright,3),2);for(let i=0;i<result.d.length;i+=4){result.d[i]=Math.min(255,result.d[i]+Math.round(g1.d[i]*0.5));result.d[i+1]=Math.min(255,result.d[i+1]+Math.round(g1.d[i+1]*0.5));result.d[i+2]=Math.min(255,result.d[i+2]+Math.round(g1.d[i+2]*0.5));result.d[i+3]=Math.min(255,result.d[i+3]+Math.round(g1.d[i+3]*0.5))}
+      const g2=gblur(bright,10);for(let i=0;i<result.d.length;i+=4){for(let c=0;c<3;c++){const d=result.d[i+c]/255,s=(g2.d[i+c]/255)*0.25;result.d[i+c]=Math.round(Math.min(1,1-(1-d)*(1-s))*255)}}
+      const g3=gblur(bright,25);for(let i=0;i<result.d.length;i+=4){for(let c=0;c<3;c++){const d=result.d[i+c]/255,s=(g3.d[i+c]/255)*0.08;result.d[i+c]=Math.round(Math.min(1,1-(1-d)*(1-s))*255)}}
+
+      return { art, scaled, result };
+    }
+
+    // ── Test subjects drawn at ACTUAL pixel art resolution (64x64) ──
+    // Using integer coordinates, no anti-aliasing, limited colors
+
+    const SUBJECTS = [
+      { name: 'WARRIOR', size: 48, draw: drawWarrior },
+      { name: 'DRAGON', size: 48, draw: drawDragonPA },
+      { name: 'CRYSTAL', size: 48, draw: drawCrystalPA },
+      { name: 'SHIP', size: 48, draw: drawShipPA },
+      { name: 'SKULL', size: 48, draw: drawSkullPA },
+      { name: 'TREE', size: 48, draw: drawTreePA },
+    ];
+
+    // Pixel art drawing helpers — integer coords, no smoothing
+    function drawPA(ctx, size) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, size, size);
+    }
+    function px(ctx, x, y, c) { ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.fillRect(x, y, 1, 1); }
+    function hline(ctx, x, y, w, c) { ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.fillRect(x, y, w, 1); }
+    function vline(ctx, x, y, h, c) { ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.fillRect(x, y, 1, h); }
+    function rect(ctx, x, y, w, h, c) { ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`; ctx.fillRect(x, y, w, h); }
+
+    function drawWarrior(ctx, s) {
+      drawPA(ctx, s);
+      const dk=[60,50,45], md=[140,120,110], lt=[200,190,180], hi=[240,235,230];
+      const sk=[200,160,120], eye=[50,80,200], red=[200,50,40];
+      // Helmet
+      hline(ctx,19,6,10,lt); hline(ctx,18,7,12,md); hline(ctx,17,8,14,md);
+      hline(ctx,17,9,14,dk); hline(ctx,17,10,14,md); hline(ctx,18,11,12,lt);
+      // Visor slit
+      hline(ctx,20,9,8,dk); px(ctx,21,9,eye); px(ctx,26,9,eye);
+      // Plume
+      hline(ctx,28,4,4,red); hline(ctx,27,5,5,red); hline(ctx,28,6,3,[240,80,60]);
+      // Body armor
+      rect(ctx,18,12,12,12,md); rect(ctx,19,13,10,10,dk);
+      // Chest plate
+      rect(ctx,21,14,6,6,lt); rect(ctx,22,15,4,4,md);
+      hline(ctx,22,17,4,hi); // highlight
+      // Arms
+      rect(ctx,15,13,3,10,md); rect(ctx,30,13,3,10,md);
+      // Hands
+      rect(ctx,14,22,3,2,sk); rect(ctx,31,22,3,2,sk);
+      // Legs
+      rect(ctx,19,24,4,8,dk); rect(ctx,25,24,4,8,dk);
+      // Boots
+      rect(ctx,18,31,5,2,[80,60,40]); rect(ctx,25,31,5,2,[80,60,40]);
+      // Sword (right hand)
+      vline(ctx,33,8,14,lt); vline(ctx,33,6,2,hi); px(ctx,33,5,hi);
+      hline(ctx,31,22,5,[180,160,50]); // guard
+    }
+
+    function drawDragonPA(ctx, s) {
+      drawPA(ctx, s);
+      const dk=[80,30,15], md=[180,80,30], lt=[240,140,50], hi=[255,220,100];
+      const fire=[255,200,50], fhi=[255,255,180];
+      // Wings
+      for(let i=0;i<8;i++){hline(ctx,8-i,8+i,5+i*2,dk);px(ctx,8-i,8+i,lt);px(ctx,12+i,8+i,lt);}
+      for(let i=0;i<8;i++){hline(ctx,28+i,8+i,5+i*2,dk);px(ctx,28+i,8+i,lt);px(ctx,32+i*2,8+i,lt);}
+      // Body
+      rect(ctx,18,18,12,14,md); rect(ctx,19,19,10,12,dk);
+      // Belly
+      rect(ctx,21,22,6,8,hi); rect(ctx,22,23,4,6,[255,210,120]);
+      // Head
+      rect(ctx,19,12,10,7,md); rect(ctx,20,13,8,5,dk);
+      // Eyes
+      px(ctx,21,14,[255,255,200]); px(ctx,26,14,[255,255,200]);
+      px(ctx,22,14,[30,30,150]); px(ctx,25,14,[30,30,150]);
+      // Horns
+      px(ctx,19,11,lt); px(ctx,18,10,lt); px(ctx,28,11,lt); px(ctx,29,10,lt);
+      // Legs
+      rect(ctx,19,32,4,6,md); rect(ctx,25,32,4,6,md);
+      rect(ctx,18,37,5,2,dk); rect(ctx,25,37,5,2,dk);
+      // Tail
+      hline(ctx,12,28,6,md); hline(ctx,8,27,4,md); hline(ctx,5,26,3,md);
+      // Tail flame
+      px(ctx,4,24,fhi); px(ctx,3,25,fire); px(ctx,5,25,fire);
+      px(ctx,4,23,[255,100,30]); px(ctx,3,24,fire); px(ctx,5,24,[255,100,30]);
+    }
+
+    function drawCrystalPA(ctx, s) {
+      drawPA(ctx, s);
+      const dk=[20,40,100], md=[40,80,160], lt=[100,180,255], hi=[200,230,255], wh=[230,245,255];
+      // Main crystal
+      px(ctx,24,4,hi); hline(ctx,23,5,3,lt); hline(ctx,22,6,5,lt);
+      for(let i=0;i<20;i++){const w=5+Math.min(i,10)-(i>10?i-10:0);const x=24-Math.floor(w/2);
+        hline(ctx,x,7+i,w,i%3===0?md:dk);px(ctx,x,7+i,lt);px(ctx,x+w-1,7+i,lt);}
+      // Facet line
+      for(let i=0;i<20;i++)px(ctx,24,7+i,i<5?hi:i<15?lt:md);
+      // Highlight
+      for(let i=0;i<5;i++)px(ctx,21+Math.floor(i/3),8+i,hi);
+      // Small crystals
+      for(let i=0;i<8;i++){const x1=12,x2=34;hline(ctx,x1,22+i,3+Math.min(i,4)-(i>4?i-4:0),i%2?dk:md);
+        px(ctx,x1,22+i,lt);hline(ctx,x2,20+i,2+Math.min(i,3)-(i>3?i-3:0),i%2?dk:md);px(ctx,x2,20+i,lt);}
+      // Sparkles
+      px(ctx,15,12,wh); px(ctx,33,16,wh); px(ctx,10,28,wh); px(ctx,38,24,wh);
+    }
+
+    function drawShipPA(ctx, s) {
+      drawPA(ctx, s);
+      const dk=[80,90,110], md=[150,160,180], lt=[200,210,225], hi=[230,240,250];
+      const eng=[100,180,255], enghi=[200,240,255];
+      // Nose
+      px(ctx,24,6,hi); hline(ctx,23,7,3,lt); hline(ctx,22,8,5,md);
+      // Hull
+      for(let i=0;i<18;i++){const w=5+Math.min(i,8);const x=24-Math.floor(w/2);
+        hline(ctx,x,9+i,w,i%4===0?lt:i%2===0?md:dk);px(ctx,x,9+i,lt);px(ctx,x+w-1,9+i,lt);}
+      // Cockpit
+      rect(ctx,22,12,5,6,[30,80,150]); rect(ctx,23,13,3,4,eng); px(ctx,24,14,enghi);
+      // Wings
+      for(let i=0;i<6;i++){hline(ctx,10-i,20+i,7+i,dk);px(ctx,10-i,20+i,lt);
+        hline(ctx,31+i,20+i,7+i,dk);px(ctx,37+i*2,20+i,lt);}
+      // Engine glow
+      rect(ctx,22,28,2,4,eng); rect(ctx,25,28,2,4,eng);
+      px(ctx,22,32,enghi); px(ctx,23,32,enghi); px(ctx,25,32,enghi); px(ctx,26,32,enghi);
+      px(ctx,22,33,[50,120,200]); px(ctx,26,33,[50,120,200]);
+    }
+
+    function drawSkullPA(ctx, s) {
+      drawPA(ctx, s);
+      const dk=[60,55,50], md=[160,150,140], lt=[220,215,205], hi=[250,245,240];
+      const eye=[200,40,30], teeth=[240,235,225];
+      // Cranium
+      hline(ctx,18,8,12,lt); hline(ctx,16,9,16,md); hline(ctx,15,10,18,md);
+      for(let i=0;i<6;i++){hline(ctx,14,11+i,20,i<2?md:dk);px(ctx,14,11+i,lt);px(ctx,33,11+i,lt);}
+      hline(ctx,15,17,18,md);
+      // Eye sockets
+      rect(ctx,17,12,5,4,[10,10,10]); rect(ctx,26,12,5,4,[10,10,10]);
+      // Eyes (glowing)
+      rect(ctx,18,13,3,2,eye); rect(ctx,27,13,3,2,eye);
+      px(ctx,19,13,[255,100,80]); px(ctx,28,13,[255,100,80]); // highlight
+      // Nose
+      px(ctx,23,16,dk); px(ctx,24,16,dk); px(ctx,23,17,[10,10,10]); px(ctx,24,17,[10,10,10]);
+      // Jaw
+      hline(ctx,16,18,16,md); hline(ctx,17,19,14,dk);
+      // Teeth
+      for(let i=0;i<6;i++){px(ctx,18+i*2,19,teeth);px(ctx,18+i*2,20,i%2?dk:teeth);}
+      hline(ctx,17,21,14,dk); hline(ctx,18,22,12,md);
+      // Jaw sides
+      rect(ctx,14,17,2,4,md); rect(ctx,32,17,2,4,md);
+    }
+
+    function drawTreePA(ctx, s) {
+      drawPA(ctx, s);
+      const bark=[80,50,30], barklt=[120,80,50], leaf=[30,120,40], leaflt=[60,180,70], leafhi=[100,220,100];
+      // Trunk
+      rect(ctx,22,28,5,14,bark); rect(ctx,23,28,3,14,barklt);
+      px(ctx,22,28,barklt); px(ctx,26,28,bark);
+      // Bark texture
+      for(let i=0;i<7;i++){px(ctx,23+(i%3),30+i*2,i%2?bark:barklt);}
+      // Roots
+      hline(ctx,20,41,3,bark); hline(ctx,26,41,3,bark);
+      hline(ctx,19,42,3,bark); hline(ctx,27,42,2,bark);
+      // Canopy - layered circles of leaves
+      for(let dy=-10;dy<=4;dy++){for(let dx=-12;dx<=12;dx++){
+        const d=Math.sqrt(dx*dx+(dy*1.3)*(dy*1.3));
+        if(d<11){const c=d<4?leafhi:d<7?leaflt:leaf;
+          if((dx+dy)%3!==0)px(ctx,24+dx,20+dy,c);}}}
+      // Leaf highlights
+      for(let i=0;i<6;i++){px(ctx,16+i*3,12+i%3,leafhi);}
+      // Shadow leaves (darker)
+      for(let i=0;i<4;i++){px(ctx,18+i*4,24,leaf);}
+    }
+
+    // ── Main ──
+    let curPal = 'inferno';
+
+    function getOpts() {
+      const shadeCount = parseInt(document.getElementById('shades').value);
+      const dither = parseInt(document.getElementById('dither').value) / 100;
+      const scale = parseInt(document.getElementById('scale').value);
+      const innerSens = parseInt(document.getElementById('innerSens').value);
+      document.getElementById('shadesVal').textContent = shadeCount;
+      document.getElementById('ditherVal').textContent = dither.toFixed(2);
+      document.getElementById('scaleVal').textContent = scale + 'x';
+      document.getElementById('innerVal').textContent = innerSens;
+      return { shadeCount, dither, scale, innerSens };
+    }
+
+    function render() {
+      const pal = PAL[curPal];
+      const opts = getOpts();
+      const container = document.getElementById('output');
+      container.innerHTML = '';
+
+      for (const subj of SUBJECTS) {
+        const sz = subj.size;
+        const dispSz = sz * opts.scale;
+
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `<h3>${subj.name}</h3>
+          <div class="label">SOURCE ${sz}x${sz}</div>
+          <canvas class="src" width="${sz}" height="${sz}" style="width:${sz*3}px;height:${sz*3}px"></canvas>
+          <div class="label">ART (quantized)</div>
+          <canvas class="art" width="${sz}" height="${sz}" style="width:${sz*3}px;height:${sz*3}px"></canvas>
+          <div class="label">DISPLAY ${dispSz}x${dispSz}</div>
+          <canvas class="out" width="${dispSz}" height="${dispSz}" style="width:${Math.min(dispSz,256)}px;height:${Math.min(dispSz,256)}px"></canvas>`;
+        container.appendChild(div);
+
+        // Draw source at native pixel art resolution
+        const srcC = div.querySelector('.src');
+        const srcCtx = srcC.getContext('2d');
+        srcCtx.imageSmoothingEnabled = false;
+        subj.draw(srcCtx, sz);
+
+        // Get pixel data
+        const srcData = srcCtx.getImageData(0, 0, sz, sz);
+        const srcBuf = fromImg(srcData);
+
+        // Run pipeline
+        const { art, result } = pipeline(srcBuf, pal.pri, opts);
+
+        // Draw art (quantized, at pixel resolution)
+        const artC = div.querySelector('.art');
+        const artCtx = artC.getContext('2d');
+        artCtx.imageSmoothingEnabled = false;
+        artCtx.putImageData(new ImageData(new Uint8ClampedArray(art.d), sz, sz), 0, 0);
+
+        // Draw final result
+        const outC = div.querySelector('.out');
+        const outCtx = outC.getContext('2d');
+        outCtx.imageSmoothingEnabled = false;
+        outCtx.putImageData(new ImageData(new Uint8ClampedArray(result.d), dispSz, dispSz), 0, 0);
+      }
+
+      document.getElementById('info').textContent =
+        `Pipeline: ${opts.shadeCount} shades | dither ${opts.dither.toFixed(2)} | ${opts.scale}x scale | ${curPal.toUpperCase()}`;
+    }
+
+    document.querySelectorAll('.pbtn').forEach(b=>{b.addEventListener('click',()=>{
+      document.querySelectorAll('.pbtn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); curPal=b.dataset.p; render();})});
+    document.querySelectorAll('input[type=range]').forEach(i=>i.addEventListener('input',render));
+
+    render();
+  </script>
+</body>
+</html>

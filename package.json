@@ -37,6 +37,7 @@
     "test:charizard": "npx http-server tests/charizard -p 8081 -o",
     "test:hud": "npx http-server tests/hud-dashboard -p 8082 -o",
     "test:consistency": "npx http-server tests/consistency -p 8083 -o",
+    "test:pixelart": "npx http-server tests/pixelart-test -p 8084 -o",
     "typecheck": "tsc --noEmit"
   },
   "files": [
