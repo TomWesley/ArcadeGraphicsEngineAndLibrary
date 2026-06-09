@@ -1,0 +1,60 @@
+{
+  "name": "@tomwesley/arcade-graphics-engine",
+  "version": "0.1.0",
+  "description": "Neon-glow pixel art graphics engine and style library for arcade games",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./style": {
+      "import": "./dist/style/index.mjs",
+      "require": "./dist/style/index.js"
+    },
+    "./engine": {
+      "import": "./dist/engine/index.mjs",
+      "require": "./dist/engine/index.js"
+    },
+    "./components": {
+      "import": "./dist/components/index.mjs",
+      "require": "./dist/components/index.js"
+    },
+    "./pipeline": {
+      "import": "./dist/pipeline/index.mjs",
+      "require": "./dist/pipeline/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup && tsc --emitDeclarationOnly --outDir dist",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:charizard": "npx http-server tests/charizard -p 8081 -o",
+    "test:hud": "npx http-server tests/hud-dashboard -p 8082 -o",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "keywords": [
+    "pixel-art",
+    "neon",
+    "arcade",
+    "graphics-engine",
+    "game-engine",
+    "canvas",
+    "sprites"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

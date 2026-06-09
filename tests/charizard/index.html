@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcade Graphics Engine - Charizard Style Test</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Press Start 2P', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 14px;
+      color: #ff44ff;
+      text-shadow: 0 0 10px #ff44ff, 0 0 20px #ff44ff44;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      font-size: 8px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+    .canvas-row {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .canvas-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .canvas-container label {
+      font-size: 8px;
+      color: #888;
+    }
+    canvas {
+      border: 1px solid #222;
+      image-rendering: pixelated;
+    }
+    #status {
+      font-size: 8px;
+      color: #44ff44;
+      text-shadow: 0 0 6px #44ff44;
+      margin-top: 10px;
+    }
+    .palette-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .palette-btn {
+      background: transparent;
+      border: 1px solid #333;
+      color: #888;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .palette-btn:hover, .palette-btn.active {
+      border-color: currentColor;
+      text-shadow: 0 0 8px currentColor;
+    }
+  </style>
+</head>
+<body>
+  <h1>CHARIZARD STYLE TEST</h1>
+  <p class="subtitle">Neon Arcade Graphics Engine - Sprite Conversion Pipeline</p>
+
+  <div class="palette-selector">
+    <button class="palette-btn active" data-palette="inferno" style="color: #ff44ff;">NEON INFERNO</button>
+    <button class="palette-btn" data-palette="ocean" style="color: #4488ff;">ELECTRIC OCEAN</button>
+    <button class="palette-btn" data-palette="jungle" style="color: #44ff44;">TOXIC JUNGLE</button>
+    <button class="palette-btn" data-palette="solar" style="color: #ff8844;">SOLAR STORM</button>
+  </div>
+
+  <div class="canvas-row">
+    <div class="canvas-container">
+      <label>ORIGINAL (PIXEL ART)</label>
+      <canvas id="original" width="64" height="64" style="width: 256px; height: 256px;"></canvas>
+    </div>
+    <div class="canvas-container">
+      <label>NEONIFIED</label>
+      <canvas id="neonified" width="64" height="64" style="width: 256px; height: 256px;"></canvas>
+    </div>
+    <div class="canvas-container">
+      <label>NEONIFIED + GLOW</label>
+      <canvas id="glowed" width="192" height="192" style="width: 384px; height: 384px;"></canvas>
+    </div>
+  </div>
+
+  <div class="canvas-row">
+    <div class="canvas-container">
+      <label>FULL SCENE DEMO</label>
+      <canvas id="scene" width="800" height="400"></canvas>
+    </div>
+  </div>
+
+  <p id="status">Initializing...</p>
+
+  <script type="module">
+    // ── Import engine modules (using source directly for test) ──
+    // In a real game, you'd import from the npm package.
+    // For this test, we inline the core functions.
+
+    // ── Color utilities ──
+    function rgba(r, g, b, a = 1) { return [r, g, b, a]; }
+    function withAlpha(c, a) { return [c[0], c[1], c[2], a]; }
+    function rgbaCss(c) { return `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`; }
+
+    function hslToRgba(h, s, l, a = 1) {
+      s /= 100; l /= 100;
+      const c = (1 - Math.abs(2 * l - 1)) * s;
+      const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+      const m = l - c / 2;
+      let r = 0, g = 0, b = 0;
+      if (h < 60) { r = c; g = x; }
+      else if (h < 120) { r = x; g = c; }
+      else if (h < 180) { g = c; b = x; }
+      else if (h < 240) { g = x; b = c; }
+      else if (h < 300) { r = x; b = c; }
+      else { r = c; b = x; }
+      return [Math.round((r+m)*255), Math.round((g+m)*255), Math.round((b+m)*255), a];
+    }
+
+    function createNeonColor(name, hue, sat = 100, lit = 60) {
+      return {
+        name,
+        core: hslToRgba(hue, sat, lit),
+        glow: hslToRgba(hue, sat, lit + 15, 0.6),
+        dim: hslToRgba(hue, sat - 30, lit - 35),
+      };
+    }
+
+    // ── Palettes ──
+    const PALETTES = {
+      inferno: {
+        primary: createNeonColor('Magenta', 300, 100, 60),
+        secondary: createNeonColor('Cyan', 195, 100, 65),
+        tertiary: createNeonColor('Amber', 30, 100, 55),
+        danger: createNeonColor('Crimson', 350, 100, 50),
+      },
+      ocean: {
+        primary: createNeonColor('Blue', 220, 100, 60),
+        secondary: createNeonColor('Seafoam', 160, 90, 55),
+        tertiary: createNeonColor('Gold', 45, 100, 55),
+        danger: createNeonColor('Coral', 15, 100, 55),
+      },
+      jungle: {
+        primary: createNeonColor('Green', 120, 100, 55),
+        secondary: createNeonColor('Violet', 270, 90, 60),
+        tertiary: createNeonColor('Yellow', 55, 100, 60),
+        danger: createNeonColor('Pink', 330, 100, 55),
+      },
+      solar: {
+        primary: createNeonColor('Orange', 25, 100, 58),
+        secondary: createNeonColor('Blue', 210, 100, 60),
+        tertiary: createNeonColor('White', 50, 80, 75),
+        danger: createNeonColor('Red', 0, 100, 48),
+      },
+    };
+
+    // ── Pixel Buffer operations ──
+    function createBuf(w, h) {
+      return { width: w, height: h, data: new Uint8ClampedArray(w * h * 4) };
+    }
+
+    function getPx(buf, x, y) {
+      const i = (y * buf.width + x) * 4;
+      return [buf.data[i], buf.data[i+1], buf.data[i+2], buf.data[i+3] / 255];
+    }
+
+    function setPx(buf, x, y, c) {
+      if (x < 0 || x >= buf.width || y < 0 || y >= buf.height) return;
+      const i = (y * buf.width + x) * 4;
+      buf.data[i] = c[0]; buf.data[i+1] = c[1]; buf.data[i+2] = c[2];
+      buf.data[i+3] = Math.round(c[3] * 255);
+    }
+
+    function brightness(c) { return c[0] * 0.299 + c[1] * 0.587 + c[2] * 0.114; }
+
+    // ── Charizard pixel art (64x64, hand-crafted in the classic sprite style) ──
+    // This is a simplified Charizard silhouette as pixel art.
+    // Each row is hex pairs: 00=transparent, others=brightness values
+    function buildCharizardSprite() {
+      const buf = createBuf(64, 64);
+
+      // Draw a Charizard-like dragon silhouette using simple shapes
+      const draw = (x, y, c) => setPx(buf, x, y, c);
+      const orange = [255, 140, 40, 1];
+      const darkOrange = [200, 100, 20, 1];
+      const yellow = [255, 220, 60, 1];
+      const red = [220, 50, 30, 1];
+      const darkRed = [140, 30, 20, 1];
+      const white = [255, 255, 240, 1];
+      const cream = [240, 200, 140, 1];
+      const dark = [80, 40, 10, 1];
+
+      // Helper: filled rect
+      const fillRect = (x0, y0, w, h, c) => {
+        for (let dy = 0; dy < h; dy++)
+          for (let dx = 0; dx < w; dx++)
+            draw(x0 + dx, y0 + dy, c);
+      };
+
+      // Helper: filled ellipse
+      const fillEllipse = (cx, cy, rx, ry, c) => {
+        for (let y = -ry; y <= ry; y++)
+          for (let x = -rx; x <= rx; x++)
+            if ((x*x)/(rx*rx) + (y*y)/(ry*ry) <= 1)
+              draw(cx + x, cy + y, c);
+      };
+
+      // Wings (back, darker)
+      // Left wing
+      const wingPts = [
+        [8, 18], [6, 14], [4, 10], [3, 6], [5, 3], [9, 2], [13, 4],
+        [10, 8], [14, 5], [18, 3], [22, 5], [19, 10], [16, 14], [20, 20],
+      ];
+      for (const [px, py] of wingPts) {
+        fillRect(px, py, 3, 2, darkOrange);
+      }
+      // Wing membrane
+      for (let y = 3; y < 22; y++) {
+        const left = 3 + Math.floor(Math.sin((y - 3) / 19 * Math.PI) * 2);
+        const right = 22 - Math.floor((y - 3) / 19 * 8);
+        for (let x = left; x < right; x++) {
+          if (!getPx(buf, x, y)[3]) {
+            draw(x, y, [180, 80 + Math.floor(Math.random() * 40), 20, 0.85]);
+          }
+        }
+      }
+
+      // Right wing
+      for (let y = 3; y < 22; y++) {
+        const left = 40 + Math.floor((y - 3) / 19 * 8);
+        const right = 60 - Math.floor(Math.sin((y - 3) / 19 * Math.PI) * 2);
+        for (let x = left; x < right; x++) {
+          draw(x, y, [180, 80 + Math.floor(Math.random() * 40), 20, 0.85]);
+        }
+      }
+
+      // Body
+      fillEllipse(32, 36, 10, 12, orange);
+      fillEllipse(32, 38, 9, 10, darkOrange);
+
+      // Belly (lighter)
+      fillEllipse(32, 40, 6, 7, cream);
+      fillEllipse(32, 40, 5, 6, yellow);
+
+      // Head
+      fillEllipse(32, 20, 7, 6, orange);
+      // Horns
+      fillRect(26, 14, 2, 4, darkOrange);
+      fillRect(25, 13, 2, 2, orange);
+      fillRect(38, 14, 2, 4, darkOrange);
+      fillRect(39, 13, 2, 2, orange);
+
+      // Eyes
+      draw(29, 19, white);
+      draw(30, 19, white);
+      draw(35, 19, white);
+      draw(36, 19, white);
+      draw(30, 19, [50, 50, 200, 1]); // pupil
+      draw(35, 19, [50, 50, 200, 1]); // pupil
+
+      // Mouth/snout
+      fillRect(30, 22, 5, 1, darkOrange);
+
+      // Arms
+      fillRect(21, 32, 3, 6, orange);
+      fillRect(20, 37, 2, 2, darkOrange);
+      fillRect(40, 32, 3, 6, orange);
+      fillRect(42, 37, 2, 2, darkOrange);
+
+      // Legs
+      fillRect(26, 48, 5, 8, orange);
+      fillRect(25, 55, 6, 3, darkOrange);
+      fillRect(35, 48, 5, 8, orange);
+      fillRect(34, 55, 6, 3, darkOrange);
+
+      // Tail with flame
+      const tailPts = [[22, 44], [19, 42], [16, 40], [13, 38], [10, 37]];
+      for (const [tx, ty] of tailPts) {
+        fillRect(tx, ty, 3, 3, orange);
+      }
+      // Tail flame
+      fillEllipse(9, 34, 3, 4, red);
+      fillEllipse(9, 33, 2, 3, yellow);
+      fillEllipse(9, 32, 1, 2, white);
+
+      // Fire breath
+      for (let i = 0; i < 8; i++) {
+        const fx = 38 + i * 2 + Math.floor(Math.random() * 2);
+        const fy = 20 + Math.floor(Math.sin(i * 0.8) * 3);
+        const fireColor = i < 3 ? yellow : i < 6 ? red : darkRed;
+        fillRect(fx, fy, 2 + Math.floor(Math.random() * 2), 2, fireColor);
+      }
+
+      return buf;
+    }
+
+    // ── Neonify transform ──
+    function neonifySprite(src, neonColor) {
+      const dst = createBuf(src.width, src.height);
+      const threshold = 30;
+
+      // Detect edges
+      const edges = createBuf(src.width, src.height);
+      for (let y = 1; y < src.height - 1; y++) {
+        for (let x = 1; x < src.width - 1; x++) {
+          const c = getPx(src, x, y);
+          if (c[3] < 0.1) continue;
+          let isEdge = false;
+          for (let dy = -1; dy <= 1 && !isEdge; dy++) {
+            for (let dx = -1; dx <= 1 && !isEdge; dx++) {
+              if (dx === 0 && dy === 0) continue;
+              const n = getPx(src, x + dx, y + dy);
+              if (n[3] < 0.1 || brightness(n) < threshold) isEdge = true;
+            }
+          }
+          if (isEdge) setPx(edges, x, y, [255, 255, 255, 1]);
+        }
+      }
+
+      // Apply neon style
+      for (let y = 0; y < src.height; y++) {
+        for (let x = 0; x < src.width; x++) {
+          const orig = getPx(src, x, y);
+          const edge = getPx(edges, x, y);
+
+          if (orig[3] < 0.1) continue;
+
+          if (edge[0] > 128) {
+            // Edge = full neon core color
+            setPx(dst, x, y, [...neonColor.core.slice(0, 3), orig[3]]);
+          } else {
+            // Interior: map brightness to dim->core
+            const b = brightness(orig) / 255;
+            const t = b * 0.35;
+            const r = Math.round(neonColor.dim[0] + (neonColor.core[0] - neonColor.dim[0]) * t);
+            const g = Math.round(neonColor.dim[1] + (neonColor.core[1] - neonColor.dim[1]) * t);
+            const bl = Math.round(neonColor.dim[2] + (neonColor.core[2] - neonColor.dim[2]) * t);
+            setPx(dst, x, y, [r, g, bl, orig[3]]);
+          }
+        }
+      }
+
+      return dst;
+    }
+
+    // ── Glow generation (box blur + additive composite) ──
+    function boxBlur(src, radius) {
+      const dst = createBuf(src.width, src.height);
+      const w = src.width, h = src.height;
+      const r = Math.max(1, Math.round(radius));
+      const div = 2 * r + 1;
+
+      const tmp = new Uint8ClampedArray(src.data.length);
+      // Horizontal
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let rr = 0, gg = 0, bb = 0, aa = 0;
+          for (let dx = -r; dx <= r; dx++) {
+            const sx = Math.max(0, Math.min(w - 1, x + dx));
+            const i = (y * w + sx) * 4;
+            rr += src.data[i]; gg += src.data[i+1]; bb += src.data[i+2]; aa += src.data[i+3];
+          }
+          const i = (y * w + x) * 4;
+          tmp[i] = rr / div; tmp[i+1] = gg / div; tmp[i+2] = bb / div; tmp[i+3] = aa / div;
+        }
+      }
+      // Vertical
+      for (let x = 0; x < w; x++) {
+        for (let y = 0; y < h; y++) {
+          let rr = 0, gg = 0, bb = 0, aa = 0;
+          for (let dy = -r; dy <= r; dy++) {
+            const sy = Math.max(0, Math.min(h - 1, y + dy));
+            const i = (sy * w + x) * 4;
+            rr += tmp[i]; gg += tmp[i+1]; bb += tmp[i+2]; aa += tmp[i+3];
+          }
+          const i = (y * w + x) * 4;
+          dst.data[i] = rr / div; dst.data[i+1] = gg / div; dst.data[i+2] = bb / div; dst.data[i+3] = aa / div;
+        }
+      }
+      return dst;
+    }
+
+    function generateGlow(src, passes = 3, innerR = 2, outerR = 12, intensity = 0.7) {
+      const result = createBuf(src.width, src.height);
+      result.data.set(src.data);
+
+      const step = (outerR - innerR) / Math.max(1, passes - 1);
+      for (let pass = 0; pass < passes; pass++) {
+        const radius = innerR + step * pass;
+        const passInt = intensity * (1 - pass / passes) * 0.5;
+        const blurred = boxBlur(src, radius);
+        for (let i = 0; i < result.data.length; i += 4) {
+          result.data[i] = Math.min(255, result.data[i] + Math.round(blurred.data[i] * passInt));
+          result.data[i+1] = Math.min(255, result.data[i+1] + Math.round(blurred.data[i+1] * passInt));
+          result.data[i+2] = Math.min(255, result.data[i+2] + Math.round(blurred.data[i+2] * passInt));
+          result.data[i+3] = Math.min(255, result.data[i+3] + Math.round(blurred.data[i+3] * passInt));
+        }
+      }
+      return result;
+    }
+
+    // ── Scale up for glow canvas ──
+    function scaleUp(src, scale) {
+      const w = src.width * scale, h = src.height * scale;
+      const dst = createBuf(w, h);
+      for (let y = 0; y < h; y++) {
+        const sy = Math.floor(y / scale);
+        for (let x = 0; x < w; x++) {
+          const sx = Math.floor(x / scale);
+          const si = (sy * src.width + sx) * 4;
+          const di = (y * w + x) * 4;
+          dst.data[di] = src.data[si]; dst.data[di+1] = src.data[si+1];
+          dst.data[di+2] = src.data[si+2]; dst.data[di+3] = src.data[si+3];
+        }
+      }
+      return dst;
+    }
+
+    // ── Render to canvas ──
+    function renderBuf(canvasId, buf) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      canvas.width = buf.width;
+      canvas.height = buf.height;
+      ctx.imageSmoothingEnabled = false;
+      const imgData = new ImageData(new Uint8ClampedArray(buf.data), buf.width, buf.height);
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    // ── Scene rendering ──
+    function renderScene(palette) {
+      const canvas = document.getElementById('scene');
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+
+      // Black background
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, 800, 400);
+
+      // Subtle background tint
+      ctx.fillStyle = 'rgba(10, 2, 15, 1)';
+      ctx.fillRect(0, 0, 800, 400);
+
+      const neon = palette.primary;
+      const secondary = palette.secondary;
+      const tertiary = palette.tertiary;
+
+      // Draw crystalline terrain at bottom
+      ctx.save();
+      ctx.shadowColor = rgbaCss(withAlpha(neon.core, 0.7));
+      ctx.shadowBlur = 12;
+      ctx.strokeStyle = rgbaCss(neon.core);
+      ctx.lineWidth = 1.5;
+      ctx.lineJoin = 'miter';
+
+      // Generate crystalline mountain shapes
+      const terrainPoints = [];
+      let tx = 0;
+      while (tx < 820) {
+        const h = 340 - Math.random() * 80 - Math.abs(Math.sin(tx * 0.01)) * 60;
+        terrainPoints.push([tx, h]);
+        tx += 8 + Math.random() * 15;
+      }
+      terrainPoints.push([820, 400]);
+      terrainPoints.push([0, 400]);
+
+      // Filled terrain with gradient
+      ctx.beginPath();
+      ctx.moveTo(terrainPoints[0][0], terrainPoints[0][1]);
+      for (const [px, py] of terrainPoints) ctx.lineTo(px, py);
+      ctx.closePath();
+      const tGrad = ctx.createLinearGradient(0, 260, 0, 400);
+      tGrad.addColorStop(0, rgbaCss(withAlpha(neon.core, 0.08)));
+      tGrad.addColorStop(1, rgbaCss(withAlpha(neon.core, 0.02)));
+      ctx.fillStyle = tGrad;
+      ctx.fill();
+      ctx.stroke();
+
+      // Inner highlight lines
+      ctx.strokeStyle = rgbaCss(withAlpha(neon.core, 0.3));
+      ctx.lineWidth = 0.5;
+      ctx.shadowBlur = 4;
+      for (let i = 2; i < terrainPoints.length - 2; i += 3) {
+        ctx.beginPath();
+        ctx.moveTo(terrainPoints[i][0], terrainPoints[i][1]);
+        ctx.lineTo(terrainPoints[i][0] + 5, terrainPoints[i][1] + 20);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Ice stalactites from top (like reference)
+      ctx.save();
+      ctx.shadowColor = rgbaCss(withAlpha(secondary.core, 0.8));
+      ctx.shadowBlur = 15;
+      ctx.strokeStyle = rgbaCss(secondary.core);
+      ctx.lineWidth = 1.5;
+
+      for (let i = 0; i < 7; i++) {
+        const sx = 80 + i * 100 + Math.random() * 40;
+        const sh = 40 + Math.random() * 80;
+        const sw = 8 + Math.random() * 12;
+
+        ctx.beginPath();
+        ctx.moveTo(sx - sw/2, 0);
+        ctx.lineTo(sx + sw/2, 0);
+        ctx.lineTo(sx + sw/4, sh * 0.6);
+        ctx.lineTo(sx, sh);
+        ctx.lineTo(sx - sw/4, sh * 0.6);
+        ctx.closePath();
+
+        ctx.fillStyle = rgbaCss(withAlpha(secondary.core, 0.05));
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Charizard sprite in scene
+      const sprite = buildCharizardSprite();
+      const neonSprite = neonifySprite(sprite, palette.primary);
+      const scaled = scaleUp(neonSprite, 4);
+      const glowed = generateGlow(scaled, 3, 3, 16, 0.6);
+
+      const offCanvas = new OffscreenCanvas(glowed.width, glowed.height);
+      const offCtx = offCanvas.getContext('2d');
+      offCtx.putImageData(new ImageData(new Uint8ClampedArray(glowed.data), glowed.width, glowed.height), 0, 0);
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(offCanvas, 270, 60);
+      ctx.restore();
+
+      // Fire particles
+      ctx.save();
+      for (let i = 0; i < 30; i++) {
+        const px = 350 + Math.random() * 200;
+        const py = 280 + Math.random() * 100;
+        const size = 1 + Math.random() * 3;
+        const alpha = 0.3 + Math.random() * 0.7;
+        ctx.shadowColor = rgbaCss(withAlpha(tertiary.core, 0.8));
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = rgbaCss(withAlpha(tertiary.core, alpha));
+        ctx.beginPath();
+        ctx.arc(px, py, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Title text
+      ctx.save();
+      ctx.font = '20px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = rgbaCss(withAlpha(neon.core, 0.9));
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = rgbaCss(neon.core);
+      ctx.fillText('CHARIZARD', 400, 380);
+      ctx.restore();
+
+      // Post-process bloom
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.filter = 'blur(12px)';
+      ctx.globalAlpha = 0.15;
+      ctx.drawImage(canvas, 0, 0);
+      ctx.restore();
+    }
+
+    // ── Main ──
+    let currentPalette = 'inferno';
+
+    function render() {
+      const palette = PALETTES[currentPalette];
+      const status = document.getElementById('status');
+
+      status.textContent = 'Building Charizard sprite...';
+
+      const original = buildCharizardSprite();
+      renderBuf('original', original);
+      status.textContent = 'Neonifying...';
+
+      const neonified = neonifySprite(original, palette.primary);
+      renderBuf('neonified', neonified);
+      status.textContent = 'Generating glow...';
+
+      // Scale up then glow for the glow canvas
+      const scaled = scaleUp(neonified, 3);
+      const glowed = generateGlow(scaled, 3, 2, 12, 0.7);
+      renderBuf('glowed', glowed);
+
+      status.textContent = 'Rendering scene...';
+      renderScene(palette);
+
+      status.textContent = `READY - ${PALETTES[currentPalette].primary.name.toUpperCase()} PALETTE`;
+      status.style.color = rgbaCss(palette.primary.core);
+      status.style.textShadow = `0 0 6px ${rgbaCss(palette.primary.core)}`;
+    }
+
+    // Palette switching
+    document.querySelectorAll('.palette-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPalette = btn.dataset.palette;
+        render();
+      });
+    });
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
