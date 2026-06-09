@@ -45,6 +45,20 @@ export function setPixelAdditive(buf: PixelBuffer, x: number, y: number, color: 
   buf.data[i + 3] = Math.min(255, buf.data[i + 3] + Math.round(a * 255));
 }
 
+/** Alpha-blended pixel write (proper compositing) */
+export function setPixelBlend(buf: PixelBuffer, x: number, y: number, color: RGBA): void {
+  if (x < 0 || x >= buf.width || y < 0 || y >= buf.height) return;
+  const i = (y * buf.width + x) * 4;
+  const sa = color[3];
+  const da = buf.data[i + 3] / 255;
+  const outA = sa + da * (1 - sa);
+  if (outA < 0.001) return;
+  buf.data[i] = Math.round((color[0] * sa + buf.data[i] * da * (1 - sa)) / outA);
+  buf.data[i + 1] = Math.round((color[1] * sa + buf.data[i + 1] * da * (1 - sa)) / outA);
+  buf.data[i + 2] = Math.round((color[2] * sa + buf.data[i + 2] * da * (1 - sa)) / outA);
+  buf.data[i + 3] = Math.round(outA * 255);
+}
+
 export function clearBuffer(buf: PixelBuffer, color: RGBA = [0, 0, 0, 1]): void {
   for (let i = 0; i < buf.data.length; i += 4) {
     buf.data[i] = color[0];
@@ -54,31 +68,59 @@ export function clearBuffer(buf: PixelBuffer, color: RGBA = [0, 0, 0, 1]): void 
   }
 }
 
-/** Apply a box blur to a pixel buffer (used for glow effects) */
-export function boxBlur(src: PixelBuffer, radius: number): PixelBuffer {
-  const dst = createPixelBuffer(src.width, src.height);
-  const w = src.width;
-  const h = src.height;
-  const d = src.data;
-  const o = dst.data;
-  const r = Math.max(1, Math.round(radius));
-  const div = (2 * r + 1);
+/** Copy one buffer into another */
+export function copyBuffer(dst: PixelBuffer, src: PixelBuffer): void {
+  dst.data.set(src.data);
+}
+
+// ── Blur Algorithms ──────────────────────────────────────────────────
+
+/** Generate 1D Gaussian kernel */
+function gaussianKernel(radius: number): Float64Array {
+  const size = radius * 2 + 1;
+  const kernel = new Float64Array(size);
+  const sigma = radius / 3;
+  const s2 = 2 * sigma * sigma;
+  let sum = 0;
+  for (let i = 0; i < size; i++) {
+    const x = i - radius;
+    kernel[i] = Math.exp(-(x * x) / s2);
+    sum += kernel[i];
+  }
+  for (let i = 0; i < size; i++) kernel[i] /= sum;
+  return kernel;
+}
+
+/** Proper separable Gaussian blur */
+export function gaussianBlur(src: PixelBuffer, radius: number): PixelBuffer {
+  if (radius < 1) {
+    const copy = createPixelBuffer(src.width, src.height);
+    copy.data.set(src.data);
+    return copy;
+  }
+  const r = Math.round(radius);
+  const kernel = gaussianKernel(r);
+  const w = src.width, h = src.height;
+
+  // Use Float64 for intermediate precision
+  const tmp = new Float64Array(w * h * 4);
+  const out = new Float64Array(w * h * 4);
 
   // Horizontal pass
-  const tmp = new Uint8ClampedArray(d.length);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       let rr = 0, gg = 0, bb = 0, aa = 0;
-      for (let dx = -r; dx <= r; dx++) {
-        const sx = Math.max(0, Math.min(w - 1, x + dx));
-        const i = (y * w + sx) * 4;
-        rr += d[i]; gg += d[i + 1]; bb += d[i + 2]; aa += d[i + 3];
+      for (let k = -r; k <= r; k++) {
+        const sx = Math.max(0, Math.min(w - 1, x + k));
+        const si = (y * w + sx) * 4;
+        const weight = kernel[k + r];
+        rr += src.data[si] * weight;
+        gg += src.data[si + 1] * weight;
+        bb += src.data[si + 2] * weight;
+        aa += src.data[si + 3] * weight;
       }
-      const i = (y * w + x) * 4;
-      tmp[i] = rr / div;
-      tmp[i + 1] = gg / div;
-      tmp[i + 2] = bb / div;
-      tmp[i + 3] = aa / div;
+      const di = (y * w + x) * 4;
+      tmp[di] = rr; tmp[di + 1] = gg; tmp[di + 2] = bb; tmp[di + 3] = aa;
     }
   }
 
@@ -86,23 +128,35 @@ export function boxBlur(src: PixelBuffer, radius: number): PixelBuffer {
   for (let x = 0; x < w; x++) {
     for (let y = 0; y < h; y++) {
       let rr = 0, gg = 0, bb = 0, aa = 0;
-      for (let dy = -r; dy <= r; dy++) {
-        const sy = Math.max(0, Math.min(h - 1, y + dy));
-        const i = (sy * w + x) * 4;
-        rr += tmp[i]; gg += tmp[i + 1]; bb += tmp[i + 2]; aa += tmp[i + 3];
+      for (let k = -r; k <= r; k++) {
+        const sy = Math.max(0, Math.min(h - 1, y + k));
+        const si = (sy * w + x) * 4;
+        const weight = kernel[k + r];
+        rr += tmp[si] * weight;
+        gg += tmp[si + 1] * weight;
+        bb += tmp[si + 2] * weight;
+        aa += tmp[si + 3] * weight;
       }
-      const i = (y * w + x) * 4;
-      o[i] = rr / div;
-      o[i + 1] = gg / div;
-      o[i + 2] = bb / div;
-      o[i + 3] = aa / div;
+      const di = (y * w + x) * 4;
+      out[di] = rr; out[di + 1] = gg; out[di + 2] = bb; out[di + 3] = aa;
     }
   }
 
+  const dst = createPixelBuffer(w, h);
+  for (let i = 0; i < dst.data.length; i++) {
+    dst.data[i] = Math.max(0, Math.min(255, Math.round(out[i])));
+  }
   return dst;
 }
 
-/** Composite a glow layer onto a destination buffer additively */
+/** Legacy box blur — kept for backwards compat with tests */
+export function boxBlur(src: PixelBuffer, radius: number): PixelBuffer {
+  return gaussianBlur(src, radius);
+}
+
+// ── Compositing ──────────────────────────────────────────────────────
+
+/** Composite src onto dst using additive blending */
 export function compositeAdditive(dst: PixelBuffer, src: PixelBuffer, intensity: number): void {
   for (let i = 0; i < dst.data.length; i += 4) {
     dst.data[i] = Math.min(255, dst.data[i] + Math.round(src.data[i] * intensity));
@@ -112,23 +166,185 @@ export function compositeAdditive(dst: PixelBuffer, src: PixelBuffer, intensity:
   }
 }
 
-/** Generate a multi-pass glow from a source buffer */
-export function generateGlow(source: PixelBuffer, config: GlowConfig): PixelBuffer {
+/** Screen blend mode compositing — brighter but more natural than additive */
+export function compositeScreen(dst: PixelBuffer, src: PixelBuffer, intensity: number): void {
+  for (let i = 0; i < dst.data.length; i += 4) {
+    for (let c = 0; c < 3; c++) {
+      const d = dst.data[i + c] / 255;
+      const s = (src.data[i + c] / 255) * intensity;
+      dst.data[i + c] = Math.round(Math.min(1, 1 - (1 - d) * (1 - s)) * 255);
+    }
+    dst.data[i + 3] = Math.min(255, dst.data[i + 3] + Math.round(src.data[i + 3] * intensity));
+  }
+}
+
+// ── Multi-Layer Bloom System ─────────────────────────────────────────
+
+export interface BloomConfig {
+  /** Inner core glow radius */
+  innerRadius: number;
+  /** Inner core intensity */
+  innerIntensity: number;
+  /** Mid bloom radius */
+  midRadius: number;
+  /** Mid bloom intensity */
+  midIntensity: number;
+  /** Outer atmospheric glow radius */
+  outerRadius: number;
+  /** Outer glow intensity */
+  outerIntensity: number;
+  /** Number of blur passes for quality */
+  quality: number;
+}
+
+export const DEFAULT_BLOOM: BloomConfig = {
+  innerRadius: 2,
+  innerIntensity: 0.8,
+  midRadius: 8,
+  midIntensity: 0.4,
+  outerRadius: 24,
+  outerIntensity: 0.15,
+  quality: 2,
+};
+
+/**
+ * Multi-layer bloom system — produces the rich, layered glow seen in the reference.
+ * Layer 1 (inner): Tight, bright halo right around bright pixels
+ * Layer 2 (mid): Medium spread color bloom
+ * Layer 3 (outer): Wide atmospheric haze
+ */
+export function multiLayerBloom(source: PixelBuffer, config: BloomConfig = DEFAULT_BLOOM): PixelBuffer {
   const result = createPixelBuffer(source.width, source.height);
-  // Copy source to result
   result.data.set(source.data);
 
-  const radiusStep = (config.outerRadius - config.innerRadius) / Math.max(1, config.passes - 1);
+  // Extract bright pixels as bloom source (threshold)
+  const brightSource = extractBrightPixels(source, 40);
 
-  for (let pass = 0; pass < config.passes; pass++) {
-    const radius = config.innerRadius + radiusStep * pass;
-    const passIntensity = config.intensity * (1 - pass / config.passes) * 0.5;
-    const blurred = boxBlur(source, radius);
-    compositeAdditive(result, blurred, passIntensity);
+  // Layer 1: Inner core glow — tight and bright
+  let innerGlow = brightSource;
+  for (let i = 0; i < config.quality; i++) {
+    innerGlow = gaussianBlur(innerGlow, config.innerRadius);
   }
+  compositeAdditive(result, innerGlow, config.innerIntensity);
+
+  // Layer 2: Mid bloom — color spread
+  let midGlow = gaussianBlur(brightSource, config.midRadius);
+  for (let i = 1; i < config.quality; i++) {
+    midGlow = gaussianBlur(midGlow, config.midRadius * 0.7);
+  }
+  compositeScreen(result, midGlow, config.midIntensity);
+
+  // Layer 3: Outer atmospheric haze — wide and subtle
+  let outerGlow = gaussianBlur(brightSource, config.outerRadius);
+  compositeScreen(result, outerGlow, config.outerIntensity);
 
   return result;
 }
+
+/** Extract pixels above a brightness threshold */
+function extractBrightPixels(src: PixelBuffer, threshold: number): PixelBuffer {
+  const dst = createPixelBuffer(src.width, src.height);
+  for (let i = 0; i < src.data.length; i += 4) {
+    const bright = src.data[i] * 0.299 + src.data[i + 1] * 0.587 + src.data[i + 2] * 0.114;
+    if (bright > threshold) {
+      dst.data[i] = src.data[i];
+      dst.data[i + 1] = src.data[i + 1];
+      dst.data[i + 2] = src.data[i + 2];
+      dst.data[i + 3] = src.data[i + 3];
+    }
+  }
+  return dst;
+}
+
+/** Legacy generateGlow — now delegates to multiLayerBloom */
+export function generateGlow(source: PixelBuffer, config: GlowConfig): PixelBuffer {
+  return multiLayerBloom(source, {
+    innerRadius: config.innerRadius,
+    innerIntensity: config.intensity * 0.8,
+    midRadius: (config.innerRadius + config.outerRadius) / 2,
+    midIntensity: config.intensity * 0.4,
+    outerRadius: config.outerRadius,
+    outerIntensity: config.intensity * 0.15,
+    quality: config.passes,
+  });
+}
+
+// ── Edge Detection ───────────────────────────────────────────────────
+
+/** Sobel edge detection — produces gradient magnitude map */
+export function sobelEdges(src: PixelBuffer): PixelBuffer {
+  const dst = createPixelBuffer(src.width, src.height);
+  const w = src.width, h = src.height;
+
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      // Sample 3x3 neighborhood luminance
+      const lum = (px: number, py: number): number => {
+        const i = (py * w + px) * 4;
+        return src.data[i] * 0.299 + src.data[i + 1] * 0.587 + src.data[i + 2] * 0.114;
+      };
+
+      // Sobel kernels
+      const gx = (
+        -1 * lum(x - 1, y - 1) + 1 * lum(x + 1, y - 1) +
+        -2 * lum(x - 1, y)     + 2 * lum(x + 1, y) +
+        -1 * lum(x - 1, y + 1) + 1 * lum(x + 1, y + 1)
+      );
+      const gy = (
+        -1 * lum(x - 1, y - 1) - 2 * lum(x, y - 1) - 1 * lum(x + 1, y - 1) +
+         1 * lum(x - 1, y + 1) + 2 * lum(x, y + 1) + 1 * lum(x + 1, y + 1)
+      );
+
+      const magnitude = Math.min(255, Math.sqrt(gx * gx + gy * gy));
+      const i = (y * w + x) * 4;
+      dst.data[i] = magnitude;
+      dst.data[i + 1] = magnitude;
+      dst.data[i + 2] = magnitude;
+      dst.data[i + 3] = src.data[i + 3]; // preserve alpha
+    }
+  }
+
+  return dst;
+}
+
+/** Compute distance field from non-transparent pixels (for smooth glow falloff) */
+export function distanceField(src: PixelBuffer, maxDist: number): Float64Array {
+  const w = src.width, h = src.height;
+  const dist = new Float64Array(w * h);
+  dist.fill(maxDist);
+
+  // Mark non-transparent pixels as distance 0
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      if (src.data[i + 3] > 10) {
+        dist[y * w + x] = 0;
+      }
+    }
+  }
+
+  // Simple brute-force SDF for small buffers (good enough for sprites)
+  // Forward pass
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      if (x > 0) dist[idx] = Math.min(dist[idx], dist[idx - 1] + 1);
+      if (y > 0) dist[idx] = Math.min(dist[idx], dist[(y - 1) * w + x] + 1);
+    }
+  }
+  // Backward pass
+  for (let y = h - 1; y >= 0; y--) {
+    for (let x = w - 1; x >= 0; x--) {
+      const idx = y * w + x;
+      if (x < w - 1) dist[idx] = Math.min(dist[idx], dist[idx + 1] + 1);
+      if (y < h - 1) dist[idx] = Math.min(dist[idx], dist[(y + 1) * w + x] + 1);
+    }
+  }
+
+  return dist;
+}
+
+// ── Scaling ──────────────────────────────────────────────────────────
 
 /** Scale a pixel buffer using nearest-neighbor (crisp pixel art scaling) */
 export function nearestNeighborScale(src: PixelBuffer, scale: number): PixelBuffer {
@@ -152,10 +368,42 @@ export function nearestNeighborScale(src: PixelBuffer, scale: number): PixelBuff
   return dst;
 }
 
+/** Bilinear scale — smoother, used for glow layers */
+export function bilinearScale(src: PixelBuffer, newWidth: number, newHeight: number): PixelBuffer {
+  const dst = createPixelBuffer(newWidth, newHeight);
+  const xRatio = src.width / newWidth;
+  const yRatio = src.height / newHeight;
+
+  for (let y = 0; y < newHeight; y++) {
+    for (let x = 0; x < newWidth; x++) {
+      const srcX = x * xRatio;
+      const srcY = y * yRatio;
+      const x0 = Math.floor(srcX);
+      const y0 = Math.floor(srcY);
+      const x1 = Math.min(x0 + 1, src.width - 1);
+      const y1 = Math.min(y0 + 1, src.height - 1);
+      const fx = srcX - x0;
+      const fy = srcY - y0;
+
+      const di = (y * newWidth + x) * 4;
+      for (let c = 0; c < 4; c++) {
+        const tl = src.data[(y0 * src.width + x0) * 4 + c];
+        const tr = src.data[(y0 * src.width + x1) * 4 + c];
+        const bl = src.data[(y1 * src.width + x0) * 4 + c];
+        const br = src.data[(y1 * src.width + x1) * 4 + c];
+        const top = tl + (tr - tl) * fx;
+        const bot = bl + (br - bl) * fx;
+        dst.data[di + c] = Math.round(top + (bot - top) * fy);
+      }
+    }
+  }
+
+  return dst;
+}
+
 // ── Drawing Primitives (on PixelBuffer) ──────────────────────────────
 
 export function drawLine(buf: PixelBuffer, x0: number, y0: number, x1: number, y1: number, color: RGBA): void {
-  // Bresenham's line algorithm
   x0 = Math.round(x0); y0 = Math.round(y0);
   x1 = Math.round(x1); y1 = Math.round(y1);
   const dx = Math.abs(x1 - x0);
@@ -189,7 +437,6 @@ export function drawRect(buf: PixelBuffer, x: number, y: number, w: number, h: n
 }
 
 export function drawCircle(buf: PixelBuffer, cx: number, cy: number, r: number, color: RGBA, filled: boolean = false): void {
-  // Midpoint circle algorithm
   let x = r, y = 0, err = 1 - r;
 
   while (x >= y) {
