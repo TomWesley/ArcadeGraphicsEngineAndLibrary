@@ -36,6 +36,7 @@
     "test:watch": "vitest",
     "test:charizard": "npx http-server tests/charizard -p 8081 -o",
     "test:hud": "npx http-server tests/hud-dashboard -p 8082 -o",
+    "test:consistency": "npx http-server tests/consistency -p 8083 -o",
     "typecheck": "tsc --noEmit"
   },
   "files": [

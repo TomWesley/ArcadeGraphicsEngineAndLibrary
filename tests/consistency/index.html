@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcade Engine - Multi-Subject Consistency Test</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; color: #fff; font-family: 'Press Start 2P', monospace; padding: 16px; }
+    h1 { font-size: 12px; color: #ff44ff; text-shadow: 0 0 10px #ff44ff; margin-bottom: 4px; text-align: center; }
+    .subtitle { font-size: 7px; color: #666; text-align: center; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .subject { background: rgba(255,255,255,0.02); border: 1px solid #222; padding: 10px; }
+    .subject h3 { font-size: 8px; color: #888; margin-bottom: 8px; }
+    .subject-canvases { display: flex; gap: 8px; align-items: end; }
+    .subject-canvases .col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .subject-canvases label { font-size: 5px; color: #555; }
+    canvas { border: 1px solid #111; image-rendering: pixelated; background: #000; }
+    .stats { font-size: 6px; color: #555; margin-top: 6px; line-height: 1.6; }
+    .stats .pass { color: #44ff44; }
+    .stats .fail { color: #ff4444; }
+    .stats .warn { color: #ffaa44; }
+    #summary { text-align: center; font-size: 8px; color: #44ff44; text-shadow: 0 0 6px #44ff44; margin: 16px 0; }
+    .palette-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; }
+    .palette-btn {
+      background: transparent; border: 1px solid #333; color: #888;
+      font-family: 'Press Start 2P', monospace; font-size: 6px; padding: 5px 8px; cursor: pointer;
+    }
+    .palette-btn:hover, .palette-btn.active { border-color: currentColor; text-shadow: 0 0 6px currentColor; }
+    .consistency-matrix { margin: 16px auto; border-collapse: collapse; }
+    .consistency-matrix td, .consistency-matrix th { font-size: 6px; padding: 4px 6px; border: 1px solid #222; text-align: center; }
+    .consistency-matrix th { color: #888; }
+    .score-high { color: #44ff44; }
+    .score-mid { color: #ffaa44; }
+    .score-low { color: #ff4444; }
+  </style>
+</head>
+<body>
+  <h1>MULTI-SUBJECT CONSISTENCY TEST</h1>
+  <p class="subtitle">Proving that different subjects get identical style treatment — "same artist" validation</p>
+
+  <div class="palette-row">
+    <button class="palette-btn active" data-palette="inferno" style="color:#ff44ff;">INFERNO</button>
+    <button class="palette-btn" data-palette="ocean" style="color:#4488ff;">OCEAN</button>
+    <button class="palette-btn" data-palette="jungle" style="color:#44ff44;">JUNGLE</button>
+    <button class="palette-btn" data-palette="solar" style="color:#ff8844;">SOLAR</button>
+  </div>
+
+  <div class="grid" id="subjects"></div>
+
+  <div style="text-align:center;">
+    <h3 style="font-size:8px; color:#888; margin-bottom:8px;">ZONE DISTRIBUTION CONSISTENCY MATRIX</h3>
+    <table class="consistency-matrix" id="matrix"></table>
+  </div>
+
+  <p id="summary">Running analysis...</p>
+
+  <script type="module">
+    // ── Engine core (inlined) ──
+    function rgba(r,g,b,a=1){return[r,g,b,a]}
+    function withAlpha(c,a){return[c[0],c[1],c[2],a]}
+    function css(c){return`rgba(${c[0]},${c[1]},${c[2]},${c[3]})`}
+    function lerpColor(a,b,t){return[Math.round(a[0]+(b[0]-a[0])*t),Math.round(a[1]+(b[1]-a[1])*t),Math.round(a[2]+(b[2]-a[2])*t),a[3]+(b[3]-a[3])*t]}
+    function hslToRgba(h,s,l,a=1){s/=100;l/=100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return[Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255),a]}
+    function rgbaToHsl(c){const r=c[0]/255,g=c[1]/255,b=c[2]/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let h=0,s=0;if(mx!==mn){const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);if(mx===r)h=((g-b)/d+(g<b?6:0))*60;else if(mx===g)h=((b-r)/d+2)*60;else h=((r-g)/d+4)*60}return[Math.round(h),Math.round(s*100),Math.round(l*100)]}
+    function neonColor(name,hue,sat=100,lit=60){return{name,core:hslToRgba(hue,sat,lit),glow:hslToRgba(hue,sat,lit+15,0.6),dim:hslToRgba(hue,Math.max(0,sat-30),Math.max(0,lit-35))}}
+
+    const PALETTES = {
+      inferno:{primary:neonColor('Magenta',300,100,60),secondary:neonColor('Cyan',195,100,65)},
+      ocean:{primary:neonColor('Blue',220,100,60),secondary:neonColor('Seafoam',160,90,55)},
+      jungle:{primary:neonColor('Green',120,100,55),secondary:neonColor('Violet',270,90,60)},
+      solar:{primary:neonColor('Orange',25,100,58),secondary:neonColor('Blue',210,100,60)},
+    };
+
+    // SPEC constants
+    const SPEC = {
+      EDGE_THRESHOLD: 30, ALPHA_EDGE_THRESHOLD: 20, EDGE_INFLUENCE_RADIUS: 4,
+      ZONE_COUNT: 5, ZONE_BOUNDARIES: [0,1,3,8,999], ZONE_BRIGHTNESS: [1.0,0.65,0.4,0.22,0.08],
+      GRADIENT_STOPS: [0,0.15,0.35,0.6,0.85,1.0],
+      HUE_VARIATION_AMOUNT: 0.12, HUE_VARIATION_RANGE: [0.2,0.7],
+      BLOOM_INNER_RADIUS:2, BLOOM_INNER_INTENSITY:0.65,
+      BLOOM_MID_RADIUS:8, BLOOM_MID_INTENSITY:0.30,
+      BLOOM_OUTER_RADIUS:22, BLOOM_OUTER_INTENSITY:0.10,
+      BLOOM_QUALITY:2, BLOOM_THRESHOLD:40,
+    };
+
+    // Buffer ops
+    function createBuf(w,h){return{width:w,height:h,data:new Uint8ClampedArray(w*h*4)}}
+    function bufFromImageData(d){return{width:d.width,height:d.height,data:new Uint8ClampedArray(d.data)}}
+    function getPx(b,x,y){const i=(y*b.width+x)*4;return[b.data[i],b.data[i+1],b.data[i+2],b.data[i+3]/255]}
+    function setPx(b,x,y,c){if(x<0||x>=b.width||y<0||y>=b.height)return;const i=(y*b.width+x)*4;b.data[i]=c[0];b.data[i+1]=c[1];b.data[i+2]=c[2];b.data[i+3]=Math.round(c[3]*255)}
+
+    function gaussKernel(r){const sz=r*2+1,k=new Float64Array(sz),sig=r/3,s2=2*sig*sig;let sum=0;for(let i=0;i<sz;i++){const x=i-r;k[i]=Math.exp(-(x*x)/s2);sum+=k[i]}for(let i=0;i<sz;i++)k[i]/=sum;return k}
+    function gaussianBlur(src,radius){if(radius<1){const c=createBuf(src.width,src.height);c.data.set(src.data);return c}const r=Math.round(radius),k=gaussKernel(r),w=src.width,h=src.height;const tmp=new Float64Array(w*h*4),out=new Float64Array(w*h*4);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let rr=0,gg=0,bb=0,aa=0;for(let j=-r;j<=r;j++){const sx=Math.max(0,Math.min(w-1,x+j)),si=(y*w+sx)*4,wt=k[j+r];rr+=src.data[si]*wt;gg+=src.data[si+1]*wt;bb+=src.data[si+2]*wt;aa+=src.data[si+3]*wt}const di=(y*w+x)*4;tmp[di]=rr;tmp[di+1]=gg;tmp[di+2]=bb;tmp[di+3]=aa}for(let x=0;x<w;x++)for(let y=0;y<h;y++){let rr=0,gg=0,bb=0,aa=0;for(let j=-r;j<=r;j++){const sy=Math.max(0,Math.min(h-1,y+j)),si=(sy*w+x)*4,wt=k[j+r];rr+=tmp[si]*wt;gg+=tmp[si+1]*wt;bb+=tmp[si+2]*wt;aa+=tmp[si+3]*wt}const di=(y*w+x)*4;out[di]=rr;out[di+1]=gg;out[di+2]=bb;out[di+3]=aa}const dst=createBuf(w,h);for(let i=0;i<dst.data.length;i++)dst.data[i]=Math.max(0,Math.min(255,Math.round(out[i])));return dst}
+
+    function sobelEdges(src){const dst=createBuf(src.width,src.height);const w=src.width,h=src.height;for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const lum=(px,py)=>{const i=(py*w+px)*4;return src.data[i]*0.299+src.data[i+1]*0.587+src.data[i+2]*0.114};const gx=-lum(x-1,y-1)+lum(x+1,y-1)-2*lum(x-1,y)+2*lum(x+1,y)-lum(x-1,y+1)+lum(x+1,y+1);const gy=-lum(x-1,y-1)-2*lum(x,y-1)-lum(x+1,y-1)+lum(x-1,y+1)+2*lum(x,y+1)+lum(x+1,y+1);const mag=Math.min(255,Math.sqrt(gx*gx+gy*gy));const i=(y*w+x)*4;dst.data[i]=mag;dst.data[i+1]=mag;dst.data[i+2]=mag;dst.data[i+3]=src.data[i+3]}return dst}
+
+    function distanceField(src,threshold){const w=src.width,h=src.height,dist=new Float64Array(w*h);dist.fill(9999);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;if(src.data[i+3]>10&&(src.data[i]+src.data[i+1]+src.data[i+2])>threshold*3)dist[y*w+x]=0}for(let y=0;y<h;y++)for(let x=0;x<w;x++){const idx=y*w+x;if(x>0)dist[idx]=Math.min(dist[idx],dist[idx-1]+1);if(y>0)dist[idx]=Math.min(dist[idx],dist[(y-1)*w+x]+1)}for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){const idx=y*w+x;if(x<w-1)dist[idx]=Math.min(dist[idx],dist[idx+1]+1);if(y<h-1)dist[idx]=Math.min(dist[idx],dist[(y+1)*w+x]+1)}return dist}
+
+    // Analysis
+    function analyzeImage(src) {
+      const w=src.width,h=src.height,n=w*h;
+      const fg=new Uint8Array(n), lum=new Float64Array(n);
+      for(let i=0;i<n;i++){const si=i*4;const a=src.data[si+3];fg[i]=(a>SPEC.ALPHA_EDGE_THRESHOLD&&(src.data[si]+src.data[si+1]+src.data[si+2])>SPEC.EDGE_THRESHOLD*3)?1:0;lum[i]=(src.data[si]*0.299+src.data[si+1]*0.587+src.data[si+2]*0.114)*(a/255)/255}
+      const edges=sobelEdges(src);const edgeStr=new Float64Array(n);for(let i=0;i<n;i++)edgeStr[i]=edges.data[i*4]/255;
+      const edgeMask=createBuf(w,h);
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){const idx=y*w+x;if(!fg[idx])continue;let isE=false;for(let dy=-1;dy<=1&&!isE;dy++)for(let dx=-1;dx<=1&&!isE;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<0||nx>=w||ny<0||ny>=h){isE=true;continue}if(!fg[ny*w+nx])isE=true}if(isE||edgeStr[idx]>SPEC.EDGE_THRESHOLD/255)setPx(edgeMask,x,y,[255,255,255,1])}
+      const rawDist=distanceField(edgeMask,0);const edgeDist=new Float64Array(n);let maxD=0;
+      for(let i=0;i<n;i++){edgeDist[i]=rawDist[i];if(fg[i]&&rawDist[i]<9000)maxD=Math.max(maxD,rawDist[i])}maxD=Math.max(1,maxD);
+      const zones=new Uint8Array(n);const zb=SPEC.ZONE_BOUNDARIES;
+      for(let i=0;i<n;i++){if(!fg[i]){zones[i]=255;continue}const d=edgeDist[i];let z=SPEC.ZONE_COUNT-1;for(let j=0;j<SPEC.ZONE_COUNT-1;j++){if(d<=zb[j+1]){z=j;break}}zones[i]=z}
+      const blurred=gaussianBlur(src,3);const lc=new Float64Array(n);
+      for(let i=0;i<n;i++){const si=i*4;const ol=src.data[si]*0.299+src.data[si+1]*0.587+src.data[si+2]*0.114;const bl=blurred.data[si]*0.299+blurred.data[si+1]*0.587+blurred.data[si+2]*0.114;lc[i]=Math.min(1,Math.abs(ol-bl)/128)}
+      return{width:w,height:h,luminance:lum,edgeStrength:edgeStr,edgeDistance:edgeDist,maxDistance:maxD,foregroundMask:fg,zoneMap:zones,localContrast:lc};
+    }
+
+    // Neon gradient
+    function neonGradient(t,neon,accent){const s=SPEC.GRADIENT_STOPS;if(t<s[1]){const v=t/s[1];return lerpColor([2,2,5,1],neon.dim,v*0.3)}else if(t<s[2]){const v=(t-s[1])/(s[2]-s[1]);const dd=[Math.round(neon.dim[0]*0.4),Math.round(neon.dim[1]*0.4),Math.round(neon.dim[2]*0.4),1];return lerpColor(dd,neon.dim,v)}else if(t<s[3]){const v=(t-s[2])/(s[3]-s[2]);const mid=accent?lerpColor(neon.dim,accent.dim,0.3):neon.dim;return lerpColor(neon.dim,mid,v)}else if(t<s[4]){const v=(t-s[3])/(s[4]-s[3]);return lerpColor(neon.dim,neon.core,v)}else{const v=(t-s[4])/(s[5]-s[4]);const hot=[Math.min(255,neon.core[0]+80),Math.min(255,neon.core[1]+80),Math.min(255,neon.core[2]+80),1];return lerpColor(neon.core,hot,v)}}
+
+    // Neonify
+    function neonifyImage(src,neon,accent){
+      const analysis=analyzeImage(src);const w=src.width,h=src.height,dst=createBuf(w,h);
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){const idx=y*w+x;if(!analysis.foregroundMask[idx])continue;
+        const orig=getPx(src,x,y);const zone=analysis.zoneMap[idx];const pLum=analysis.luminance[idx];const eStr=analysis.edgeStrength[idx];const lc=analysis.localContrast[idx];
+        let t=SPEC.ZONE_BRIGHTNESS[Math.min(zone,SPEC.ZONE_BRIGHTNESS.length-1)]*(0.5+pLum*0.6);
+        if(eStr>0.15)t=Math.min(1,t+eStr*0.5);t=Math.min(1,t+lc*0.15);t=Math.max(0,Math.min(1,t));
+        let color=neonGradient(t,neon,accent);
+        if(t>0.2&&t<0.7){const oh=rgbaToHsl(orig);const nh=rgbaToHsl(color);const bh=nh[0]+(oh[0]-nh[0])*0.12;const inf=hslToRgba((bh+360)%360,nh[1],nh[2],color[3]);color=lerpColor(color,inf,0.15)}
+        dst.data[idx*4]=color[0];dst.data[idx*4+1]=color[1];dst.data[idx*4+2]=color[2];dst.data[idx*4+3]=Math.round(orig[3]*255)}
+      return{buf:dst,analysis};
+    }
+
+    function multiLayerBloom(src){const result=createBuf(src.width,src.height);result.data.set(src.data);const bright=createBuf(src.width,src.height);for(let i=0;i<src.data.length;i+=4){const b=src.data[i]*0.299+src.data[i+1]*0.587+src.data[i+2]*0.114;if(b>SPEC.BLOOM_THRESHOLD){bright.data[i]=src.data[i];bright.data[i+1]=src.data[i+1];bright.data[i+2]=src.data[i+2];bright.data[i+3]=src.data[i+3]}}let inner=gaussianBlur(bright,SPEC.BLOOM_INNER_RADIUS);inner=gaussianBlur(inner,SPEC.BLOOM_INNER_RADIUS);for(let i=0;i<result.data.length;i+=4){result.data[i]=Math.min(255,result.data[i]+Math.round(inner.data[i]*SPEC.BLOOM_INNER_INTENSITY));result.data[i+1]=Math.min(255,result.data[i+1]+Math.round(inner.data[i+1]*SPEC.BLOOM_INNER_INTENSITY));result.data[i+2]=Math.min(255,result.data[i+2]+Math.round(inner.data[i+2]*SPEC.BLOOM_INNER_INTENSITY));result.data[i+3]=Math.min(255,result.data[i+3]+Math.round(inner.data[i+3]*SPEC.BLOOM_INNER_INTENSITY))}let mid=gaussianBlur(bright,SPEC.BLOOM_MID_RADIUS);for(let i=0;i<result.data.length;i+=4){for(let c=0;c<3;c++){const d=result.data[i+c]/255,sv=(mid.data[i+c]/255)*SPEC.BLOOM_MID_INTENSITY;result.data[i+c]=Math.round(Math.min(1,1-(1-d)*(1-sv))*255)}}const outer=gaussianBlur(bright,SPEC.BLOOM_OUTER_RADIUS);for(let i=0;i<result.data.length;i+=4){for(let c=0;c<3;c++){const d=result.data[i+c]/255,sv=(outer.data[i+c]/255)*SPEC.BLOOM_OUTER_INTENSITY;result.data[i+c]=Math.round(Math.min(1,1-(1-d)*(1-sv))*255)}}return result}
+
+    // ══════════════════════════════════════════════════════════════════
+    // TEST SUBJECTS — wildly different shapes to prove style consistency
+    // ══════════════════════════════════════════════════════════════════
+
+    const SUBJECTS = [
+      { name: 'DRAGON', draw: drawDragon },
+      { name: 'KNIGHT', draw: drawKnight },
+      { name: 'CRYSTAL', draw: drawCrystal },
+      { name: 'SPACESHIP', draw: drawSpaceship },
+      { name: 'POTION', draw: drawPotion },
+      { name: 'SWORD', draw: drawSword },
+    ];
+
+    function drawDragon(ctx, s) {
+      // Compact dragon silhouette
+      ctx.beginPath(); ctx.moveTo(64*s,20*s); ctx.bezierCurveTo(50*s,15*s,30*s,10*s,15*s,20*s);
+      ctx.bezierCurveTo(8*s,25*s,20*s,35*s,35*s,30*s); ctx.bezierCurveTo(25*s,25*s,40*s,20*s,55*s,25*s);
+      ctx.lineTo(64*s,20*s);
+      ctx.moveTo(64*s,20*s); ctx.bezierCurveTo(78*s,15*s,98*s,10*s,113*s,20*s);
+      ctx.bezierCurveTo(120*s,25*s,108*s,35*s,93*s,30*s); ctx.bezierCurveTo(103*s,25*s,88*s,20*s,73*s,25*s);
+      ctx.closePath();
+      const wg=ctx.createRadialGradient(64*s,25*s,5*s,64*s,25*s,50*s);
+      wg.addColorStop(0,'rgba(180,90,40,0.9)');wg.addColorStop(1,'rgba(120,50,20,0.5)');
+      ctx.fillStyle=wg; ctx.fill();
+      ctx.strokeStyle='rgba(220,120,60,0.8)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      // Body
+      ctx.beginPath(); ctx.ellipse(64*s,60*s,20*s,25*s,0,0,Math.PI*2);
+      const bg=ctx.createRadialGradient(64*s,55*s,5*s,64*s,60*s,22*s);
+      bg.addColorStop(0,'rgb(240,150,60)');bg.addColorStop(1,'rgb(180,80,25)');
+      ctx.fillStyle=bg; ctx.fill(); ctx.strokeStyle='rgb(250,170,80)'; ctx.lineWidth=2*s; ctx.stroke();
+      // Belly
+      ctx.beginPath(); ctx.ellipse(64*s,68*s,12*s,14*s,0,0,Math.PI*2);
+      ctx.fillStyle='rgb(255,220,120)'; ctx.fill();
+      // Head
+      ctx.beginPath(); ctx.ellipse(64*s,32*s,14*s,11*s,0,0,Math.PI*2);
+      ctx.fillStyle='rgb(230,130,50)'; ctx.fill(); ctx.strokeStyle='rgb(250,160,70)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      // Eyes
+      ctx.fillStyle='rgb(255,255,240)'; ctx.beginPath(); ctx.ellipse(58*s,30*s,4*s,3*s,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(70*s,30*s,4*s,3*s,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgb(30,30,150)'; ctx.beginPath(); ctx.arc(59*s,30*s,2*s,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(69*s,30*s,2*s,0,Math.PI*2); ctx.fill();
+      // Horns
+      ctx.strokeStyle='rgb(200,100,30)'; ctx.lineWidth=2.5*s;
+      ctx.beginPath(); ctx.moveTo(52*s,24*s); ctx.bezierCurveTo(48*s,15*s,50*s,8*s,53*s,6*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(76*s,24*s); ctx.bezierCurveTo(80*s,15*s,78*s,8*s,75*s,6*s); ctx.stroke();
+      // Legs
+      ctx.fillStyle='rgb(210,110,35)';
+      ctx.fillRect(50*s,80*s,8*s,18*s); ctx.fillRect(70*s,80*s,8*s,18*s);
+      // Tail
+      ctx.beginPath(); ctx.moveTo(44*s,65*s); ctx.bezierCurveTo(30*s,60*s,18*s,55*s,12*s,50*s);
+      ctx.strokeStyle='rgb(220,120,40)'; ctx.lineWidth=4*s; ctx.lineCap='round'; ctx.stroke();
+      // Flame
+      ctx.beginPath(); ctx.ellipse(10*s,45*s,6*s,8*s,0,0,Math.PI*2);
+      const fg=ctx.createRadialGradient(10*s,44*s,2*s,10*s,45*s,7*s);
+      fg.addColorStop(0,'rgb(255,255,200)');fg.addColorStop(0.4,'rgb(255,200,50)');fg.addColorStop(1,'rgb(220,50,10)');
+      ctx.fillStyle=fg; ctx.fill();
+    }
+
+    function drawKnight(ctx, s) {
+      // Helmet
+      ctx.beginPath(); ctx.ellipse(64*s,25*s,16*s,14*s,0,0,Math.PI*2);
+      ctx.fillStyle='rgb(180,190,200)'; ctx.fill();
+      ctx.strokeStyle='rgb(200,210,220)'; ctx.lineWidth=2*s; ctx.stroke();
+      // Visor
+      ctx.fillStyle='rgb(40,40,60)'; ctx.fillRect(52*s,22*s,24*s,6*s);
+      ctx.fillStyle='rgb(100,150,220)'; ctx.fillRect(54*s,23*s,4*s,4*s); ctx.fillRect(70*s,23*s,4*s,4*s);
+      // Plume
+      ctx.beginPath(); ctx.moveTo(64*s,12*s); ctx.bezierCurveTo(70*s,5*s,80*s,4*s,85*s,8*s);
+      ctx.bezierCurveTo(82*s,12*s,74*s,14*s,64*s,12*s);
+      ctx.fillStyle='rgb(200,40,40)'; ctx.fill();
+      // Body armor
+      ctx.beginPath(); ctx.moveTo(48*s,38*s); ctx.lineTo(80*s,38*s);
+      ctx.lineTo(84*s,75*s); ctx.lineTo(44*s,75*s); ctx.closePath();
+      const ag=ctx.createLinearGradient(44*s,38*s,84*s,75*s);
+      ag.addColorStop(0,'rgb(170,180,195)');ag.addColorStop(0.5,'rgb(140,150,165)');ag.addColorStop(1,'rgb(110,120,135)');
+      ctx.fillStyle=ag; ctx.fill(); ctx.strokeStyle='rgb(200,210,220)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      // Chest plate detail
+      ctx.beginPath(); ctx.moveTo(56*s,42*s); ctx.lineTo(72*s,42*s); ctx.lineTo(68*s,60*s); ctx.lineTo(60*s,60*s); ctx.closePath();
+      ctx.fillStyle='rgb(190,200,215)'; ctx.fill();
+      // Arms
+      ctx.fillStyle='rgb(155,165,180)';
+      ctx.beginPath(); ctx.moveTo(44*s,40*s); ctx.bezierCurveTo(35*s,42*s,30*s,55*s,32*s,70*s); ctx.lineTo(40*s,68*s);
+      ctx.bezierCurveTo(38*s,55*s,40*s,45*s,44*s,40*s); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(84*s,40*s); ctx.bezierCurveTo(93*s,42*s,98*s,55*s,96*s,70*s); ctx.lineTo(88*s,68*s);
+      ctx.bezierCurveTo(90*s,55*s,88*s,45*s,84*s,40*s); ctx.fill();
+      // Legs
+      ctx.fillStyle='rgb(140,150,165)';
+      ctx.fillRect(50*s,75*s,10*s,20*s); ctx.fillRect(68*s,75*s,10*s,20*s);
+      // Boots
+      ctx.fillStyle='rgb(100,80,60)';
+      ctx.fillRect(48*s,90*s,14*s,8*s); ctx.fillRect(66*s,90*s,14*s,8*s);
+      // Shield
+      ctx.beginPath(); ctx.moveTo(30*s,50*s); ctx.lineTo(22*s,55*s); ctx.lineTo(22*s,72*s);
+      ctx.lineTo(30*s,78*s); ctx.lineTo(38*s,72*s); ctx.lineTo(38*s,55*s); ctx.closePath();
+      ctx.fillStyle='rgb(60,80,160)'; ctx.fill(); ctx.strokeStyle='rgb(180,190,210)'; ctx.lineWidth=2*s; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(30*s,55*s); ctx.lineTo(30*s,75*s); ctx.strokeStyle='rgb(200,180,50)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(24*s,63*s); ctx.lineTo(36*s,63*s); ctx.stroke();
+    }
+
+    function drawCrystal(ctx, s) {
+      // Main crystal body
+      ctx.beginPath(); ctx.moveTo(64*s,5*s); ctx.lineTo(82*s,40*s); ctx.lineTo(78*s,85*s);
+      ctx.lineTo(64*s,95*s); ctx.lineTo(50*s,85*s); ctx.lineTo(46*s,40*s); ctx.closePath();
+      const cg=ctx.createLinearGradient(46*s,5*s,82*s,95*s);
+      cg.addColorStop(0,'rgb(100,180,255)');cg.addColorStop(0.3,'rgb(60,120,200)');
+      cg.addColorStop(0.6,'rgb(40,80,160)');cg.addColorStop(1,'rgb(20,40,100)');
+      ctx.fillStyle=cg; ctx.fill(); ctx.strokeStyle='rgb(150,200,255)'; ctx.lineWidth=2*s; ctx.stroke();
+      // Facets
+      ctx.beginPath(); ctx.moveTo(64*s,5*s); ctx.lineTo(64*s,95*s); ctx.strokeStyle='rgba(180,220,255,0.4)'; ctx.lineWidth=1*s; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(46*s,40*s); ctx.lineTo(82*s,40*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(50*s,85*s); ctx.lineTo(78*s,85*s); ctx.stroke();
+      // Highlight
+      ctx.beginPath(); ctx.moveTo(55*s,15*s); ctx.lineTo(52*s,35*s); ctx.lineTo(64*s,30*s); ctx.closePath();
+      ctx.fillStyle='rgba(200,230,255,0.5)'; ctx.fill();
+      // Small crystals
+      ctx.beginPath(); ctx.moveTo(35*s,60*s); ctx.lineTo(42*s,45*s); ctx.lineTo(48*s,55*s); ctx.lineTo(42*s,75*s); ctx.closePath();
+      ctx.fillStyle='rgb(70,140,220)'; ctx.fill(); ctx.strokeStyle='rgb(130,190,255)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(85*s,55*s); ctx.lineTo(90*s,35*s); ctx.lineTo(95*s,50*s); ctx.lineTo(90*s,70*s); ctx.closePath();
+      ctx.fillStyle='rgb(80,150,230)'; ctx.fill(); ctx.strokeStyle='rgb(140,200,255)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      // Sparkles
+      for(let i=0;i<6;i++){const px=30+Math.sin(i*1.1)*40,py=20+i*12;
+        ctx.beginPath();ctx.arc(px*s,py*s,1.5*s,0,Math.PI*2);ctx.fillStyle='rgb(220,240,255)';ctx.fill()}
+    }
+
+    function drawSpaceship(ctx, s) {
+      // Hull
+      ctx.beginPath(); ctx.moveTo(64*s,8*s); ctx.bezierCurveTo(72*s,20*s,80*s,40*s,78*s,70*s);
+      ctx.lineTo(85*s,80*s); ctx.lineTo(75*s,90*s); ctx.lineTo(53*s,90*s); ctx.lineTo(43*s,80*s);
+      ctx.lineTo(50*s,70*s); ctx.bezierCurveTo(48*s,40*s,56*s,20*s,64*s,8*s);
+      const sg=ctx.createLinearGradient(43*s,8*s,85*s,90*s);
+      sg.addColorStop(0,'rgb(200,210,220)');sg.addColorStop(0.5,'rgb(150,160,175)');sg.addColorStop(1,'rgb(100,110,130)');
+      ctx.fillStyle=sg; ctx.fill(); ctx.strokeStyle='rgb(210,220,235)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      // Cockpit
+      ctx.beginPath(); ctx.ellipse(64*s,35*s,8*s,12*s,0,0,Math.PI*2);
+      const cockpit=ctx.createRadialGradient(64*s,33*s,2*s,64*s,35*s,10*s);
+      cockpit.addColorStop(0,'rgb(100,200,255)');cockpit.addColorStop(1,'rgb(30,80,150)');
+      ctx.fillStyle=cockpit; ctx.fill(); ctx.strokeStyle='rgb(150,210,255)'; ctx.lineWidth=1*s; ctx.stroke();
+      // Wings
+      ctx.beginPath(); ctx.moveTo(50*s,60*s); ctx.lineTo(20*s,80*s); ctx.lineTo(25*s,85*s); ctx.lineTo(50*s,72*s); ctx.closePath();
+      ctx.fillStyle='rgb(160,170,185)'; ctx.fill(); ctx.strokeStyle='rgb(200,210,225)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(78*s,60*s); ctx.lineTo(108*s,80*s); ctx.lineTo(103*s,85*s); ctx.lineTo(78*s,72*s); ctx.closePath();
+      ctx.fillStyle='rgb(160,170,185)'; ctx.fill(); ctx.strokeStyle='rgb(200,210,225)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      // Engine glow
+      ctx.beginPath(); ctx.ellipse(58*s,92*s,4*s,6*s,0,0,Math.PI*2);
+      const eg1=ctx.createRadialGradient(58*s,92*s,1*s,58*s,92*s,5*s);
+      eg1.addColorStop(0,'rgb(255,255,200)');eg1.addColorStop(0.5,'rgb(100,180,255)');eg1.addColorStop(1,'rgba(50,100,200,0.3)');
+      ctx.fillStyle=eg1; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(70*s,92*s,4*s,6*s,0,0,Math.PI*2); ctx.fillStyle=eg1; ctx.fill();
+    }
+
+    function drawPotion(ctx, s) {
+      // Bottle body
+      ctx.beginPath(); ctx.moveTo(52*s,40*s); ctx.bezierCurveTo(40*s,50*s,35*s,65*s,38*s,80*s);
+      ctx.bezierCurveTo(40*s,90*s,50*s,95*s,64*s,95*s);
+      ctx.bezierCurveTo(78*s,95*s,88*s,90*s,90*s,80*s);
+      ctx.bezierCurveTo(93*s,65*s,88*s,50*s,76*s,40*s); ctx.closePath();
+      const pg=ctx.createRadialGradient(64*s,70*s,5*s,64*s,72*s,30*s);
+      pg.addColorStop(0,'rgb(80,220,120)');pg.addColorStop(0.5,'rgb(40,160,80)');pg.addColorStop(1,'rgb(15,80,40)');
+      ctx.fillStyle=pg; ctx.fill(); ctx.strokeStyle='rgb(100,240,140)'; ctx.lineWidth=2*s; ctx.stroke();
+      // Liquid shine
+      ctx.beginPath(); ctx.ellipse(55*s,65*s,6*s,10*s,-0.3,0,Math.PI*2);
+      ctx.fillStyle='rgba(150,255,180,0.3)'; ctx.fill();
+      // Bottle neck
+      ctx.beginPath(); ctx.moveTo(56*s,40*s); ctx.lineTo(56*s,22*s); ctx.lineTo(72*s,22*s); ctx.lineTo(72*s,40*s); ctx.closePath();
+      ctx.fillStyle='rgb(180,200,190)'; ctx.fill(); ctx.strokeStyle='rgb(200,220,210)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      // Cork
+      ctx.fillStyle='rgb(160,120,70)'; ctx.fillRect(54*s,15*s,20*s,8*s);
+      ctx.strokeStyle='rgb(180,140,80)'; ctx.lineWidth=1*s; ctx.strokeRect(54*s,15*s,20*s,8*s);
+      // Bubbles
+      for(let i=0;i<5;i++){const bx=50+Math.random()*28,by=50+Math.random()*35,br=1.5+Math.random()*2;
+        ctx.beginPath();ctx.arc(bx*s,by*s,br*s,0,Math.PI*2);ctx.fillStyle='rgba(150,255,200,0.5)';ctx.fill()}
+      // Label
+      ctx.fillStyle='rgba(255,255,200,0.15)'; ctx.fillRect(46*s,62*s,36*s,18*s);
+      ctx.strokeStyle='rgba(255,255,200,0.3)'; ctx.lineWidth=0.5*s; ctx.strokeRect(46*s,62*s,36*s,18*s);
+    }
+
+    function drawSword(ctx, s) {
+      // Blade
+      ctx.beginPath(); ctx.moveTo(64*s,5*s); ctx.lineTo(70*s,60*s); ctx.lineTo(64*s,65*s); ctx.lineTo(58*s,60*s); ctx.closePath();
+      const bg=ctx.createLinearGradient(58*s,5*s,70*s,65*s);
+      bg.addColorStop(0,'rgb(230,235,240)');bg.addColorStop(0.3,'rgb(200,210,220)');bg.addColorStop(0.7,'rgb(170,180,195)');bg.addColorStop(1,'rgb(140,150,170)');
+      ctx.fillStyle=bg; ctx.fill(); ctx.strokeStyle='rgb(220,230,240)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      // Blade highlight
+      ctx.beginPath(); ctx.moveTo(64*s,8*s); ctx.lineTo(62*s,55*s); ctx.lineTo(64*s,60*s);
+      ctx.strokeStyle='rgba(240,245,255,0.6)'; ctx.lineWidth=1*s; ctx.stroke();
+      // Guard
+      ctx.beginPath(); ctx.moveTo(45*s,65*s); ctx.bezierCurveTo(48*s,62*s,58*s,63*s,64*s,64*s);
+      ctx.bezierCurveTo(70*s,63*s,80*s,62*s,83*s,65*s);
+      ctx.bezierCurveTo(80*s,68*s,70*s,70*s,64*s,68*s);
+      ctx.bezierCurveTo(58*s,70*s,48*s,68*s,45*s,65*s); ctx.closePath();
+      ctx.fillStyle='rgb(180,150,50)'; ctx.fill(); ctx.strokeStyle='rgb(220,190,60)'; ctx.lineWidth=1.5*s; ctx.stroke();
+      // Gem
+      ctx.beginPath(); ctx.arc(64*s,66*s,3*s,0,Math.PI*2);
+      const gg=ctx.createRadialGradient(64*s,65*s,0.5*s,64*s,66*s,3*s);
+      gg.addColorStop(0,'rgb(255,100,100)');gg.addColorStop(1,'rgb(150,20,20)');
+      ctx.fillStyle=gg; ctx.fill();
+      // Handle
+      ctx.fillStyle='rgb(100,70,40)';
+      ctx.beginPath(); ctx.moveTo(60*s,68*s); ctx.lineTo(68*s,68*s); ctx.lineTo(67*s,88*s); ctx.lineTo(61*s,88*s); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='rgb(140,100,50)'; ctx.lineWidth=1*s; ctx.stroke();
+      // Wrap
+      for(let i=0;i<5;i++){const wy=70+i*3.5;ctx.beginPath();ctx.moveTo(60*s,wy*s);ctx.lineTo(68*s,(wy+1.5)*s);
+        ctx.strokeStyle='rgb(160,120,60)';ctx.lineWidth=1*s;ctx.stroke()}
+      // Pommel
+      ctx.beginPath(); ctx.arc(64*s,91*s,4*s,0,Math.PI*2);
+      ctx.fillStyle='rgb(180,150,50)'; ctx.fill(); ctx.strokeStyle='rgb(220,190,60)'; ctx.lineWidth=1.5*s; ctx.stroke();
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // RENDER + ANALYSIS
+    // ══════════════════════════════════════════════════════════════════
+
+    let currentPalette = 'inferno';
+    const SIZE = 128;
+    const analysisResults = {};
+
+    function zoneDistribution(analysis) {
+      const counts = new Float64Array(SPEC.ZONE_COUNT);
+      let fg = 0;
+      for (const z of analysis.zoneMap) {
+        if (z < SPEC.ZONE_COUNT) { counts[z]++; fg++; }
+      }
+      if (fg === 0) return counts;
+      for (let i = 0; i < counts.length; i++) counts[i] /= fg;
+      return counts;
+    }
+
+    function consistencyScore(a, b) {
+      const da = zoneDistribution(a), db = zoneDistribution(b);
+      let diff = 0;
+      for (let i = 0; i < SPEC.ZONE_COUNT; i++) diff += Math.abs(da[i] - db[i]);
+      return Math.max(0, 1 - diff / SPEC.ZONE_COUNT);
+    }
+
+    function render() {
+      const palette = PALETTES[currentPalette];
+      const container = document.getElementById('subjects');
+      container.innerHTML = '';
+
+      const results = [];
+
+      for (const subject of SUBJECTS) {
+        const div = document.createElement('div');
+        div.className = 'subject';
+        div.innerHTML = `<h3>${subject.name}</h3><div class="subject-canvases">
+          <div class="col"><label>SOURCE</label><canvas class="src" width="${SIZE}" height="${SIZE}" style="width:${SIZE}px;height:${SIZE}px;"></canvas></div>
+          <div class="col"><label>NEONIFIED</label><canvas class="neo" width="${SIZE}" height="${SIZE}" style="width:${SIZE}px;height:${SIZE}px;"></canvas></div>
+          <div class="col"><label>+ BLOOM</label><canvas class="bloom" width="${SIZE}" height="${SIZE}" style="width:${SIZE}px;height:${SIZE}px;"></canvas></div>
+        </div><div class="stats"></div>`;
+        container.appendChild(div);
+
+        // Draw source
+        const srcCanvas = div.querySelector('.src');
+        const srcCtx = srcCanvas.getContext('2d');
+        srcCtx.clearRect(0, 0, SIZE, SIZE);
+        subject.draw(srcCtx, SIZE / 128);
+
+        // Get image data
+        const srcData = srcCtx.getImageData(0, 0, SIZE, SIZE);
+        const srcBuf = bufFromImageData(srcData);
+
+        // Neonify
+        const { buf: neoBuf, analysis } = neonifyImage(srcBuf, palette.primary, palette.secondary);
+        const neoCanvas = div.querySelector('.neo');
+        neoCanvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(neoBuf.data), SIZE, SIZE), 0, 0);
+
+        // Bloom
+        const bloomBuf = multiLayerBloom(neoBuf);
+        const bloomCanvas = div.querySelector('.bloom');
+        bloomCanvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(bloomBuf.data), SIZE, SIZE), 0, 0);
+
+        // Zone distribution stats
+        const dist = zoneDistribution(analysis);
+        const statsDiv = div.querySelector('.stats');
+        const zoneNames = ['OUTLINE', 'INNER RIM', 'MID', 'INTERIOR', 'DEEP'];
+        let statsHtml = '';
+        for (let z = 0; z < SPEC.ZONE_COUNT; z++) {
+          const pct = (dist[z] * 100).toFixed(1);
+          statsHtml += `Zone ${z} (${zoneNames[z]}): ${pct}%<br>`;
+        }
+
+        // Validate
+        const violations = [];
+        // Check dark/bright ratio
+        let dark=0,bright=0,total=0;
+        for(let i=0;i<bloomBuf.data.length;i+=4){if(bloomBuf.data[i+3]<10)continue;total++;
+          const l=bloomBuf.data[i]*0.299+bloomBuf.data[i+1]*0.587+bloomBuf.data[i+2]*0.114;
+          if(l<30)dark++;if(l>180)bright++}
+        if(total>0){
+          if(dark/total<0.3)violations.push('Low contrast (dark<30%)');
+          if(bright/total<0.01)violations.push('No bright neon (bright<1%)');
+        }
+
+        const status = violations.length === 0 ? '<span class="pass">PASS</span>' : violations.map(v=>`<span class="fail">${v}</span>`).join('<br>');
+        statsHtml += '<br>' + status;
+        statsDiv.innerHTML = statsHtml;
+
+        results.push({ name: subject.name, analysis, violations });
+      }
+
+      // Consistency matrix
+      const matrix = document.getElementById('matrix');
+      let mHtml = '<tr><th></th>';
+      for (const r of results) mHtml += `<th>${r.name}</th>`;
+      mHtml += '</tr>';
+      let totalScore = 0, scoreCount = 0;
+      for (let i = 0; i < results.length; i++) {
+        mHtml += `<tr><th>${results[i].name}</th>`;
+        for (let j = 0; j < results.length; j++) {
+          if (i === j) { mHtml += '<td>—</td>'; continue; }
+          const score = consistencyScore(results[i].analysis, results[j].analysis);
+          const cls = score > 0.8 ? 'score-high' : score > 0.5 ? 'score-mid' : 'score-low';
+          mHtml += `<td class="${cls}">${(score*100).toFixed(0)}%</td>`;
+          if (j > i) { totalScore += score; scoreCount++; }
+        }
+        mHtml += '</tr>';
+      }
+      matrix.innerHTML = mHtml;
+
+      const avgScore = scoreCount > 0 ? totalScore / scoreCount : 0;
+      const passCount = results.filter(r => r.violations.length === 0).length;
+      const summary = document.getElementById('summary');
+      summary.textContent = `${passCount}/${results.length} subjects pass | Avg consistency: ${(avgScore*100).toFixed(0)}% | Palette: ${palette.primary.name}`;
+      summary.style.color = avgScore > 0.7 ? '#44ff44' : avgScore > 0.4 ? '#ffaa44' : '#ff4444';
+    }
+
+    document.querySelectorAll('.palette-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPalette = btn.dataset.palette;
+        render();
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>
