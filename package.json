@@ -39,6 +39,7 @@
     "test:consistency": "npx http-server tests/consistency -p 8083 -o",
     "test:pixelart": "npx http-server tests/pixelart-test -p 8084 -o",
     "test:style-match": "npx http-server tests/style-match -p 8085 -o",
+    "test:menu": "npx http-server tests/menu-gen -p 8086 -o",
     "typecheck": "tsc --noEmit"
   },
   "files": [
