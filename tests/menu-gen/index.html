@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcade Engine - Menu Generation Test</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#111;color:#fff;font-family:'Press Start 2P',monospace;padding:16px;display:flex;flex-direction:column;align-items:center}
+    h1{font-size:11px;color:#ff44ff;text-shadow:0 0 10px #ff44ff;margin-bottom:4px}
+    .sub{font-size:7px;color:#555;margin-bottom:16px;text-align:center;line-height:1.8}
+    .menu-grid{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
+    .menu-card{display:flex;flex-direction:column;align-items:center;gap:4px}
+    .menu-card canvas{border:1px solid #1a1a1a;cursor:pointer}
+    .menu-card .label{font-size:6px;color:#555}
+    .config-panel{background:rgba(255,255,255,0.02);border:1px solid #1a1a1a;padding:12px;margin-bottom:16px;max-width:700px;width:100%}
+    .config-panel h3{font-size:8px;color:#666;margin-bottom:8px}
+    .config-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;align-items:center}
+    .config-row label{font-size:6px;color:#444;min-width:60px}
+    .config-row input,.config-row select{background:#0a0a0a;border:1px solid #222;color:#aaa;font-family:'Press Start 2P',monospace;font-size:7px;padding:4px 6px}
+    .config-row input[type=text]{width:200px}
+    .config-row select{width:120px}
+    #status{font-size:7px;color:#44ff44;text-shadow:0 0 6px #44ff44;margin:8px 0}
+  </style>
+</head>
+<body>
+  <h1>SEMANTIC MENU GENERATION</h1>
+  <p class="sub">Define a menu with text config. Engine produces fully styled output across all palettes.</p>
+
+  <div class="config-panel">
+    <h3>MENU CONFIGURATION</h3>
+    <div class="config-row">
+      <label>TITLE</label>
+      <input type="text" id="cfgTitle" value="NEON DRAGONS">
+    </div>
+    <div class="config-row">
+      <label>SUBTITLE</label>
+      <input type="text" id="cfgSubtitle" value="RISE OF THE ARCADE">
+    </div>
+    <div class="config-row">
+      <label>ITEMS</label>
+      <input type="text" id="cfgItems" value="NEW GAME,CONTINUE,OPTIONS,LEADERBOARD,QUIT" style="width:360px">
+    </div>
+    <div class="config-row">
+      <label>FOOTER</label>
+      <input type="text" id="cfgFooter" value="PRESS ENTER TO SELECT">
+    </div>
+    <div class="config-row">
+      <label>SELECTED</label>
+      <input type="range" id="cfgSelected" min="-1" max="6" value="0" style="width:100px">
+      <span id="selVal" style="font-size:6px;color:#666">0</span>
+    </div>
+    <div class="config-row">
+      <label>BACKGROUND</label>
+      <select id="cfgBg"><option value="vignette">VIGNETTE</option><option value="grid">GRID</option><option value="solid">SOLID</option><option value="none">NONE</option></select>
+    </div>
+    <div class="config-row">
+      <label>LAYOUT</label>
+      <select id="cfgLayout"><option value="center">CENTER</option><option value="left">LEFT</option><option value="right">RIGHT</option></select>
+    </div>
+  </div>
+
+  <div class="menu-grid" id="output"></div>
+  <p id="status">Generating...</p>
+
+  <script>
+    // ── Engine (inlined) ──
+    function rgba(r,g,b,a=1){return[r,g,b,a]}
+    function withAlpha(c,a){return[c[0],c[1],c[2],a]}
+    function css(c){return`rgba(${c[0]},${c[1]},${c[2]},${c[3]})`}
+    function hsl2rgba(h,s,l,a=1){s/=100;l/=100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return[Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255),a]}
+    function neonC(n,h,s=100,l=60){return{name:n,core:hsl2rgba(h,s,l),glow:hsl2rgba(h,s,l+15,0.6),dim:hsl2rgba(h,Math.max(0,s-30),Math.max(0,l-35))}}
+
+    const PALETTES = {
+      'NEON INFERNO': {
+        primary:neonC('Magenta',300),secondary:neonC('Cyan',195,100,65),
+        tertiary:neonC('Amber',30,100,55),danger:neonC('Red',350,100,50),
+        background:[0,0,0,1],backgroundTint:[8,2,12,1]},
+      'ELECTRIC OCEAN': {
+        primary:neonC('Blue',220),secondary:neonC('Seafoam',160,90,55),
+        tertiary:neonC('Gold',45,100,55),danger:neonC('Coral',15,100,55),
+        background:[0,0,0,1],backgroundTint:[2,5,18,1]},
+      'TOXIC JUNGLE': {
+        primary:neonC('Green',120,100,55),secondary:neonC('Violet',270,90,60),
+        tertiary:neonC('Yellow',55,100,60),danger:neonC('Pink',330,100,55),
+        background:[0,0,0,1],backgroundTint:[2,10,5,1]},
+      'SOLAR STORM': {
+        primary:neonC('Orange',25,100,58),secondary:neonC('Blue',210,100,60),
+        tertiary:neonC('White',50,80,75),danger:neonC('Red',0,100,48),
+        background:[0,0,0,1],backgroundTint:[12,5,2,1]},
+    };
+
+    // ── Menu renderer (matches src/components/menu.ts) ──
+    function neonText(ctx, text, x, y, color, fontSize, opts={}) {
+      const glow = opts.glow ?? 0.7;
+      ctx.save();
+      ctx.font = `${fontSize}px "Press Start 2P", monospace`;
+      ctx.textAlign = opts.align ?? 'center';
+      ctx.textBaseline = 'middle';
+      const passes = [{blur:20,alpha:glow*0.15},{blur:10,alpha:glow*0.3},{blur:4,alpha:glow*0.5},{blur:0,alpha:1.0}];
+      for (const p of passes) {
+        ctx.shadowColor = css(withAlpha(color,p.alpha));
+        ctx.shadowBlur = p.blur;
+        ctx.fillStyle = css(p.blur===0?color:withAlpha(color,p.alpha));
+        ctx.fillText(text,x,y);
+      }
+      ctx.restore();
+    }
+
+    function clippedRect(ctx,x,y,w,h,c) {
+      ctx.beginPath();ctx.moveTo(x+c,y);ctx.lineTo(x+w-c,y);ctx.lineTo(x+w,y+c);
+      ctx.lineTo(x+w,y+h-c);ctx.lineTo(x+w-c,y+h);ctx.lineTo(x+c,y+h);
+      ctx.lineTo(x,y+h-c);ctx.lineTo(x,y+c);ctx.closePath();
+    }
+
+    function drawButton(ctx,x,y,w,h,label,color,selected,time) {
+      const clip=8, pulse=selected?0.5+Math.sin(time*4)*0.15:0;
+      ctx.save();
+      clippedRect(ctx,x,y,w,h,clip);
+      if(selected){ctx.fillStyle=css(withAlpha(color,0.08+pulse*0.04));ctx.fill();}
+      clippedRect(ctx,x,y,w,h,clip);
+      ctx.shadowColor=css(withAlpha(color,selected?0.6+pulse:0.15));
+      ctx.shadowBlur=selected?12:4;
+      ctx.strokeStyle=css(withAlpha(color,selected?0.8+pulse*0.2:0.2));
+      ctx.lineWidth=selected?1.5:0.5;ctx.stroke();
+      if(selected){
+        ctx.strokeStyle=css(withAlpha(color,0.9));ctx.lineWidth=2;ctx.shadowBlur=8;
+        ctx.beginPath();ctx.moveTo(x,y+clip);ctx.lineTo(x+clip,y);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x+w-clip,y);ctx.lineTo(x+w,y+clip);ctx.stroke();
+        ctx.shadowBlur=10;ctx.fillStyle=css(color);
+        ctx.beginPath();ctx.moveTo(x+12,y+h/2);ctx.lineTo(x+18,y+h/2-4);ctx.lineTo(x+18,y+h/2+4);ctx.closePath();ctx.fill();
+      }
+      neonText(ctx,label,x+w/2,y+h/2,selected?color:withAlpha(color,0.4),12,{glow:selected?0.8+pulse*0.2:0.1});
+      if(selected){ctx.globalAlpha=0.03;for(let sy=y;sy<y+h;sy+=2){ctx.fillStyle=css(color);ctx.fillRect(x,sy,w,1)}ctx.globalAlpha=1}
+      ctx.restore();
+    }
+
+    function drawDecoLine(ctx,w,y,color) {
+      ctx.save();
+      const grad=ctx.createLinearGradient(0,y,w,y);
+      grad.addColorStop(0,css(withAlpha(color,0)));grad.addColorStop(0.15,css(withAlpha(color,0.3)));
+      grad.addColorStop(0.5,css(withAlpha(color,0.5)));grad.addColorStop(0.85,css(withAlpha(color,0.3)));
+      grad.addColorStop(1,css(withAlpha(color,0)));
+      ctx.strokeStyle=grad;ctx.lineWidth=1;ctx.shadowColor=css(withAlpha(color,0.3));ctx.shadowBlur=6;
+      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+      const cx=w/2;ctx.fillStyle=css(withAlpha(color,0.6));ctx.shadowBlur=8;
+      ctx.beginPath();ctx.moveTo(cx,y-4);ctx.lineTo(cx+4,y);ctx.lineTo(cx,y+4);ctx.lineTo(cx-4,y);ctx.closePath();ctx.fill();
+      ctx.restore();
+    }
+
+    function renderMenu(ctx, config, palette, W, H) {
+      const {title,subtitle,items,footer,selectedIndex=0,layout='center',background='vignette',time=0} = config;
+      const pri=palette.primary,sec=palette.secondary,ter=palette.tertiary;
+
+      // Background
+      ctx.fillStyle=css(palette.background);ctx.fillRect(0,0,W,H);
+      ctx.fillStyle=css(palette.backgroundTint);ctx.fillRect(0,0,W,H);
+      if(background==='grid'){ctx.save();ctx.strokeStyle=css(withAlpha(pri.core,0.03));ctx.lineWidth=0.5;
+        for(let x=0;x<=W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+        for(let y=0;y<=H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.restore()}
+      if(background==='vignette'||background==='grid'){const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.7);
+        g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,0.5)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
+
+      const menuW=Math.max(280,W*0.55);
+      let cx;if(layout==='left')cx=60+menuW/2;else if(layout==='right')cx=W-60-menuW/2;else cx=W/2;
+      let curY=H*0.12;
+
+      // Title
+      if(title){neonText(ctx,title,cx,curY,pri.core,Math.min(28,W*0.04),{glow:0.9});curY+=28+20;
+        drawDecoLine(ctx,W,curY-10,pri.core)}
+      if(subtitle){neonText(ctx,subtitle,cx,curY,withAlpha(sec.core,0.6),Math.min(10,W*0.015),{glow:0.3});curY+=10+30}
+
+      // Items
+      const ix=cx-menuW/2;
+      for(let i=0;i<items.length;i++){
+        drawButton(ctx,ix,curY,menuW,40,items[i],i===selectedIndex?pri.core:sec.core,i===selectedIndex,time);
+        curY+=46;
+      }
+
+      // Footer
+      if(footer){const fy=H-40;const fp=0.4+Math.sin(time*2)*0.2;
+        neonText(ctx,footer,cx,fy,withAlpha(ter.core,fp),8,{glow:0.3})}
+
+      // Corner brackets
+      const bc=withAlpha(pri.core,0.15),bs=30,mg=20;
+      ctx.save();ctx.strokeStyle=css(bc);ctx.shadowColor=css(withAlpha(pri.core,0.1));ctx.shadowBlur=6;ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(mg,mg+bs);ctx.lineTo(mg,mg);ctx.lineTo(mg+bs,mg);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(W-mg-bs,mg);ctx.lineTo(W-mg,mg);ctx.lineTo(W-mg,mg+bs);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(mg,H-mg-bs);ctx.lineTo(mg,H-mg);ctx.lineTo(mg+bs,H-mg);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(W-mg-bs,H-mg);ctx.lineTo(W-mg,H-mg);ctx.lineTo(W-mg,H-mg-bs);ctx.stroke();
+      ctx.restore();
+
+      // Bloom
+      ctx.save();ctx.globalCompositeOperation='lighter';ctx.filter='blur(12px)';ctx.globalAlpha=0.05;ctx.drawImage(ctx.canvas,0,0);ctx.restore();
+    }
+
+    // ── Main ──
+    let animTime = 0;
+    let animFrame;
+
+    function getConfig() {
+      const sel = parseInt(document.getElementById('cfgSelected').value);
+      document.getElementById('selVal').textContent = sel < 0 ? 'NONE' : sel;
+      return {
+        title: document.getElementById('cfgTitle').value || undefined,
+        subtitle: document.getElementById('cfgSubtitle').value || undefined,
+        items: document.getElementById('cfgItems').value.split(',').map(s=>s.trim()).filter(Boolean),
+        footer: document.getElementById('cfgFooter').value || undefined,
+        selectedIndex: sel,
+        background: document.getElementById('cfgBg').value,
+        layout: document.getElementById('cfgLayout').value,
+        time: animTime,
+        animated: true,
+      };
+    }
+
+    function render() {
+      const config = getConfig();
+      const container = document.getElementById('output');
+      container.innerHTML = '';
+
+      const W = 480, H = 420;
+
+      for (const [name, palette] of Object.entries(PALETTES)) {
+        const card = document.createElement('div');
+        card.className = 'menu-card';
+
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        canvas.style.width = '320px'; canvas.style.height = '280px';
+        const ctx = canvas.getContext('2d');
+
+        renderMenu(ctx, {...config, time: animTime}, palette, W, H);
+
+        card.appendChild(canvas);
+        const lbl = document.createElement('div');
+        lbl.className = 'label';
+        lbl.textContent = name;
+        card.appendChild(lbl);
+        container.appendChild(card);
+      }
+
+      document.getElementById('status').textContent =
+        `${config.items.length} items | ${Object.keys(PALETTES).length} palettes | ${config.background} bg`;
+    }
+
+    function animate() {
+      animTime += 1/60;
+      render();
+      animFrame = requestAnimationFrame(animate);
+    }
+
+    // Debounce config changes
+    let renderTimeout;
+    function scheduleRender() {
+      // Restart animation
+      if (animFrame) cancelAnimationFrame(animFrame);
+      animTime = 0;
+      animate();
+    }
+
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', () => {
+        clearTimeout(renderTimeout);
+        renderTimeout = setTimeout(scheduleRender, 100);
+      });
+    });
+
+    animate();
+  </script>
+</body>
+</html>
