@@ -6,7 +6,9 @@
       "Bash(npm install:*)",
       "Bash(npx tsc:*)",
       "Bash(npx vitest:*)",
-      "Bash(npx tsup:*)"
+      "Bash(npx tsup:*)",
+      "Bash(identify \"/Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/Sample PixelArt.png\")",
+      "Bash(sips -g pixelWidth -g pixelHeight \"/Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/Sample PixelArt.png\")"
     ]
   }
 }
