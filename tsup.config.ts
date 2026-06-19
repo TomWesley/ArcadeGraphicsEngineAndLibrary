@@ -7,6 +7,7 @@ export default defineConfig({
     'engine/index': 'src/engine/index.ts',
     'components/index': 'src/components/index.ts',
     'pipeline/index': 'src/pipeline/index.ts',
+    'integration/index': 'src/integration/index.ts',
   },
   format: ['cjs', 'esm'],
   dts: false,

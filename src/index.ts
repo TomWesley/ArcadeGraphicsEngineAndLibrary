@@ -5,3 +5,4 @@ export * from './style';
 export * from './engine';
 export * from './components';
 export * from './pipeline';
+export * from './integration';
