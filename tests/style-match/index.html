@@ -3,451 +3,299 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arcade Engine - Style Match Test (Reference Alien)</title>
+  <title>Arcade Engine - Style Analysis (v2 Rich Pixel Art)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
-    body{background:#000;color:#fff;font-family:'Press Start 2P',monospace;padding:16px;display:flex;flex-direction:column;align-items:center}
-    h1{font-size:11px;color:#ff44ff;text-shadow:0 0 10px #ff44ff;margin-bottom:4px}
-    .sub{font-size:7px;color:#555;margin-bottom:16px;text-align:center;max-width:800px;line-height:1.8}
-    .main-row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-bottom:20px;align-items:start}
-    .panel{background:rgba(255,255,255,0.015);border:1px solid #181818;padding:12px;display:flex;flex-direction:column;align-items:center}
-    .panel h3{font-size:8px;color:#888;margin-bottom:8px}
-    .panel canvas{border:1px solid #0a0a0a;image-rendering:pixelated;background:#000;display:block;margin-bottom:6px}
-    .panel .info{font-size:5px;color:#444;text-align:center;line-height:1.6}
-    .controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+    body{background:#1a1530;color:#fff;font-family:'Press Start 2P',monospace;padding:16px;display:flex;flex-direction:column;align-items:center}
+    h1{font-size:11px;color:#e8a0ff;text-shadow:0 0 8px rgba(232,160,255,0.4);margin-bottom:4px}
+    .sub{font-size:7px;color:#777;margin-bottom:16px;text-align:center;max-width:800px;line-height:1.8}
+    .compare{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-bottom:20px;align-items:start}
+    .panel{background:rgba(255,255,255,0.02);border:1px solid #2a2540;padding:12px;text-align:center}
+    .panel h3{font-size:8px;color:#999;margin-bottom:8px}
+    .panel canvas{border:1px solid #1a1530;image-rendering:pixelated;display:block;margin:0 auto 6px}
+    .panel .info{font-size:5px;color:#666;line-height:1.6}
+    .controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;align-items:center}
     .ctrl{display:flex;flex-direction:column;align-items:center;gap:2px}
-    .ctrl label{font-size:5px;color:#444}
-    .ctrl span{font-size:5px;color:#666}
-    input[type=range]{width:90px;accent-color:#ff44ff}
-    .palette-row{display:flex;gap:6px;justify-content:center;margin-bottom:12px}
-    .pbtn{background:transparent;border:1px solid #333;color:#888;font-family:'Press Start 2P',monospace;font-size:6px;padding:4px 8px;cursor:pointer}
-    .pbtn:hover,.pbtn.active{border-color:currentColor;text-shadow:0 0 6px currentColor}
-    .recolor-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+    .ctrl label{font-size:5px;color:#555}
+    .ctrl span{font-size:5px;color:#777}
+    input[type=range]{width:80px;accent-color:#e8a0ff}
+    .recolor-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
     .recolor-card{text-align:center}
-    .recolor-card canvas{border:1px solid #111;image-rendering:pixelated;background:#000;display:block;margin-bottom:3px}
-    .recolor-card .label{font-size:5px;color:#555}
-    #status{font-size:7px;color:#44ff44;text-shadow:0 0 6px #44ff44;margin:8px 0}
-    .shade-strip{display:flex;gap:1px;margin-top:6px}
-    .shade-swatch{width:16px;height:16px;border:1px solid #222}
-    .compare-row{display:flex;gap:30px;justify-content:center;align-items:start;flex-wrap:wrap;margin-bottom:16px}
+    .recolor-card canvas{border:1px solid #2a2540;image-rendering:pixelated;display:block;margin-bottom:3px}
+    .recolor-card .label{font-size:5px;color:#777}
+    #status{font-size:7px;color:#88dd88;text-shadow:0 0 4px rgba(136,221,136,0.3);margin:8px 0}
+    .tab-row{display:flex;gap:4px;margin-bottom:12px}
+    .tab{background:transparent;border:1px solid #333;color:#888;font-family:'Press Start 2P',monospace;font-size:6px;padding:5px 10px;cursor:pointer}
+    .tab:hover,.tab.active{border-color:#e8a0ff;color:#e8a0ff;text-shadow:0 0 6px rgba(232,160,255,0.4)}
+    .analysis{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;margin:10px 0}
+    .stat{background:rgba(255,255,255,0.02);border:1px solid #222;padding:6px;text-align:center}
+    .stat .val{font-size:10px;color:#e8a0ff;margin-bottom:2px}
+    .stat .lbl{font-size:5px;color:#666}
   </style>
 </head>
 <body>
-  <h1>STYLE MATCH: REFERENCE ALIEN</h1>
+  <h1>STYLE ANALYSIS v2: RICH PIXEL ART</h1>
   <p class="sub">
-    Extracting the alien from GraphicsSample.png and processing it through our pipeline.
-    The LEFT panel is the original reference crop. The RIGHT panel is our engine's output.
-    Goal: identical visual quality and feel.
+    Analyzing reference art for color density, shading depth, and material richness.
+    The engine recolors while preserving all detail — warm highlights, cool shadows, per-pixel precision.
   </p>
 
-  <div class="palette-row">
-    <button class="pbtn active" data-p="original" style="color:#ff44ff">ORIGINAL COLORS</button>
-    <button class="pbtn" data-p="cyan" style="color:#44ffff">CYAN RECOLOR</button>
-    <button class="pbtn" data-p="green" style="color:#44ff44">GREEN RECOLOR</button>
-    <button class="pbtn" data-p="orange" style="color:#ff8844">ORANGE RECOLOR</button>
+  <div class="tab-row">
+    <button class="tab active" data-src="pixel">PIXEL ART CHARACTERS</button>
+    <button class="tab" data-src="alien">NEON ALIEN (GLOW)</button>
   </div>
 
   <div class="controls">
-    <div class="ctrl"><label>SHADES</label><input type="range" id="shades" min="4" max="16" value="8"><span id="shadesV">8</span></div>
-    <div class="ctrl"><label>DITHER</label><input type="range" id="dither" min="0" max="100" value="30"><span id="ditherV">0.30</span></div>
-    <div class="ctrl"><label>GLOW INNER</label><input type="range" id="glowInner" min="0" max="100" value="45"><span id="glowInnerV">0.45</span></div>
-    <div class="ctrl"><label>GLOW MID</label><input type="range" id="glowMid" min="0" max="100" value="20"><span id="glowMidV">0.20</span></div>
-    <div class="ctrl"><label>GLOW OUTER</label><input type="range" id="glowOuter" min="0" max="100" value="8"><span id="glowOuterV">0.08</span></div>
-    <div class="ctrl"><label>BG THRESHOLD</label><input type="range" id="bgThresh" min="5" max="80" value="20"><span id="bgThreshV">20</span></div>
+    <div class="ctrl"><label>HUE SHIFT</label><input type="range" id="hueShift" min="-180" max="180" value="0"><span id="hueShiftV">0</span></div>
+    <div class="ctrl"><label>SATURATION</label><input type="range" id="satMod" min="50" max="150" value="100"><span id="satModV">100%</span></div>
+    <div class="ctrl"><label>WARM HIGHLIGHTS</label><input type="range" id="warmHL" min="0" max="40" value="15"><span id="warmHLV">15</span></div>
+    <div class="ctrl"><label>COOL SHADOWS</label><input type="range" id="coolSH" min="0" max="50" value="25"><span id="coolSHV">25</span></div>
+    <div class="ctrl"><label>GLOW (tactical)</label><input type="range" id="glowAmt" min="0" max="100" value="0"><span id="glowAmtV">0%</span></div>
   </div>
 
-  <div class="compare-row">
-    <div class="panel">
-      <h3>REFERENCE (ORIGINAL CROP)</h3>
-      <canvas id="refCanvas" width="200" height="250"></canvas>
-      <div class="info" id="refInfo">Loading reference...</div>
-    </div>
-    <div class="panel">
-      <h3>ENGINE OUTPUT</h3>
-      <canvas id="outCanvas" width="200" height="250"></canvas>
-      <div class="info" id="outInfo">Processing...</div>
-      <div class="shade-strip" id="shadeStrip"></div>
-    </div>
-  </div>
+  <div class="compare" id="mainView"></div>
 
-  <h3 style="font-size:8px;color:#666;margin-bottom:8px;text-align:center">ALL PALETTE VARIANTS</h3>
+  <h3 style="font-size:8px;color:#888;margin:12px 0 8px">HUE SHIFT VARIANTS</h3>
   <div class="recolor-row" id="variants"></div>
 
-  <p id="status">Initializing...</p>
+  <h3 style="font-size:8px;color:#888;margin:12px 0 8px">COLOR ANALYSIS</h3>
+  <div class="analysis" id="analysis"></div>
+
+  <p id="status">Loading references...</p>
 
   <script>
-    // ── Engine core ──
-    function mkBuf(w,h){return{w,h,d:new Uint8ClampedArray(w*h*4)}}
-    function gPx(b,x,y){if(x<0||x>=b.w||y<0||y>=b.h)return[0,0,0,0];const i=(y*b.w+x)*4;return[b.d[i],b.d[i+1],b.d[i+2],b.d[i+3]]}
-    function sPx(b,x,y,c){if(x<0||x>=b.w||y<0||y>=b.h)return;const i=(y*b.w+x)*4;b.d[i]=c[0];b.d[i+1]=c[1];b.d[i+2]=c[2];b.d[i+3]=c[3]!==undefined?c[3]:255}
-    function lerpC(a,b,t){return[Math.round(a[0]+(b[0]-a[0])*t),Math.round(a[1]+(b[1]-a[1])*t),Math.round(a[2]+(b[2]-a[2])*t),Math.round((a[3]??255)+((b[3]??255)-(a[3]??255))*t)]}
+    // ── Core ──
+    function css(c){return`rgba(${c[0]},${c[1]},${c[2]},${c[3]??1})`}
     function hsl2rgb(h,s,l){s/=100;l/=100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return[Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)]}
     function rgb2hsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let h=0,s=0;if(mx!==mn){const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);if(mx===r)h=((g-b)/d+(g<b?6:0))*60;else if(mx===g)h=((b-r)/d+2)*60;else h=((r-g)/d+4)*60}return[h,s*100,l*100]}
 
-    // Gaussian blur
+    // Gaussian blur (for tactical glow)
     function gk(r){const s=r*2+1,k=new Float64Array(s),sig=Math.max(r/3,0.5),s2=2*sig*sig;let sum=0;for(let i=0;i<s;i++){const x=i-r;k[i]=Math.exp(-(x*x)/s2);sum+=k[i]}for(let i=0;i<s;i++)k[i]/=sum;return k}
-    function gblur(src,radius){if(radius<1){const c=mkBuf(src.w,src.h);c.d.set(src.d);return c}const r=Math.round(radius),k=gk(r),w=src.w,h=src.h;const t=new Float64Array(w*h*4),o=new Float64Array(w*h*4);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let rr=0,gg=0,bb=0,aa=0;for(let j=-r;j<=r;j++){const sx=Math.max(0,Math.min(w-1,x+j)),si=(y*w+sx)*4,wt=k[j+r];rr+=src.d[si]*wt;gg+=src.d[si+1]*wt;bb+=src.d[si+2]*wt;aa+=src.d[si+3]*wt}const di=(y*w+x)*4;t[di]=rr;t[di+1]=gg;t[di+2]=bb;t[di+3]=aa}for(let x=0;x<w;x++)for(let y=0;y<h;y++){let rr=0,gg=0,bb=0,aa=0;for(let j=-r;j<=r;j++){const sy=Math.max(0,Math.min(h-1,y+j)),si=(sy*w+x)*4,wt=k[j+r];rr+=t[si]*wt;gg+=t[si+1]*wt;bb+=t[si+2]*wt;aa+=t[si+3]*wt}const di=(y*w+x)*4;o[di]=rr;o[di+1]=gg;o[di+2]=bb;o[di+3]=aa}const dst=mkBuf(w,h);for(let i=0;i<dst.d.length;i++)dst.d[i]=Math.max(0,Math.min(255,Math.round(o[i])));return dst}
+    function gblur(d,w,h,radius){if(radius<1)return new Uint8ClampedArray(d);const r=Math.round(radius),k=gk(r);const t=new Float64Array(w*h*4),o=new Float64Array(w*h*4);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let rr=0,gg=0,bb=0,aa=0;for(let j=-r;j<=r;j++){const sx=Math.max(0,Math.min(w-1,x+j)),si=(y*w+sx)*4,wt=k[j+r];rr+=d[si]*wt;gg+=d[si+1]*wt;bb+=d[si+2]*wt;aa+=d[si+3]*wt}const di=(y*w+x)*4;t[di]=rr;t[di+1]=gg;t[di+2]=bb;t[di+3]=aa}for(let x=0;x<w;x++)for(let y=0;y<h;y++){let rr=0,gg=0,bb=0,aa=0;for(let j=-r;j<=r;j++){const sy=Math.max(0,Math.min(h-1,y+j)),si=(sy*w+x)*4,wt=k[j+r];rr+=t[si]*wt;gg+=t[si+1]*wt;bb+=t[si+2]*wt;aa+=t[si+3]*wt}const di=(y*w+x)*4;o[di]=rr;o[di+1]=gg;o[di+2]=bb;o[di+3]=aa}const dst=new Uint8ClampedArray(d.length);for(let i=0;i<dst.length;i++)dst[i]=Math.max(0,Math.min(255,Math.round(o[i])));return dst}
 
-    // ── Load reference image and extract the alien ──
-    const refImg = new Image();
-    refImg.src = './GraphicsSample.png';
+    // ── Rich recolor: hue shift with warm highlights + cool shadows ──
+    function richRecolor(srcData, w, h, opts) {
+      const { hueShift=0, satMod=1, warmHL=15, coolSH=25, bgThresh=15 } = opts;
+      const dst = new Uint8ClampedArray(srcData.length);
 
-    let alienCrop = null; // Raw pixel data of the alien from the reference
+      for (let i = 0; i < srcData.length; i += 4) {
+        const r = srcData[i], g = srcData[i+1], b = srcData[i+2], a = srcData[i+3];
+        if (a < bgThresh) { dst[i+3] = a; continue; }
 
-    refImg.onload = () => {
-      // The alien is roughly in the center-upper area of the image
-      // Let's extract it by analyzing the reference
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = refImg.naturalWidth;
-      tempCanvas.height = refImg.naturalHeight;
-      const tempCtx = tempCanvas.getContext('2d');
-      tempCtx.drawImage(refImg, 0, 0);
+        let [h, s, l] = rgb2hsl(r, g, b);
 
-      const fullData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        // Hue shift
+        h = (h + hueShift + 360) % 360;
 
-      // Find the alien's bounding box by scanning for the magenta/pink cluster
-      // The alien is the magenta figure in the upper-center
-      const w = fullData.width, h = fullData.height;
+        // Saturation mod
+        s = Math.max(0, Math.min(100, s * satMod / 100));
 
-      // Scan for bright magenta pixels (the alien's outline)
-      let minX = w, maxX = 0, minY = h, maxY = 0;
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const i = (y * w + x) * 4;
-          const r = fullData.data[i], g = fullData.data[i+1], b = fullData.data[i+2];
-          // The alien is magenta/pink — high R, low-mid G, high B
-          const isMagenta = r > 100 && b > 80 && g < r * 0.7 && (r + b) > 200;
-          // Also include the dark body pixels near magenta ones
-          const isDarkBody = (r > 20 || b > 20) && g < 60 && r + b > 30 && r + b < 200;
-          // Focus on the upper portion where the alien is
-          if ((isMagenta || isDarkBody) && y < h * 0.65 && y > h * 0.05) {
-            // Additional spatial filter: alien is roughly in center third
-            if (x > w * 0.25 && x < w * 0.75) {
-              minX = Math.min(minX, x);
-              maxX = Math.max(maxX, x);
-              minY = Math.min(minY, y);
-              maxY = Math.max(maxY, y);
-            }
-          }
+        // Warm highlights: shift bright pixels toward yellow
+        const lNorm = l / 100;
+        if (lNorm > 0.5) {
+          const warmT = (lNorm - 0.5) * 2; // 0-1 for upper half
+          h = (h + warmHL * warmT + 360) % 360;
+          s = Math.max(0, s - warmT * 15); // desaturate highlights slightly
         }
-      }
 
-      // Add some padding
-      const pad = 10;
-      minX = Math.max(0, minX - pad);
-      minY = Math.max(0, minY - pad);
-      maxX = Math.min(w - 1, maxX + pad);
-      maxY = Math.min(h - 1, maxY + pad);
-
-      const cropW = maxX - minX + 1;
-      const cropH = maxY - minY + 1;
-
-      // Extract the crop
-      const cropData = tempCtx.getImageData(minX, minY, cropW, cropH);
-      alienCrop = { w: cropW, h: cropH, d: new Uint8ClampedArray(cropData.data) };
-
-      // Remove non-alien pixels (anything that's very dark and far from bright pixels)
-      // Build a "near bright" mask
-      const brightMask = new Uint8Array(cropW * cropH);
-      for (let y = 0; y < cropH; y++) {
-        for (let x = 0; x < cropW; x++) {
-          const i = (y * cropW + x) * 4;
-          const lum = alienCrop.d[i] * 0.299 + alienCrop.d[i+1] * 0.587 + alienCrop.d[i+2] * 0.114;
-          if (lum > 30) brightMask[y * cropW + x] = 1;
+        // Cool shadows: shift dark pixels toward blue/purple
+        if (lNorm < 0.4) {
+          const coolT = (0.4 - lNorm) / 0.4;
+          h = (h - coolSH * coolT + 360) % 360;
+          s = Math.min(100, s + coolT * 8);
         }
-      }
 
-      // Expand bright mask by a few pixels
-      const expanded = new Uint8Array(brightMask);
-      for (let pass = 0; pass < 5; pass++) {
-        for (let y = 1; y < cropH - 1; y++) {
-          for (let x = 1; x < cropW - 1; x++) {
-            if (brightMask[y * cropW + x]) continue;
-            const nb = [[-1,0],[1,0],[0,-1],[0,1]];
-            for (const [dx,dy] of nb) {
-              if (expanded[(y+dy)*cropW+(x+dx)]) { expanded[y*cropW+x] = 1; break; }
-            }
-          }
-        }
-        for (let i = 0; i < expanded.length; i++) brightMask[i] = expanded[i];
-      }
-
-      // Zero out pixels not near bright areas (background cleanup)
-      for (let i = 0; i < cropW * cropH; i++) {
-        if (!brightMask[i]) {
-          alienCrop.d[i*4] = 0;
-          alienCrop.d[i*4+1] = 0;
-          alienCrop.d[i*4+2] = 0;
-          alienCrop.d[i*4+3] = 0;
-        }
-      }
-
-      console.log(`Alien extracted: ${cropW}x${cropH} from (${minX},${minY})`);
-      render();
-    };
-
-    // ── Palette-aware recoloring ──
-    // Analyze the alien's original hue distribution, then remap to target hue
-    function recolorAlien(src, targetHue) {
-      const dst = mkBuf(src.w, src.h);
-      for (let i = 0; i < src.d.length; i += 4) {
-        if (src.d[i+3] < 10) continue;
-        const r = src.d[i], g = src.d[i+1], b = src.d[i+2];
-        const [h, s, l] = rgb2hsl(r, g, b);
-
-        // Remap hue: shift from original (roughly 280-320 magenta) to target
-        const origHue = 300; // The alien is magenta
-        const hueDiff = targetHue - origHue;
-        const newH = (h + hueDiff + 360) % 360;
-
-        const [nr, ng, nb] = hsl2rgb(newH, s, l);
-        dst.d[i] = nr; dst.d[i+1] = ng; dst.d[i+2] = nb; dst.d[i+3] = src.d[i+3];
+        const [nr, ng, nb] = hsl2rgb(h, s, l);
+        dst[i] = nr; dst[i+1] = ng; dst[i+2] = nb; dst[i+3] = a;
       }
       return dst;
     }
 
-    // ── Quantize to N shades while preserving the pixel art structure ──
-    function quantizeSprite(src, shadeCount, ditherStrength, bgThreshold) {
-      const dst = mkBuf(src.w, src.h);
-      const B4=[[0/16,8/16,2/16,10/16],[12/16,4/16,14/16,6/16],[3/16,11/16,1/16,9/16],[15/16,7/16,13/16,5/16]];
-
-      // Collect all non-background pixel luminances to build adaptive shade levels
-      const lums = [];
-      for (let i = 0; i < src.d.length; i += 4) {
-        if (src.d[i+3] < bgThreshold) continue;
-        const lum = src.d[i]*0.299 + src.d[i+1]*0.587 + src.d[i+2]*0.114;
-        if (lum > bgThreshold * 0.3) lums.push(lum);
-      }
-      lums.sort((a,b) => a - b);
-
-      // Create shade boundaries based on luminance distribution
-      const shadeLevels = [];
-      for (let i = 0; i < shadeCount; i++) {
-        const idx = Math.floor((i / (shadeCount - 1)) * (lums.length - 1));
-        shadeLevels.push(lums[Math.min(idx, lums.length - 1)] || 0);
-      }
-
-      for (let y = 0; y < src.h; y++) {
-        for (let x = 0; x < src.w; x++) {
-          const i = (y * src.w + x) * 4;
-          if (src.d[i+3] < bgThreshold) continue;
-
-          const r = src.d[i], g = src.d[i+1], b = src.d[i+2], a = src.d[i+3];
-          const lum = r*0.299 + g*0.587 + b*0.114;
-
-          // Find closest shade level
-          const thr = B4[y%4][x%4];
-          const adjusted = lum + (thr - 0.5) * ditherStrength * (256/shadeCount);
-
-          let shadeIdx = 0;
-          let minDist = Infinity;
-          for (let s = 0; s < shadeLevels.length; s++) {
-            const dist = Math.abs(adjusted - shadeLevels[s]);
-            if (dist < minDist) { minDist = dist; shadeIdx = s; }
-          }
-
-          // Map to the shade: preserve the hue/saturation, snap the luminance
-          const [h, sat, origL] = rgb2hsl(r, g, b);
-          const targetL = shadeLevels[shadeIdx] / 255 * 100;
-          const [nr, ng, nb] = hsl2rgb(h, sat, targetL);
-
-          dst.d[i] = nr; dst.d[i+1] = ng; dst.d[i+2] = nb; dst.d[i+3] = a;
-        }
-      }
-      return dst;
-    }
-
-    // ── Apply glow (bloom at native resolution) ──
-    function applyGlow(src, innerI, midI, outerI) {
-      const result = mkBuf(src.w, src.h);
-      result.d.set(src.d);
+    // ── Tactical glow overlay (for energy effects) ──
+    function addTacticalGlow(data, w, h, intensity) {
+      if (intensity < 0.01) return data;
+      const result = new Uint8ClampedArray(data);
 
       // Extract bright pixels
-      const bright = mkBuf(src.w, src.h);
-      for (let i = 0; i < src.d.length; i += 4) {
-        const lum = src.d[i]*0.299 + src.d[i+1]*0.587 + src.d[i+2]*0.114;
-        if (lum > 40) {
-          bright.d[i] = src.d[i]; bright.d[i+1] = src.d[i+1];
-          bright.d[i+2] = src.d[i+2]; bright.d[i+3] = src.d[i+3];
-        }
+      const bright = new Uint8ClampedArray(data.length);
+      for (let i = 0; i < data.length; i += 4) {
+        const lum = data[i]*0.299 + data[i+1]*0.587 + data[i+2]*0.114;
+        if (lum > 180) { bright[i]=data[i]; bright[i+1]=data[i+1]; bright[i+2]=data[i+2]; bright[i+3]=data[i+3]; }
       }
 
-      // Inner glow
-      if (innerI > 0.01) {
-        const g1 = gblur(gblur(bright, 2), 2);
-        for (let i = 0; i < result.d.length; i += 4) {
-          result.d[i] = Math.min(255, result.d[i] + Math.round(g1.d[i] * innerI));
-          result.d[i+1] = Math.min(255, result.d[i+1] + Math.round(g1.d[i+1] * innerI));
-          result.d[i+2] = Math.min(255, result.d[i+2] + Math.round(g1.d[i+2] * innerI));
-          result.d[i+3] = Math.min(255, result.d[i+3] + Math.round(g1.d[i+3] * innerI));
+      // Blur and composite
+      const g1 = gblur(bright, w, h, 3);
+      const g2 = gblur(bright, w, h, 10);
+      for (let i = 0; i < result.length; i += 4) {
+        result[i] = Math.min(255, result[i] + Math.round(g1[i] * intensity * 0.5));
+        result[i+1] = Math.min(255, result[i+1] + Math.round(g1[i+1] * intensity * 0.5));
+        result[i+2] = Math.min(255, result[i+2] + Math.round(g1[i+2] * intensity * 0.5));
+        for (let c = 0; c < 3; c++) {
+          const d = result[i+c]/255, sv = (g2[i+c]/255) * intensity * 0.2;
+          result[i+c] = Math.round(Math.min(1, 1-(1-d)*(1-sv)) * 255);
         }
       }
-
-      // Mid bloom
-      if (midI > 0.01) {
-        const g2 = gblur(bright, 8);
-        for (let i = 0; i < result.d.length; i += 4) {
-          for (let c = 0; c < 3; c++) {
-            const d = result.d[i+c]/255, s = (g2.d[i+c]/255) * midI;
-            result.d[i+c] = Math.round(Math.min(1, 1-(1-d)*(1-s)) * 255);
-          }
-        }
-      }
-
-      // Outer atmospheric
-      if (outerI > 0.01) {
-        const g3 = gblur(bright, 20);
-        for (let i = 0; i < result.d.length; i += 4) {
-          for (let c = 0; c < 3; c++) {
-            const d = result.d[i+c]/255, s = (g3.d[i+c]/255) * outerI;
-            result.d[i+c] = Math.round(Math.min(1, 1-(1-d)*(1-s)) * 255);
-          }
-        }
-      }
-
       return result;
     }
 
-    // ── Render ──
-    let curMode = 'original';
+    // ── Color analysis ──
+    function analyzeColors(data) {
+      const uniqueColors = new Set();
+      const hueBuckets = new Float64Array(12);
+      const lumBuckets = new Float64Array(10);
+      let totalPx = 0, satSum = 0;
+
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i+3] < 15) continue;
+        totalPx++;
+        const r=data[i],g=data[i+1],b=data[i+2];
+        uniqueColors.add(`${r>>3},${g>>3},${b>>3}`); // quantize to ~32 levels per channel
+        const [h,s,l] = rgb2hsl(r,g,b);
+        satSum += s;
+        if (s > 10) hueBuckets[Math.floor(h / 30) % 12]++;
+        lumBuckets[Math.min(9, Math.floor(l / 10))]++;
+      }
+
+      const hueCount = hueBuckets.filter(v => v > totalPx * 0.01).length;
+      return {
+        totalPixels: totalPx,
+        uniqueColors: uniqueColors.size,
+        hueRanges: hueCount,
+        avgSaturation: totalPx > 0 ? (satSum / totalPx).toFixed(0) : '0',
+        hueDist: hueBuckets,
+        lumDist: lumBuckets,
+      };
+    }
+
+    // ── Loading ──
+    let sources = {};
+    let curSrc = 'pixel';
+    const imgs = {
+      pixel: { src: './SamplePixelArt.png', label: 'Rich Pixel Art Characters' },
+      alien: { src: './GraphicsSample.png', label: 'Neon Alien (Glow Demo)' },
+    };
+
+    let loadedCount = 0;
+    for (const [key, info] of Object.entries(imgs)) {
+      const img = new Image();
+      img.src = info.src;
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        sources[key] = ctx.getImageData(0, 0, c.width, c.height);
+        loadedCount++;
+        if (loadedCount === Object.keys(imgs).length) render();
+      };
+    }
 
     function getOpts() {
       const o = {
-        shades: parseInt(document.getElementById('shades').value),
-        dither: parseInt(document.getElementById('dither').value) / 100,
-        glowInner: parseInt(document.getElementById('glowInner').value) / 100,
-        glowMid: parseInt(document.getElementById('glowMid').value) / 100,
-        glowOuter: parseInt(document.getElementById('glowOuter').value) / 100,
-        bgThresh: parseInt(document.getElementById('bgThresh').value),
+        hueShift: parseInt(document.getElementById('hueShift').value),
+        satMod: parseInt(document.getElementById('satMod').value),
+        warmHL: parseInt(document.getElementById('warmHL').value),
+        coolSH: parseInt(document.getElementById('coolSH').value),
+        glowAmt: parseInt(document.getElementById('glowAmt').value) / 100,
       };
-      document.getElementById('shadesV').textContent = o.shades;
-      document.getElementById('ditherV').textContent = o.dither.toFixed(2);
-      document.getElementById('glowInnerV').textContent = o.glowInner.toFixed(2);
-      document.getElementById('glowMidV').textContent = o.glowMid.toFixed(2);
-      document.getElementById('glowOuterV').textContent = o.glowOuter.toFixed(2);
-      document.getElementById('bgThreshV').textContent = o.bgThresh;
+      document.getElementById('hueShiftV').textContent = o.hueShift;
+      document.getElementById('satModV').textContent = o.satMod + '%';
+      document.getElementById('warmHLV').textContent = o.warmHL;
+      document.getElementById('coolSHV').textContent = o.coolSH;
+      document.getElementById('glowAmtV').textContent = Math.round(o.glowAmt * 100) + '%';
       return o;
     }
 
-    function drawBuf(canvas, buf) {
-      canvas.width = buf.w; canvas.height = buf.h;
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = false;
-      ctx.putImageData(new ImageData(new Uint8ClampedArray(buf.d), buf.w, buf.h), 0, 0);
-    }
-
     function render() {
-      if (!alienCrop) return;
+      const src = sources[curSrc];
+      if (!src) return;
       const opts = getOpts();
-      const status = document.getElementById('status');
+      const w = src.width, h = src.height;
 
-      // Show reference crop
-      const refCanvas = document.getElementById('refCanvas');
-      drawBuf(refCanvas, alienCrop);
-      refCanvas.style.width = Math.min(300, alienCrop.w * 2) + 'px';
-      refCanvas.style.height = Math.min(400, alienCrop.h * 2) + 'px';
-      document.getElementById('refInfo').textContent =
-        `${alienCrop.w}x${alienCrop.h} pixels | Original magenta palette`;
+      // Main view
+      const mainView = document.getElementById('mainView');
+      mainView.innerHTML = '';
 
-      // Process through pipeline
-      let processed = alienCrop;
+      // Original
+      const origPanel = document.createElement('div');
+      origPanel.className = 'panel';
+      origPanel.innerHTML = `<h3>ORIGINAL</h3>`;
+      const origCanvas = document.createElement('canvas');
+      origCanvas.width = w; origCanvas.height = h;
+      origCanvas.style.width = Math.min(500, w) + 'px';
+      origCanvas.style.height = Math.min(300, h * (Math.min(500, w) / w)) + 'px';
+      origCanvas.getContext('2d').putImageData(src, 0, 0);
+      origPanel.appendChild(origCanvas);
+      const origAnalysis = analyzeColors(src.data);
+      origPanel.innerHTML += `<div class="info">${w}x${h} | ${origAnalysis.uniqueColors} unique colors | ${origAnalysis.hueRanges} hue ranges | avg sat ${origAnalysis.avgSaturation}%</div>`;
+      mainView.appendChild(origPanel);
 
-      // Recolor if needed
-      const hueMap = { original: null, cyan: 180, green: 120, orange: 25 };
-      if (hueMap[curMode] !== null) {
-        processed = recolorAlien(processed, hueMap[curMode]);
-      }
+      // Processed
+      const procPanel = document.createElement('div');
+      procPanel.className = 'panel';
+      procPanel.innerHTML = `<h3>ENGINE OUTPUT (hue ${opts.hueShift >= 0 ? '+' : ''}${opts.hueShift})</h3>`;
+      let processed = richRecolor(src.data, w, h, opts);
+      if (opts.glowAmt > 0.01) processed = addTacticalGlow(processed, w, h, opts.glowAmt);
+      const procCanvas = document.createElement('canvas');
+      procCanvas.width = w; procCanvas.height = h;
+      procCanvas.style.width = Math.min(500, w) + 'px';
+      procCanvas.style.height = Math.min(300, h * (Math.min(500, w) / w)) + 'px';
+      procCanvas.getContext('2d').putImageData(new ImageData(processed, w, h), 0, 0);
+      procPanel.appendChild(procCanvas);
+      const procAnalysis = analyzeColors(processed);
+      procPanel.innerHTML += `<div class="info">${w}x${h} | ${procAnalysis.uniqueColors} unique colors | ${procAnalysis.hueRanges} hue ranges | avg sat ${procAnalysis.avgSaturation}%</div>`;
+      mainView.appendChild(procPanel);
 
-      // Quantize
-      const quantized = quantizeSprite(processed, opts.shades, opts.dither, opts.bgThresh);
-
-      // Apply glow
-      const glowed = applyGlow(quantized, opts.glowInner, opts.glowMid, opts.glowOuter);
-
-      // Show output
-      const outCanvas = document.getElementById('outCanvas');
-      drawBuf(outCanvas, glowed);
-      outCanvas.style.width = Math.min(300, glowed.w * 2) + 'px';
-      outCanvas.style.height = Math.min(400, glowed.h * 2) + 'px';
-
-      // Count unique colors in output
-      const colorSet = new Set();
-      for (let i = 0; i < glowed.d.length; i += 4) {
-        if (glowed.d[i+3] < 10) continue;
-        colorSet.add(`${glowed.d[i]},${glowed.d[i+1]},${glowed.d[i+2]}`);
-      }
-
-      document.getElementById('outInfo').textContent =
-        `${glowed.w}x${glowed.h} | ${opts.shades} shades | ${colorSet.size} unique colors | dither ${opts.dither.toFixed(2)}`;
-
-      // Show shade strip
-      // Collect luminance distribution
-      const lumBuckets = new Float64Array(opts.shades);
-      let totalPx = 0;
-      for (let i = 0; i < quantized.d.length; i += 4) {
-        if (quantized.d[i+3] < opts.bgThresh) continue;
-        totalPx++;
-        const lum = quantized.d[i]*0.299 + quantized.d[i+1]*0.587 + quantized.d[i+2]*0.114;
-        const bucket = Math.min(opts.shades - 1, Math.floor(lum / 256 * opts.shades));
-        lumBuckets[bucket]++;
-      }
-      const strip = document.getElementById('shadeStrip');
-      strip.innerHTML = '';
-      for (let i = 0; i < opts.shades; i++) {
-        const pct = totalPx > 0 ? (lumBuckets[i] / totalPx * 100).toFixed(0) : 0;
-        const l = Math.round(i / (opts.shades - 1) * 100);
-        const [h] = curMode === 'original' ? [300] : [hueMap[curMode] ?? 300];
-        const [r,g,b] = hsl2rgb(h, 80, l);
-        const swatch = document.createElement('div');
-        swatch.className = 'shade-swatch';
-        swatch.style.background = `rgb(${r},${g},${b})`;
-        swatch.title = `Shade ${i}: ${pct}%`;
-        strip.appendChild(swatch);
-      }
-
-      // All variants
+      // Hue shift variants
       const varContainer = document.getElementById('variants');
       varContainer.innerHTML = '';
-      const hues = [
-        { name: 'MAGENTA', hue: null },
-        { name: 'CYAN', hue: 180 },
-        { name: 'GREEN', hue: 120 },
-        { name: 'ORANGE', hue: 25 },
-        { name: 'BLUE', hue: 220 },
-        { name: 'RED', hue: 0 },
-        { name: 'YELLOW', hue: 55 },
-        { name: 'VIOLET', hue: 270 },
-      ];
-
-      for (const variant of hues) {
-        let vBuf = alienCrop;
-        if (variant.hue !== null) vBuf = recolorAlien(vBuf, variant.hue);
-        const vQ = quantizeSprite(vBuf, opts.shades, opts.dither, opts.bgThresh);
-        const vG = applyGlow(vQ, opts.glowInner, opts.glowMid, opts.glowOuter);
-
+      const shifts = [-120, -90, -60, -30, 0, 30, 60, 90, 120, 150];
+      for (const shift of shifts) {
+        const vData = richRecolor(src.data, w, h, { ...opts, hueShift: shift });
         const card = document.createElement('div');
         card.className = 'recolor-card';
-        const c = document.createElement('canvas');
-        drawBuf(c, vG);
-        c.style.width = Math.min(120, vG.w) + 'px';
-        c.style.height = Math.min(160, vG.h) + 'px';
-        card.appendChild(c);
+        const vc = document.createElement('canvas');
+        vc.width = w; vc.height = h;
+        vc.style.width = Math.min(110, w * 0.3) + 'px';
+        vc.style.height = Math.min(70, h * (Math.min(110, w * 0.3) / w)) + 'px';
+        vc.getContext('2d').putImageData(new ImageData(vData, w, h), 0, 0);
+        card.appendChild(vc);
         const lbl = document.createElement('div');
         lbl.className = 'label';
-        lbl.textContent = variant.name;
+        lbl.textContent = `${shift >= 0 ? '+' : ''}${shift}°`;
         card.appendChild(lbl);
         varContainer.appendChild(card);
       }
 
-      status.textContent = `READY | ${alienCrop.w}x${alienCrop.h} alien | ${curMode.toUpperCase()} | ${opts.shades} shades`;
+      // Color analysis grid
+      const analysisDiv = document.getElementById('analysis');
+      analysisDiv.innerHTML = '';
+      const stats = [
+        { val: origAnalysis.uniqueColors, lbl: 'UNIQUE COLORS (ORIG)' },
+        { val: procAnalysis.uniqueColors, lbl: 'UNIQUE COLORS (OUT)' },
+        { val: origAnalysis.hueRanges + '/12', lbl: 'HUE RANGES (ORIG)' },
+        { val: procAnalysis.hueRanges + '/12', lbl: 'HUE RANGES (OUT)' },
+        { val: origAnalysis.avgSaturation + '%', lbl: 'AVG SAT (ORIG)' },
+        { val: procAnalysis.avgSaturation + '%', lbl: 'AVG SAT (OUT)' },
+      ];
+      for (const s of stats) {
+        const d = document.createElement('div');
+        d.className = 'stat';
+        d.innerHTML = `<div class="val">${s.val}</div><div class="lbl">${s.lbl}</div>`;
+        analysisDiv.appendChild(d);
+      }
+
+      document.getElementById('status').textContent =
+        `${imgs[curSrc].label} | ${w}x${h} | Hue ${opts.hueShift >= 0 ? '+' : ''}${opts.hueShift} | Glow ${Math.round(opts.glowAmt*100)}%`;
     }
 
-    document.querySelectorAll('.pbtn').forEach(b => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('.pbtn').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        curMode = b.dataset.p;
+    // Event listeners
+    document.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        curSrc = t.dataset.src;
         render();
       });
     });
