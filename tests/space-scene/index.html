@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcade Engine - Space Scene Test</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0a0818;overflow:hidden;display:flex;justify-content:center;align-items:center;height:100vh}
+    canvas{image-rendering:auto}
+  </style>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <script>
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+    const W = 960, H = 640;
+    canvas.width = W; canvas.height = H;
+    canvas.style.width = Math.min(W, window.innerWidth) + 'px';
+    canvas.style.height = Math.min(H, window.innerHeight) + 'px';
+
+    // ── Color helpers ──
+    function hsl(h,s,l){s/=100;l/=100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return`rgb(${Math.round((r+m)*255)},${Math.round((g+m)*255)},${Math.round((b+m)*255)})`}
+    function hsla(h,s,l,a){return hsl(h,s,l).replace('rgb','rgba').replace(')',`,${a})`)}
+
+    // ── Material palette generator (warm highlights, cool shadows) ──
+    function materialPalette(baseHue, baseSat, baseLit, levels) {
+      const pal = [];
+      for (let i = 0; i < levels; i++) {
+        const t = i / (levels - 1);
+        const hShift = t < 0.5 ? -25 * (1 - t * 2) : 15 * (t - 0.5) * 2;
+        const h = (baseHue + hShift + 360) % 360;
+        const sBoost = t < 0.3 ? 10 * (1 - t / 0.3) : t > 0.8 ? -20 * ((t - 0.8) / 0.2) : 0;
+        const s = Math.max(0, Math.min(100, baseSat + sBoost));
+        const l = 8 + t * (baseLit + 15 - 8);
+        pal.push({ h, s, l: Math.min(92, l) });
+      }
+      return pal;
+    }
+
+    // ── Seeded random for deterministic detail ──
+    function seededRand(seed) {
+      let s = seed;
+      return () => { s = (s * 16807 + 0) % 2147483647; return s / 2147483647; };
+    }
+
+    // ── Stars (static background, generated once) ──
+    const starCanvas = document.createElement('canvas');
+    starCanvas.width = W; starCanvas.height = H;
+    const starCtx = starCanvas.getContext('2d');
+    function generateStars() {
+      const rng = seededRand(42);
+      // Deep space gradient background
+      const bg = starCtx.createRadialGradient(W/2, H/2, 50, W/2, H/2, W*0.7);
+      bg.addColorStop(0, '#141028');
+      bg.addColorStop(0.4, '#0e0a1e');
+      bg.addColorStop(1, '#080614');
+      starCtx.fillStyle = bg;
+      starCtx.fillRect(0, 0, W, H);
+
+      // Nebula hint (very subtle colored regions)
+      for (let i = 0; i < 3; i++) {
+        const nx = rng() * W, ny = rng() * H;
+        const nr = 100 + rng() * 200;
+        const nh = [280, 340, 200][i];
+        const ng = starCtx.createRadialGradient(nx, ny, 0, nx, ny, nr);
+        ng.addColorStop(0, hsla(nh, 50, 20, 0.06));
+        ng.addColorStop(0.5, hsla(nh, 40, 15, 0.03));
+        ng.addColorStop(1, 'rgba(0,0,0,0)');
+        starCtx.fillStyle = ng;
+        starCtx.fillRect(0, 0, W, H);
+      }
+
+      // Stars
+      for (let i = 0; i < 300; i++) {
+        const x = rng() * W, y = rng() * H;
+        const size = rng() < 0.05 ? 1.5 + rng() : rng() < 0.2 ? 1 : 0.5;
+        const hue = rng() < 0.3 ? 220 + rng() * 40 : rng() < 0.5 ? 30 + rng() * 30 : 0;
+        const sat = rng() * 30;
+        const lit = 60 + rng() * 35;
+        starCtx.fillStyle = hsla(hue, sat, lit, 0.4 + rng() * 0.5);
+        starCtx.fillRect(Math.round(x), Math.round(y), size, size);
+        // Larger stars get a tiny cross
+        if (size > 1.2) {
+          starCtx.fillStyle = hsla(hue, sat, lit, 0.15);
+          starCtx.fillRect(Math.round(x) - 1, Math.round(y), 3, 1);
+          starCtx.fillRect(Math.round(x), Math.round(y) - 1, 1, 3);
+        }
+      }
+    }
+    generateStars();
+
+    // ── Planet ──
+    const PLANET = {
+      x: W / 2, y: H / 2, radius: 110,
+      palette: materialPalette(5, 70, 45, 8), // red planet
+      craters: [],
+      surfaceNoise: [],
+    };
+
+    // Generate craters and surface detail (deterministic)
+    {
+      const rng = seededRand(777);
+      for (let i = 0; i < 18; i++) {
+        const angle = rng() * Math.PI * 2;
+        const dist = rng() * 0.85;
+        const r = 4 + rng() * 18;
+        PLANET.craters.push({ angle, dist, r, depth: 0.3 + rng() * 0.4 });
+      }
+      for (let i = 0; i < 200; i++) {
+        PLANET.surfaceNoise.push({
+          angle: rng() * Math.PI * 2,
+          dist: rng(),
+          shade: Math.floor(rng() * 3) - 1, // -1, 0, or 1 shade offset
+          size: 0.5 + rng() * 2,
+        });
+      }
+    }
+
+    function drawPlanet(t) {
+      const { x, y, radius, palette: pal, craters, surfaceNoise } = PLANET;
+      const lightAngle = -0.7; // top-left light
+
+      ctx.save();
+
+      // Atmosphere glow (tactical glow — subtle)
+      const atmosGrad = ctx.createRadialGradient(x, y, radius * 0.9, x, y, radius * 1.35);
+      atmosGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      atmosGrad.addColorStop(0.3, hsla(pal[5].h, 40, 30, 0.08));
+      atmosGrad.addColorStop(0.6, hsla(pal[4].h, 30, 20, 0.04));
+      atmosGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = atmosGrad;
+      ctx.beginPath(); ctx.arc(x, y, radius * 1.35, 0, Math.PI * 2); ctx.fill();
+
+      // Planet body — clip to circle
+      ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.clip();
+
+      // Base fill with radial light/shadow gradient
+      const lightX = x + Math.cos(lightAngle) * radius * 0.4;
+      const lightY = y + Math.sin(lightAngle) * radius * 0.4;
+      const bodyGrad = ctx.createRadialGradient(lightX, lightY, radius * 0.1, x, y, radius);
+      bodyGrad.addColorStop(0, hsl(pal[6].h, pal[6].s, pal[6].l));
+      bodyGrad.addColorStop(0.25, hsl(pal[5].h, pal[5].s, pal[5].l));
+      bodyGrad.addColorStop(0.5, hsl(pal[4].h, pal[4].s, pal[4].l));
+      bodyGrad.addColorStop(0.7, hsl(pal[3].h, pal[3].s, pal[3].l));
+      bodyGrad.addColorStop(0.85, hsl(pal[2].h, pal[2].s, pal[2].l));
+      bodyGrad.addColorStop(1, hsl(pal[1].h, pal[1].s, pal[1].l));
+      ctx.fillStyle = bodyGrad;
+      ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+
+      // Surface noise (tiny pixel-level color variation)
+      for (const n of surfaceNoise) {
+        const nx = x + Math.cos(n.angle) * n.dist * radius;
+        const ny = y + Math.sin(n.angle) * n.dist * radius;
+        const shadeIdx = Math.max(0, Math.min(pal.length - 1, 3 + n.shade));
+        const p = pal[shadeIdx];
+        ctx.fillStyle = hsla(p.h, p.s, p.l, 0.3);
+        ctx.fillRect(Math.round(nx), Math.round(ny), n.size, n.size);
+      }
+
+      // Surface bands (horizontal striations like Mars)
+      for (let i = 0; i < 8; i++) {
+        const bandY = y - radius + (radius * 2 * i / 8) + Math.sin(t * 0.1 + i) * 2;
+        const bandPal = pal[2 + (i % 3)];
+        ctx.fillStyle = hsla(bandPal.h, bandPal.s + 5, bandPal.l - 3, 0.08);
+        ctx.fillRect(x - radius, bandY, radius * 2, radius * 0.08);
+      }
+
+      // Craters
+      for (const c of craters) {
+        const cx = x + Math.cos(c.angle) * c.dist * radius;
+        const cy = y + Math.sin(c.angle) * c.dist * radius;
+
+        // Crater shadow (darker)
+        const cGrad = ctx.createRadialGradient(
+          cx - c.r * 0.2, cy - c.r * 0.2, 0,
+          cx, cy, c.r
+        );
+        const darkP = pal[1];
+        const midP = pal[3];
+        const rimP = pal[5];
+        cGrad.addColorStop(0, hsl(darkP.h, darkP.s, darkP.l));
+        cGrad.addColorStop(0.5, hsl(midP.h, midP.s, midP.l - 5));
+        cGrad.addColorStop(0.8, hsl(midP.h, midP.s, midP.l));
+        cGrad.addColorStop(1, hsl(rimP.h, rimP.s, rimP.l));
+        ctx.fillStyle = cGrad;
+        ctx.beginPath(); ctx.arc(cx, cy, c.r, 0, Math.PI * 2); ctx.fill();
+
+        // Crater rim highlight (light side)
+        ctx.strokeStyle = hsla(rimP.h, rimP.s - 10, rimP.l + 10, 0.4);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, c.r, lightAngle - 0.8, lightAngle + 0.8);
+        ctx.stroke();
+
+        // Inner shadow detail
+        ctx.strokeStyle = hsla(darkP.h, darkP.s, darkP.l, 0.3);
+        ctx.beginPath();
+        ctx.arc(cx, cy, c.r * 0.6, lightAngle + Math.PI - 0.5, lightAngle + Math.PI + 0.5);
+        ctx.stroke();
+      }
+
+      ctx.restore(); // unclip
+
+      // Terminator shadow overlay (day/night boundary)
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.clip();
+      const termGrad = ctx.createLinearGradient(
+        x + Math.cos(lightAngle) * radius,
+        y + Math.sin(lightAngle) * radius,
+        x - Math.cos(lightAngle) * radius,
+        y - Math.sin(lightAngle) * radius
+      );
+      termGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      termGrad.addColorStop(0.45, 'rgba(0,0,0,0)');
+      termGrad.addColorStop(0.6, 'rgba(0,0,0,0.3)');
+      termGrad.addColorStop(0.8, 'rgba(0,0,0,0.55)');
+      termGrad.addColorStop(1, 'rgba(0,0,0,0.7)');
+      ctx.fillStyle = termGrad;
+      ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+      ctx.restore();
+
+      // Outline (dark, per spec v2)
+      ctx.strokeStyle = hsla(pal[0].h, pal[0].s, 5, 0.7);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.stroke();
+
+      // Specular highlight (bright spot on lit side)
+      const specX = x + Math.cos(lightAngle) * radius * 0.55;
+      const specY = y + Math.sin(lightAngle) * radius * 0.55;
+      const specGrad = ctx.createRadialGradient(specX, specY, 0, specX, specY, radius * 0.3);
+      specGrad.addColorStop(0, hsla(pal[7].h, pal[7].s - 20, pal[7].l + 15, 0.15));
+      specGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = specGrad;
+      ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // ── Asteroids ──
+    const ASTEROIDS = [];
+    {
+      const rng = seededRand(123);
+      const asteroidPal = materialPalette(35, 20, 40, 6); // brownish-gray
+
+      for (let i = 0; i < 12; i++) {
+        const orbitR = 160 + rng() * 200;
+        const speed = (0.15 + rng() * 0.3) * (rng() < 0.3 ? -1 : 1);
+        const size = 6 + rng() * 20;
+        const angle = rng() * Math.PI * 2;
+
+        // Generate rocky shape (irregular polygon)
+        const verts = [];
+        const numVerts = 6 + Math.floor(rng() * 5);
+        for (let v = 0; v < numVerts; v++) {
+          const va = (v / numVerts) * Math.PI * 2;
+          const vr = size * (0.6 + rng() * 0.4);
+          verts.push({ a: va, r: vr });
+        }
+
+        // Per-asteroid color variation
+        const hueOff = -10 + rng() * 20;
+        const litOff = -8 + rng() * 16;
+
+        ASTEROIDS.push({
+          orbitR, speed, angle, size, verts, hueOff, litOff,
+          rotSpeed: (rng() - 0.5) * 2,
+          rot: rng() * Math.PI * 2,
+          orbitTilt: (rng() - 0.5) * 0.3,
+          palette: asteroidPal,
+        });
+      }
+    }
+
+    function drawAsteroid(a, t) {
+      const ax = PLANET.x + Math.cos(a.angle + t * a.speed) * a.orbitR;
+      const ay = PLANET.y + Math.sin(a.angle + t * a.speed) * a.orbitR * (0.85 + a.orbitTilt);
+      const rot = a.rot + t * a.rotSpeed;
+      const pal = a.palette;
+
+      ctx.save();
+      ctx.translate(ax, ay);
+      ctx.rotate(rot);
+
+      // Build path
+      ctx.beginPath();
+      for (let i = 0; i < a.verts.length; i++) {
+        const v = a.verts[i];
+        const vx = Math.cos(v.a) * v.r, vy = Math.sin(v.a) * v.r;
+        i === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy);
+      }
+      ctx.closePath();
+
+      // Fill with lighting gradient
+      const lightDir = -0.7 - rot; // compensate rotation
+      const gradX = Math.cos(lightDir) * a.size * 0.4;
+      const gradY = Math.sin(lightDir) * a.size * 0.4;
+      const fillGrad = ctx.createRadialGradient(gradX, gradY, a.size * 0.1, 0, 0, a.size);
+      const p5 = pal[4], p3 = pal[2], p1 = pal[1], p0 = pal[0];
+      fillGrad.addColorStop(0, hsl((p5.h + a.hueOff + 360) % 360, p5.s, p5.l + a.litOff));
+      fillGrad.addColorStop(0.35, hsl((p3.h + a.hueOff + 360) % 360, p3.s, p3.l + a.litOff));
+      fillGrad.addColorStop(0.7, hsl((p1.h + a.hueOff + 360) % 360, p1.s, p1.l + a.litOff));
+      fillGrad.addColorStop(1, hsl((p0.h + a.hueOff + 360) % 360, p0.s, p0.l));
+      ctx.fillStyle = fillGrad;
+      ctx.fill();
+
+      // Surface detail — tiny cracks/marks
+      ctx.strokeStyle = hsla((p1.h + a.hueOff + 360) % 360, p1.s, p1.l + 5, 0.3);
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i < 3; i++) {
+        const v1 = a.verts[i % a.verts.length];
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(v1.a) * v1.r * 0.3, Math.sin(v1.a) * v1.r * 0.3);
+        ctx.lineTo(Math.cos(v1.a) * v1.r * 0.7, Math.sin(v1.a) * v1.r * 0.7);
+        ctx.stroke();
+      }
+
+      // Dark outline
+      ctx.beginPath();
+      for (let i = 0; i < a.verts.length; i++) {
+        const v = a.verts[i];
+        i === 0 ? ctx.moveTo(Math.cos(v.a) * v.r, Math.sin(v.a) * v.r) :
+                   ctx.lineTo(Math.cos(v.a) * v.r, Math.sin(v.a) * v.r);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = hsla(p0.h, p0.s, 6, 0.8);
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Highlight edge on lit side
+      ctx.strokeStyle = hsla((p5.h + a.hueOff + 360) % 360, p5.s - 15, p5.l + 12, 0.3);
+      ctx.lineWidth = 0.8;
+      const litStart = Math.floor(a.verts.length * 0.1);
+      const litEnd = Math.floor(a.verts.length * 0.4);
+      ctx.beginPath();
+      for (let i = litStart; i <= litEnd && i < a.verts.length; i++) {
+        const v = a.verts[i];
+        i === litStart ? ctx.moveTo(Math.cos(v.a) * v.r, Math.sin(v.a) * v.r) :
+                         ctx.lineTo(Math.cos(v.a) * v.r, Math.sin(v.a) * v.r);
+      }
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // ── Comets (with glow tails — tactical glow in action) ──
+    const COMETS = [];
+    {
+      const rng = seededRand(999);
+      const cometColors = [
+        { h: 190, s: 80, l: 65 },  // cyan-blue
+        { h: 45, s: 90, l: 60 },   // golden
+        { h: 280, s: 70, l: 60 },  // purple
+      ];
+      for (let i = 0; i < 3; i++) {
+        COMETS.push({
+          orbitR: 200 + i * 80,
+          speed: 0.4 + rng() * 0.3,
+          angle: rng() * Math.PI * 2,
+          size: 3 + rng() * 3,
+          color: cometColors[i],
+          trail: [],
+          orbitTilt: 0.7 + rng() * 0.3,
+        });
+      }
+    }
+
+    function drawComet(c, t) {
+      const cx = PLANET.x + Math.cos(c.angle + t * c.speed) * c.orbitR;
+      const cy = PLANET.y + Math.sin(c.angle + t * c.speed) * c.orbitR * c.orbitTilt;
+
+      // Update trail
+      c.trail.push({ x: cx, y: cy });
+      if (c.trail.length > 30) c.trail.shift();
+
+      const col = c.color;
+
+      // Trail (gradient fade)
+      if (c.trail.length > 2) {
+        for (let i = 1; i < c.trail.length; i++) {
+          const alpha = (i / c.trail.length) * 0.6;
+          const width = (i / c.trail.length) * c.size * 1.5;
+          ctx.strokeStyle = hsla(col.h, col.s, col.l, alpha * 0.5);
+          ctx.lineWidth = width;
+          ctx.beginPath();
+          ctx.moveTo(c.trail[i - 1].x, c.trail[i - 1].y);
+          ctx.lineTo(c.trail[i].x, c.trail[i].y);
+          ctx.stroke();
+        }
+      }
+
+      // Comet outer glow (tactical bloom!)
+      ctx.save();
+      ctx.shadowColor = hsla(col.h, col.s, col.l, 0.6);
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = hsla(col.h, col.s, col.l, 0.3);
+      ctx.beginPath(); ctx.arc(cx, cy, c.size * 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+
+      // Comet core
+      const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, c.size);
+      coreGrad.addColorStop(0, hsl(col.h, Math.max(0, col.s - 30), Math.min(95, col.l + 30)));
+      coreGrad.addColorStop(0.4, hsl(col.h, col.s, col.l));
+      coreGrad.addColorStop(1, hsla(col.h, col.s, col.l - 10, 0.5));
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath(); ctx.arc(cx, cy, c.size, 0, Math.PI * 2); ctx.fill();
+
+      // Bright center pixel
+      ctx.fillStyle = hsl(col.h, Math.max(0, col.s - 40), 92);
+      ctx.fillRect(Math.round(cx) - 1, Math.round(cy) - 1, 2, 2);
+
+      // Outline
+      ctx.strokeStyle = hsla(col.h, col.s, 8, 0.5);
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.arc(cx, cy, c.size, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // ── Orbit rings (subtle) ──
+    function drawOrbitRings() {
+      ctx.save();
+      ctx.setLineDash([3, 8]);
+      for (const a of ASTEROIDS.slice(0, 4)) {
+        ctx.strokeStyle = hsla(260, 20, 30, 0.06);
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.ellipse(PLANET.x, PLANET.y, a.orbitR, a.orbitR * (0.85 + a.orbitTilt), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    // ── HUD overlay ──
+    function drawHUD(t) {
+      ctx.save();
+
+      // Corner frame
+      const mg = 12, sz = 20;
+      ctx.strokeStyle = hsla(260, 40, 50, 0.15);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(mg, mg + sz); ctx.lineTo(mg, mg); ctx.lineTo(mg + sz, mg); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(W - mg - sz, mg); ctx.lineTo(W - mg, mg); ctx.lineTo(W - mg, mg + sz); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mg, H - mg - sz); ctx.lineTo(mg, H - mg); ctx.lineTo(mg + sz, H - mg); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(W - mg - sz, H - mg); ctx.lineTo(W - mg, H - mg); ctx.lineTo(W - mg, H - mg - sz); ctx.stroke();
+
+      // Title
+      ctx.font = '14px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = hsla(5, 60, 65, 0.8);
+      ctx.shadowColor = hsla(5, 70, 50, 0.3);
+      ctx.shadowBlur = 8;
+      ctx.fillText('SECTOR 7 - RED GIANT', W / 2, 30);
+
+      // Stats
+      ctx.font = '7px "Press Start 2P", monospace';
+      ctx.textAlign = 'left';
+      ctx.shadowBlur = 4;
+      ctx.fillStyle = hsla(200, 50, 60, 0.6);
+      ctx.fillText(`ASTEROIDS: ${ASTEROIDS.length}`, 20, H - 35);
+      ctx.fillText(`COMETS: ${COMETS.length}`, 20, H - 22);
+
+      ctx.textAlign = 'right';
+      ctx.fillStyle = hsla(45, 60, 60, 0.5 + Math.sin(t * 2) * 0.15);
+      ctx.fillText('SCANNING...', W - 20, H - 22);
+
+      ctx.restore();
+    }
+
+    // ── Z-sort helper ──
+    function getOrbitY(obj, t) {
+      return Math.sin(obj.angle + t * obj.speed) * obj.orbitR * (obj.orbitTilt ?? 0.85);
+    }
+
+    // ── Main render loop ──
+    let time = 0;
+
+    function render() {
+      time += 1 / 60;
+
+      // Stars background (static, drawn once)
+      ctx.drawImage(starCanvas, 0, 0);
+
+      // Orbit rings
+      drawOrbitRings();
+
+      // Collect all orbiting objects with their current Y for z-sorting
+      const objects = [];
+      for (const a of ASTEROIDS) {
+        const oy = getOrbitY(a, time);
+        objects.push({ type: 'asteroid', obj: a, y: oy });
+      }
+      for (const c of COMETS) {
+        const oy = getOrbitY(c, time);
+        objects.push({ type: 'comet', obj: c, y: oy });
+      }
+
+      // Draw objects behind planet (y < 0 = above center = behind)
+      const behind = objects.filter(o => o.y < 0).sort((a, b) => a.y - b.y);
+      for (const o of behind) {
+        if (o.type === 'asteroid') drawAsteroid(o.obj, time);
+        else drawComet(o.obj, time);
+      }
+
+      // Planet
+      drawPlanet(time);
+
+      // Draw objects in front of planet (y > 0 = below center = in front)
+      const inFront = objects.filter(o => o.y >= 0).sort((a, b) => a.y - b.y);
+      for (const o of inFront) {
+        if (o.type === 'asteroid') drawAsteroid(o.obj, time);
+        else drawComet(o.obj, time);
+      }
+
+      // HUD
+      drawHUD(time);
+
+      // Subtle global bloom (very light)
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.filter = 'blur(12px)';
+      ctx.globalAlpha = 0.025;
+      ctx.drawImage(canvas, 0, 0);
+      ctx.restore();
+
+      requestAnimationFrame(render);
+    }
+
+    render();
+  </script>
+</body>
+</html>

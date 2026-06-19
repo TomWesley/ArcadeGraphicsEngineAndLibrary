@@ -41,6 +41,7 @@
     "test:style-match": "npx http-server tests/style-match -p 8085 -o",
     "test:menu": "npx http-server tests/menu-gen -p 8086 -o",
     "test:icons": "npx http-server tests/icons -p 8087 -o",
+    "test:space": "npx http-server tests/space-scene -p 8088 -o",
     "typecheck": "tsc --noEmit"
   },
   "files": [
