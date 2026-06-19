@@ -187,7 +187,10 @@
         ctx.drawImage(img, 0, 0);
         sources[key] = ctx.getImageData(0, 0, c.width, c.height);
         loadedCount++;
-        if (loadedCount === Object.keys(imgs).length) render();
+        if (loadedCount === Object.keys(imgs).length) {
+          document.getElementById('status').textContent = 'Images loaded. Processing...';
+          setTimeout(render, 50); // yield to let the DOM update
+        }
       };
     }
 
@@ -207,11 +210,17 @@
       return o;
     }
 
+    let variantTimer = null;
+
     function render() {
       const src = sources[curSrc];
       if (!src) return;
       const opts = getOpts();
       const w = src.width, h = src.height;
+      const dispW = Math.min(500, w);
+      const dispH = Math.round(h * (dispW / w));
+
+      document.getElementById('status').textContent = 'Processing main comparison...';
 
       // Main view
       const mainView = document.getElementById('mainView');
@@ -223,12 +232,9 @@
       origPanel.innerHTML = `<h3>ORIGINAL</h3>`;
       const origCanvas = document.createElement('canvas');
       origCanvas.width = w; origCanvas.height = h;
-      origCanvas.style.width = Math.min(500, w) + 'px';
-      origCanvas.style.height = Math.min(300, h * (Math.min(500, w) / w)) + 'px';
+      origCanvas.style.width = dispW + 'px'; origCanvas.style.height = dispH + 'px';
       origCanvas.getContext('2d').putImageData(src, 0, 0);
       origPanel.appendChild(origCanvas);
-      const origAnalysis = analyzeColors(src.data);
-      origPanel.innerHTML += `<div class="info">${w}x${h} | ${origAnalysis.uniqueColors} unique colors | ${origAnalysis.hueRanges} hue ranges | avg sat ${origAnalysis.avgSaturation}%</div>`;
       mainView.appendChild(origPanel);
 
       // Processed
@@ -239,19 +245,52 @@
       if (opts.glowAmt > 0.01) processed = addTacticalGlow(processed, w, h, opts.glowAmt);
       const procCanvas = document.createElement('canvas');
       procCanvas.width = w; procCanvas.height = h;
-      procCanvas.style.width = Math.min(500, w) + 'px';
-      procCanvas.style.height = Math.min(300, h * (Math.min(500, w) / w)) + 'px';
+      procCanvas.style.width = dispW + 'px'; procCanvas.style.height = dispH + 'px';
       procCanvas.getContext('2d').putImageData(new ImageData(processed, w, h), 0, 0);
       procPanel.appendChild(procCanvas);
-      const procAnalysis = analyzeColors(processed);
-      procPanel.innerHTML += `<div class="info">${w}x${h} | ${procAnalysis.uniqueColors} unique colors | ${procAnalysis.hueRanges} hue ranges | avg sat ${procAnalysis.avgSaturation}%</div>`;
       mainView.appendChild(procPanel);
 
-      // Hue shift variants
+      // Analysis
+      const origAnalysis = analyzeColors(src.data);
+      const procAnalysis = analyzeColors(processed);
+      origPanel.innerHTML += `<div class="info">${w}x${h} | ${origAnalysis.uniqueColors} colors | ${origAnalysis.hueRanges} hues</div>`;
+      procPanel.innerHTML += `<div class="info">${procAnalysis.uniqueColors} colors | ${procAnalysis.hueRanges} hues | sat ${procAnalysis.avgSaturation}%</div>`;
+
+      const analysisDiv = document.getElementById('analysis');
+      analysisDiv.innerHTML = '';
+      for (const s of [
+        { val: origAnalysis.uniqueColors, lbl: 'COLORS (ORIG)' },
+        { val: procAnalysis.uniqueColors, lbl: 'COLORS (OUT)' },
+        { val: origAnalysis.hueRanges + '/12', lbl: 'HUES (ORIG)' },
+        { val: procAnalysis.hueRanges + '/12', lbl: 'HUES (OUT)' },
+      ]) {
+        const d = document.createElement('div');
+        d.className = 'stat';
+        d.innerHTML = `<div class="val">${s.val}</div><div class="lbl">${s.lbl}</div>`;
+        analysisDiv.appendChild(d);
+      }
+
+      document.getElementById('status').textContent =
+        `${imgs[curSrc].label} | ${w}x${h} | Generating variants...`;
+
+      // Generate variants async (one at a time to avoid freezing)
       const varContainer = document.getElementById('variants');
-      varContainer.innerHTML = '';
+      varContainer.innerHTML = '<div style="font-size:6px;color:#555">Generating hue variants...</div>';
+      if (variantTimer) clearTimeout(variantTimer);
+
       const shifts = [-120, -90, -60, -30, 0, 30, 60, 90, 120, 150];
-      for (const shift of shifts) {
+      const thumbW = Math.min(w, 300);
+      const thumbH = Math.round(h * (thumbW / w));
+      let idx = 0;
+
+      function nextVariant() {
+        if (idx >= shifts.length) {
+          document.getElementById('status').textContent =
+            `${imgs[curSrc].label} | ${w}x${h} | Hue ${opts.hueShift >= 0 ? '+' : ''}${opts.hueShift} | Done`;
+          return;
+        }
+        if (idx === 0) varContainer.innerHTML = '';
+        const shift = shifts[idx];
         const vData = richRecolor(src.data, w, h, { ...opts, hueShift: shift });
         const card = document.createElement('div');
         card.className = 'recolor-card';
@@ -266,28 +305,10 @@
         lbl.textContent = `${shift >= 0 ? '+' : ''}${shift}°`;
         card.appendChild(lbl);
         varContainer.appendChild(card);
+        idx++;
+        variantTimer = setTimeout(nextVariant, 10);
       }
-
-      // Color analysis grid
-      const analysisDiv = document.getElementById('analysis');
-      analysisDiv.innerHTML = '';
-      const stats = [
-        { val: origAnalysis.uniqueColors, lbl: 'UNIQUE COLORS (ORIG)' },
-        { val: procAnalysis.uniqueColors, lbl: 'UNIQUE COLORS (OUT)' },
-        { val: origAnalysis.hueRanges + '/12', lbl: 'HUE RANGES (ORIG)' },
-        { val: procAnalysis.hueRanges + '/12', lbl: 'HUE RANGES (OUT)' },
-        { val: origAnalysis.avgSaturation + '%', lbl: 'AVG SAT (ORIG)' },
-        { val: procAnalysis.avgSaturation + '%', lbl: 'AVG SAT (OUT)' },
-      ];
-      for (const s of stats) {
-        const d = document.createElement('div');
-        d.className = 'stat';
-        d.innerHTML = `<div class="val">${s.val}</div><div class="lbl">${s.lbl}</div>`;
-        analysisDiv.appendChild(d);
-      }
-
-      document.getElementById('status').textContent =
-        `${imgs[curSrc].label} | ${w}x${h} | Hue ${opts.hueShift >= 0 ? '+' : ''}${opts.hueShift} | Glow ${Math.round(opts.glowAmt*100)}%`;
+      variantTimer = setTimeout(nextVariant, 30);
     }
 
     // Event listeners
@@ -299,7 +320,12 @@
         render();
       });
     });
-    document.querySelectorAll('input[type=range]').forEach(i => i.addEventListener('input', render));
+    let renderDebounce = null;
+    document.querySelectorAll('input[type=range]').forEach(i => i.addEventListener('input', () => {
+      getOpts(); // update display values immediately
+      clearTimeout(renderDebounce);
+      renderDebounce = setTimeout(render, 200);
+    }));
   </script>
 </body>
 </html>
