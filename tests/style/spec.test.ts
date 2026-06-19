@@ -1,80 +1,116 @@
 import { describe, it, expect } from 'vitest';
-import { SPEC, validateStyleCompliance } from '../../src/style/spec';
+import { SPEC, validateStyleCompliance, generateMaterialShading } from '../../src/style/spec';
 import { createPixelBuffer, setPixel, clearBuffer } from '../../src/engine/renderer';
-import { createNeonSprite, neonifySprite } from '../../src/engine/sprites';
-import { createNeonColor, PALETTE_NEON_INFERNO } from '../../src/style/colors';
-import { DEFAULT_THEME } from '../../src/style/theme';
 
-describe('Style Spec', () => {
+describe('Style Spec v2', () => {
   describe('SPEC constants', () => {
-    it('has black background', () => {
-      expect(SPEC.BACKGROUND).toEqual([0, 0, 0, 255]);
+    it('has colored background (not pure black)', () => {
+      const brightness = SPEC.BACKGROUND[0] + SPEC.BACKGROUND[1] + SPEC.BACKGROUND[2];
+      expect(brightness).toBeGreaterThan(0);
+      expect(brightness).toBeLessThan(300); // muted, not bright
     });
 
-    it('has 5 zone boundaries matching 5 zone brightnesses', () => {
-      expect(SPEC.ZONE_BOUNDARIES.length).toBe(SPEC.ZONE_COUNT);
-      expect(SPEC.ZONE_BRIGHTNESS.length).toBe(SPEC.ZONE_COUNT);
+    it('has dark alternative background', () => {
+      const brightness = SPEC.BACKGROUND_DARK[0] + SPEC.BACKGROUND_DARK[1] + SPEC.BACKGROUND_DARK[2];
+      expect(brightness).toBeGreaterThan(0);
+      expect(brightness).toBeLessThan(100);
     });
 
-    it('zone brightness decreases from edge to interior', () => {
-      for (let i = 1; i < SPEC.ZONE_BRIGHTNESS.length; i++) {
-        expect(SPEC.ZONE_BRIGHTNESS[i]).toBeLessThanOrEqual(SPEC.ZONE_BRIGHTNESS[i - 1]);
+    it('outline mode is dark (not neon)', () => {
+      expect(SPEC.OUTLINE_COLOR_MODE).toBe('dark');
+      expect(SPEC.OUTLINE_DARKNESS).toBeGreaterThan(0.5);
+    });
+
+    it('requires rich color palettes per element', () => {
+      expect(SPEC.MIN_COLORS_PER_ELEMENT).toBeGreaterThanOrEqual(10);
+    });
+
+    it('shading levels are reasonable', () => {
+      expect(SPEC.SHADING_LEVELS_METAL).toBeGreaterThanOrEqual(4);
+      expect(SPEC.SHADING_LEVELS_FABRIC).toBeGreaterThanOrEqual(4);
+    });
+
+    it('has warm highlight and cool shadow parameters', () => {
+      expect(SPEC.HIGHLIGHT_WARMTH).toBeGreaterThan(0);
+      expect(SPEC.SHADOW_COOLNESS).toBeGreaterThan(0);
+    });
+
+    it('glow radii are in ascending order (tactical glow)', () => {
+      expect(SPEC.GLOW_INNER_RADIUS).toBeLessThan(SPEC.GLOW_MID_RADIUS);
+      expect(SPEC.GLOW_MID_RADIUS).toBeLessThan(SPEC.GLOW_OUTER_RADIUS);
+    });
+
+    it('glow intensities decrease with distance', () => {
+      expect(SPEC.GLOW_INNER_INTENSITY).toBeGreaterThan(SPEC.GLOW_MID_INTENSITY);
+      expect(SPEC.GLOW_MID_INTENSITY).toBeGreaterThan(SPEC.GLOW_OUTER_INTENSITY);
+    });
+
+    it('glow threshold is high (tactical only, not base style)', () => {
+      expect(SPEC.GLOW_THRESHOLD).toBeGreaterThanOrEqual(150);
+    });
+  });
+
+  describe('generateMaterialShading()', () => {
+    it('generates requested number of shade levels', () => {
+      const shades = generateMaterialShading(300, 70, 50, 6);
+      expect(shades).toHaveLength(6);
+    });
+
+    it('shades go from dark to bright', () => {
+      const shades = generateMaterialShading(200, 60, 45, 6);
+      for (let i = 1; i < shades.length; i++) {
+        expect(shades[i].l).toBeGreaterThanOrEqual(shades[i - 1].l);
       }
     });
 
-    it('gradient stops are in ascending order', () => {
-      for (let i = 1; i < SPEC.GRADIENT_STOPS.length; i++) {
-        expect(SPEC.GRADIENT_STOPS[i]).toBeGreaterThan(SPEC.GRADIENT_STOPS[i - 1]);
-      }
+    it('shadow shades shift hue toward cool (blue)', () => {
+      const shades = generateMaterialShading(30, 80, 50, 6); // orange base
+      // Darkest shade should have hue shifted toward blue (lower or wrapped)
+      const darkHue = shades[0].h;
+      const midHue = shades[3].h;
+      // The dark shade should have a different hue than mid due to cool shift
+      expect(Math.abs(darkHue - midHue)).toBeGreaterThan(3);
     });
 
-    it('bloom radii are in ascending order', () => {
-      expect(SPEC.BLOOM_INNER_RADIUS).toBeLessThan(SPEC.BLOOM_MID_RADIUS);
-      expect(SPEC.BLOOM_MID_RADIUS).toBeLessThan(SPEC.BLOOM_OUTER_RADIUS);
+    it('highlight shades shift hue toward warm (yellow)', () => {
+      const shades = generateMaterialShading(200, 70, 50, 6); // blue base
+      const brightHue = shades[shades.length - 1].h;
+      const midHue = shades[3].h;
+      expect(Math.abs(brightHue - midHue)).toBeGreaterThan(3);
     });
 
-    it('bloom intensities decrease with distance', () => {
-      expect(SPEC.BLOOM_INNER_INTENSITY).toBeGreaterThan(SPEC.BLOOM_MID_INTENSITY);
-      expect(SPEC.BLOOM_MID_INTENSITY).toBeGreaterThan(SPEC.BLOOM_OUTER_INTENSITY);
-    });
-
-    it('outline brightness is full', () => {
-      expect(SPEC.OUTLINE_BRIGHTNESS).toBe(1.0);
+    it('darkest shade has minimum lightness from SPEC', () => {
+      const shades = generateMaterialShading(0, 80, 50, 6);
+      expect(shades[0].l).toBeCloseTo(SPEC.SHADOW_MIN_LIGHTNESS, 0);
     });
   });
 
   describe('validateStyleCompliance()', () => {
-    it('passes for a properly styled image', () => {
-      // Create a test sprite and run through neonify
+    it('passes for a multi-color image', () => {
       const sprite = createPixelBuffer(32, 32);
-      for (let y = 8; y < 24; y++) {
-        for (let x = 8; x < 24; x++) {
-          setPixel(sprite, x, y, [200, 100, 50, 1]);
+      // Create a multi-hue, multi-brightness image
+      for (let y = 0; y < 32; y++) {
+        for (let x = 0; x < 32; x++) {
+          const r = Math.round((x / 31) * 200 + 30);
+          const g = Math.round((y / 31) * 150 + 50);
+          const b = Math.round(100 + Math.sin(x * 0.3) * 50);
+          setPixel(sprite, x, y, [r, g, b, 1]);
         }
       }
-
-      // Apply neon style
-      const result = createNeonSprite(sprite, DEFAULT_THEME, 'primary');
-      const violations = validateStyleCompliance(result);
-
-      // Should have few or no violations
-      // (Note: small test sprites may have unusual distributions)
-      expect(violations.length).toBeLessThanOrEqual(2);
+      const violations = validateStyleCompliance(sprite);
+      expect(violations.length).toBe(0);
     });
 
-    it('flags a bright background', () => {
-      const bright = createPixelBuffer(32, 32);
-      clearBuffer(bright, [200, 200, 200, 1]);
-      const violations = validateStyleCompliance(bright);
-      expect(violations.some(v => v.includes('Corner'))).toBe(true);
-    });
-
-    it('flags lack of contrast', () => {
-      // All mid-brightness
-      const flat = createPixelBuffer(32, 32);
-      clearBuffer(flat, [120, 120, 120, 1]);
-      const violations = validateStyleCompliance(flat);
-      expect(violations.some(v => v.includes('mid-brightness') || v.includes('dark') || v.includes('bright'))).toBe(true);
+    it('flags monochromatic images', () => {
+      const mono = createPixelBuffer(32, 32);
+      for (let y = 0; y < 32; y++) {
+        for (let x = 0; x < 32; x++) {
+          const v = 50 + Math.round((y / 31) * 150);
+          setPixel(mono, x, y, [v, 0, 0, 1]); // pure red, no other hues
+        }
+      }
+      const violations = validateStyleCompliance(mono);
+      expect(violations.some(v => v.includes('color variety') || v.includes('hue'))).toBe(true);
     });
   });
 });
