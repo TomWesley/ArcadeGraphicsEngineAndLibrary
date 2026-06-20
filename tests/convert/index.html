@@ -3,61 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arcade Engine - Sleek Futuristic Conversion</title>
+  <title>Arcade Engine - Style Universe Conversion</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
-    body{background:#080608;color:#fff;font-family:'Share Tech Mono',monospace;padding:20px;display:flex;flex-direction:column;align-items:center}
-    h1{font-size:14px;font-family:'Orbitron',sans-serif;color:#cc3333;letter-spacing:4px;text-shadow:0 0 12px rgba(200,50,50,0.4);margin-bottom:4px}
-    .sub{font-size:10px;color:#553333;margin-bottom:20px;letter-spacing:2px}
-    .subject{margin-bottom:32px;width:100%}
-    .subject h2{font-size:11px;font-family:'Orbitron',sans-serif;color:#993333;letter-spacing:3px;margin-bottom:12px;text-align:center}
-    .panels{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+    body{background:#08070a;color:#ccc;font-family:'Share Tech Mono',monospace;padding:24px;display:flex;flex-direction:column;align-items:center}
+    h1{font-size:13px;font-family:'Orbitron',sans-serif;color:#aaa;letter-spacing:5px;margin-bottom:6px}
+    .sub{font-size:9px;color:#555;margin-bottom:20px;letter-spacing:2px;text-align:center;line-height:1.8;max-width:700px}
+    .subject{margin-bottom:36px}
+    .subject h2{font-size:10px;font-family:'Orbitron',sans-serif;color:#888;letter-spacing:3px;margin-bottom:10px;text-align:center}
+    .panels{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;align-items:start}
     .panel{text-align:center}
-    .panel h3{font-size:9px;color:#664444;letter-spacing:2px;margin-bottom:6px;font-family:'Orbitron',sans-serif}
-    .panel canvas{display:block;margin:0 auto}
-    .panel .info{font-size:8px;color:#553333;margin-top:4px}
-    #status{font-size:9px;color:#cc4444;text-shadow:0 0 6px rgba(200,50,50,0.3);margin:12px 0}
-    .ref-panel{border:1px solid #331515;padding:12px;background:rgba(200,30,30,0.02);margin-bottom:24px;text-align:center}
-    .ref-panel img{max-width:700px;width:100%;border:1px solid #221010}
-    .ref-panel .label{font-size:8px;color:#663333;margin-top:6px;letter-spacing:2px}
+    .panel h3{font-size:8px;color:#555;letter-spacing:2px;margin-bottom:6px;font-family:'Orbitron',sans-serif}
+    .panel canvas{display:block;margin:0 auto;border:1px solid #1a1a1a}
+    .panel .info{font-size:7px;color:#444;margin-top:4px}
+    #status{font-size:9px;color:#888;margin:12px 0}
+    .controls{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;align-items:center;background:rgba(255,255,255,0.015);padding:12px 20px;border:1px solid #1a1a1a}
+    .ctrl{display:flex;flex-direction:column;align-items:center;gap:3px}
+    .ctrl label{font-size:6px;color:#555;letter-spacing:1px}
+    .ctrl span{font-size:7px;color:#777}
+    input[type=range]{width:90px;accent-color:#888}
   </style>
 </head>
 <body>
-  <h1>STYLE CONVERSION v3</h1>
-  <p class="sub">ULTRA-SLEEK  //  FUTURISTIC  //  HOLOGRAPHIC</p>
+  <h1>STYLE UNIVERSE</h1>
+  <p class="sub">Same transformation pipeline on every asset. Not about color — about lighting, atmosphere, depth, and finish. Everything should look like it lives in the same game.</p>
 
-  <div class="ref-panel">
-    <img src="./FINALSAMPLE.jpg" alt="Style Reference">
-    <div class="label">STYLE REFERENCE — COCKPIT HUD AESTHETIC</div>
+  <div class="controls">
+    <div class="ctrl"><label>CONTRAST</label><input type="range" id="contrast" min="80" max="160" value="125"><span id="contrastV">1.25</span></div>
+    <div class="ctrl"><label>ATMOSPHERE</label><input type="range" id="atmosphere" min="0" max="100" value="40"><span id="atmosphereV">40%</span></div>
+    <div class="ctrl"><label>BLOOM</label><input type="range" id="bloom" min="0" max="100" value="35"><span id="bloomV">35%</span></div>
+    <div class="ctrl"><label>RIM LIGHT</label><input type="range" id="rim" min="0" max="100" value="50"><span id="rimV">50%</span></div>
+    <div class="ctrl"><label>DEPTH</label><input type="range" id="depth" min="0" max="100" value="45"><span id="depthV">45%</span></div>
+    <div class="ctrl"><label>WARMTH</label><input type="range" id="warmth" min="-50" max="50" value="8"><span id="warmthV">+8</span></div>
   </div>
 
   <div id="output"></div>
-  <p id="status">INITIALIZING SYSTEMS...</p>
+  <p id="status">Loading assets...</p>
 
   <script>
     // ══════════════════════════════════════════════════════════════════
-    // STYLE v3: Ultra-sleek futuristic / near-photorealistic
+    // STYLE UNIVERSE ENGINE
     //
-    // Key principles from reference:
-    // - Dark backgrounds with warm subtle tint
-    // - Thin red/crimson wireframe UI overlays (1-2px)
-    // - Cyan/teal secondary accents (sparse)
-    // - Holographic translucent panels
-    // - Selective glow/bloom on bright elements
-    // - Clean, smooth — no pixellation, no noise
-    // - Depth via vignette, subtle gradients
-    // - Scan-line / holographic interference effects
+    // The transformation is NOT about forcing a color. It's about:
+    // 1. Consistent cinematic lighting (directional, rim, ambient)
+    // 2. Atmospheric depth (dark falloff, subtle environmental haze)
+    // 3. Clean edge enhancement (not outlines — sharpening + rim light)
+    // 4. Selective bloom on bright/emissive areas
+    // 5. Color harmony enhancement (boost what's there, don't replace)
+    // 6. Professional finish (smooth, polished, no artifacts)
+    //
+    // Two completely different images should look like they exist
+    // in the same game world after this pipeline.
     // ══════════════════════════════════════════════════════════════════
 
-    function hsl2rgb(h,s,l){h=((h%360)+360)%360;s=Math.max(0,Math.min(100,s))/100;l=Math.max(0,Math.min(100,l))/100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return[(r+m)*255+0.5|0,(g+m)*255+0.5|0,(b+m)*255+0.5|0]}
-    function rgb2hsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let h=0,s=0;if(mx!==mn){const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);if(mx===r)h=((g-b)/d+(g<b?6:0))*60;else if(mx===g)h=((b-r)/d+2)*60;else h=((r-g)/d+4)*60}return[h,s*100,l*100]}
-
     const IMAGES = [
-      { src: './spaceship.png', name: 'SPACESHIP', size: 350 },
-      { src: './PotionBottle.png', name: 'POTION BOTTLE', size: 350 },
+      { src: './spaceship.png', name: 'SPACESHIP' },
+      { src: './PotionBottle.png', name: 'POTION BOTTLE' },
     ];
-
     const loaded = {};
     let loadCount = 0;
 
@@ -71,194 +74,226 @@
       };
     }
 
-    // ── CONVERSION PIPELINE ──
+    function getOpts() {
+      const o = {
+        contrast: parseInt(document.getElementById('contrast').value) / 100,
+        atmosphere: parseInt(document.getElementById('atmosphere').value) / 100,
+        bloom: parseInt(document.getElementById('bloom').value) / 100,
+        rim: parseInt(document.getElementById('rim').value) / 100,
+        depth: parseInt(document.getElementById('depth').value) / 100,
+        warmth: parseInt(document.getElementById('warmth').value),
+      };
+      document.getElementById('contrastV').textContent = o.contrast.toFixed(2);
+      document.getElementById('atmosphereV').textContent = Math.round(o.atmosphere*100)+'%';
+      document.getElementById('bloomV').textContent = Math.round(o.bloom*100)+'%';
+      document.getElementById('rimV').textContent = Math.round(o.rim*100)+'%';
+      document.getElementById('depthV').textContent = Math.round(o.depth*100)+'%';
+      document.getElementById('warmthV').textContent = (o.warmth>=0?'+':'')+o.warmth;
+      return o;
+    }
 
-    function convertSleek(img, targetSize) {
-      // Determine output dimensions
+    // ── Pipeline step: background isolation ──
+    function detectBackground(ctx, w, h) {
+      const d = ctx.getImageData(0, 0, w, h).data;
+      // Sample edges to find background color
+      const samples = [];
+      for (let x = 0; x < w; x += Math.max(1, w/20|0)) {
+        samples.push([d[x*4], d[x*4+1], d[x*4+2]]);
+        const bi = ((h-1)*w+x)*4;
+        samples.push([d[bi], d[bi+1], d[bi+2]]);
+      }
+      for (let y = 0; y < h; y += Math.max(1, h/20|0)) {
+        const li = (y*w)*4, ri = (y*w+w-1)*4;
+        samples.push([d[li], d[li+1], d[li+2]]);
+        samples.push([d[ri], d[ri+1], d[ri+2]]);
+      }
+      // Median color
+      samples.sort((a,b) => (a[0]+a[1]+a[2]) - (b[0]+b[1]+b[2]));
+      const mid = samples[samples.length/2|0];
+      return mid;
+    }
+
+    // ── Pipeline: full conversion ──
+    function convertAsset(img, opts) {
+      // Work at high resolution (cap at 500px on longest side for performance)
+      const maxSize = 500;
       const aspect = img.naturalWidth / img.naturalHeight;
-      const outW = aspect >= 1 ? targetSize : Math.round(targetSize * aspect);
-      const outH = aspect >= 1 ? Math.round(targetSize / aspect) : targetSize;
+      const w = aspect >= 1 ? Math.min(maxSize, img.naturalWidth) : Math.round(Math.min(maxSize, img.naturalHeight) * aspect);
+      const h = aspect >= 1 ? Math.round(w / aspect) : Math.min(maxSize, img.naturalHeight);
 
-      const canvas = document.createElement('canvas');
-      canvas.width = outW; canvas.height = outH;
-      const ctx = canvas.getContext('2d');
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
 
-      // ── Step 1: Draw source, downscaled ──
-      ctx.drawImage(img, 0, 0, outW, outH);
+      // Detect background
+      const bgColor = detectBackground(ctx, w, h);
+      const bgLum = bgColor[0]*0.299 + bgColor[1]*0.587 + bgColor[2]*0.114;
 
-      // ── Step 2: Color grade — shift toward dark cinematic red palette ──
-      const imgData = ctx.getImageData(0, 0, outW, outH);
+      // ── STEP 1: Background → deep dark with subtle atmosphere ──
+      const imgData = ctx.getImageData(0, 0, w, h);
       const d = imgData.data;
+      const bgThreshold = 45;
 
-      // Detect background (corner sampling)
-      const corners = [[0,0],[outW-1,0],[0,outH-1],[outW-1,outH-1]];
-      let bgR=0,bgG=0,bgB=0;
-      for (const [cx,cy] of corners) {
-        const ci = (cy*outW+cx)*4;
-        bgR += d[ci]; bgG += d[ci+1]; bgB += d[ci+2];
-      }
-      bgR/=4; bgG/=4; bgB/=4;
-
+      // Build foreground mask (distance from bg color)
+      const fgMask = new Float64Array(w * h);
       for (let i = 0; i < d.length; i += 4) {
-        let r = d[i], g = d[i+1], b = d[i+2], a = d[i+3];
-
-        // Background detection — make truly dark
-        const bgDist = Math.sqrt((r-bgR)**2 + (g-bgG)**2 + (b-bgB)**2);
-        if (bgDist < 40) {
-          // Deep space dark with warm tint
-          d[i] = 8 + Math.round(r * 0.03);
-          d[i+1] = 5 + Math.round(g * 0.02);
-          d[i+2] = 6 + Math.round(b * 0.02);
-          continue;
-        }
-
-        let [h, s, l] = rgb2hsl(r, g, b);
-
-        // Increase contrast
-        l = l < 50 ? l * 0.7 : 50 + (l - 50) * 1.2;
-        l = Math.max(0, Math.min(100, l));
-
-        // Boost saturation slightly
-        s = Math.min(100, s * 1.15);
-
-        // Warm shift: pull highlights toward amber/gold
-        if (l > 60) {
-          h = (h + (l - 60) * 0.3) % 360; // slight warm shift
-          s = Math.min(100, s + (l - 60) * 0.2);
-        }
-
-        // Cool darks: subtle blue-red tint in shadows
-        if (l < 30) {
-          h = (h * 0.7 + 350 * 0.3 + 360) % 360; // pull toward deep red
-          s = Math.min(100, s * 0.8 + 8);
-        }
-
-        const [nr, ng, nb] = hsl2rgb(h, s, l);
-        d[i] = nr; d[i+1] = ng; d[i+2] = nb;
+        const dist = Math.sqrt(
+          (d[i]-bgColor[0])**2 + (d[i+1]-bgColor[1])**2 + (d[i+2]-bgColor[2])**2
+        );
+        fgMask[i/4] = Math.max(0, Math.min(1, (dist - bgThreshold/2) / bgThreshold));
       }
 
-      ctx.putImageData(imgData, 0, 0);
+      // ── STEP 2: Per-pixel processing ──
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = (y * w + x) * 4;
+          const fg = fgMask[i/4];
 
-      // ── Step 3: Vignette (dark edges) ──
-      const vg = ctx.createRadialGradient(outW/2, outH/2, Math.min(outW,outH)*0.25, outW/2, outH/2, Math.max(outW,outH)*0.65);
-      vg.addColorStop(0, 'rgba(0,0,0,0)');
-      vg.addColorStop(1, 'rgba(0,0,0,0.55)');
-      ctx.fillStyle = vg;
-      ctx.fillRect(0, 0, outW, outH);
-
-      // ── Step 4: Subtle scan lines (holographic interference) ──
-      ctx.save();
-      for (let y = 0; y < outH; y += 3) {
-        ctx.fillStyle = `rgba(0,0,0,${0.04 + Math.sin(y * 0.5) * 0.01})`;
-        ctx.fillRect(0, y, outW, 1);
-      }
-      ctx.restore();
-
-      // ── Step 5: Bloom on bright areas ──
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.filter = 'blur(8px) brightness(0.6)';
-      ctx.globalAlpha = 0.2;
-      ctx.drawImage(canvas, 0, 0);
-      ctx.restore();
-
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.filter = 'blur(20px) brightness(0.3)';
-      ctx.globalAlpha = 0.1;
-      ctx.drawImage(canvas, 0, 0);
-      ctx.restore();
-
-      // ── Step 6: Thin red wireframe overlay (HUD targeting frame) ──
-      ctx.save();
-      ctx.strokeStyle = 'rgba(200, 40, 40, 0.35)';
-      ctx.lineWidth = 1;
-      ctx.shadowColor = 'rgba(200, 40, 40, 0.3)';
-      ctx.shadowBlur = 6;
-
-      // Corner brackets
-      const mg = 8, cs = 18;
-      // Top-left
-      ctx.beginPath(); ctx.moveTo(mg, mg+cs); ctx.lineTo(mg, mg); ctx.lineTo(mg+cs, mg); ctx.stroke();
-      // Top-right
-      ctx.beginPath(); ctx.moveTo(outW-mg-cs, mg); ctx.lineTo(outW-mg, mg); ctx.lineTo(outW-mg, mg+cs); ctx.stroke();
-      // Bottom-left
-      ctx.beginPath(); ctx.moveTo(mg, outH-mg-cs); ctx.lineTo(mg, outH-mg); ctx.lineTo(mg+cs, outH-mg); ctx.stroke();
-      // Bottom-right
-      ctx.beginPath(); ctx.moveTo(outW-mg-cs, outH-mg); ctx.lineTo(outW-mg, outH-mg); ctx.lineTo(outW-mg, outH-mg-cs); ctx.stroke();
-
-      // Center crosshair (subtle)
-      ctx.strokeStyle = 'rgba(200, 40, 40, 0.15)';
-      ctx.lineWidth = 0.5;
-      const chSize = 10;
-      ctx.beginPath();
-      ctx.moveTo(outW/2 - chSize, outH/2); ctx.lineTo(outW/2 - 3, outH/2);
-      ctx.moveTo(outW/2 + 3, outH/2); ctx.lineTo(outW/2 + chSize, outH/2);
-      ctx.moveTo(outW/2, outH/2 - chSize); ctx.lineTo(outW/2, outH/2 - 3);
-      ctx.moveTo(outW/2, outH/2 + 3); ctx.lineTo(outW/2, outH/2 + chSize);
-      ctx.stroke();
-
-      // Targeting circle
-      ctx.strokeStyle = 'rgba(200, 40, 40, 0.12)';
-      ctx.lineWidth = 0.5;
-      ctx.beginPath(); ctx.arc(outW/2, outH/2, Math.min(outW, outH) * 0.35, 0, Math.PI * 2); ctx.stroke();
-
-      ctx.restore();
-
-      // ── Step 7: Data readouts ──
-      ctx.save();
-      ctx.font = '7px "Share Tech Mono", monospace';
-      ctx.fillStyle = 'rgba(200, 50, 50, 0.5)';
-      ctx.shadowColor = 'rgba(200, 40, 40, 0.3)';
-      ctx.shadowBlur = 4;
-      ctx.textAlign = 'left';
-      ctx.fillText('SCAN ACTIVE', mg + 2, outH - mg - 4);
-      ctx.textAlign = 'right';
-      ctx.fillStyle = 'rgba(60, 180, 180, 0.4)';
-      ctx.fillText('LOCKED', outW - mg - 2, outH - mg - 4);
-
-      // Top label
-      ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgba(200, 50, 50, 0.4)';
-      ctx.font = '6px "Share Tech Mono", monospace';
-      ctx.fillText('◆  ASSET RENDER  ◆', outW/2, mg + 8);
-      ctx.restore();
-
-      // ── Step 8: Edge highlight glow (subtle rim light on the object) ──
-      // Re-read the image data and find bright edges to add a colored rim
-      const finalData = ctx.getImageData(0, 0, outW, outH);
-      const fd = finalData.data;
-      for (let y = 1; y < outH - 1; y++) {
-        for (let x = 1; x < outW - 1; x++) {
-          const i = (y * outW + x) * 4;
-          const lum = fd[i]*0.299 + fd[i+1]*0.587 + fd[i+2]*0.114;
-
-          // Find edges (brightness difference with neighbors)
-          let maxDiff = 0;
-          for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-            const ni = ((y+dy)*outW+(x+dx))*4;
-            const nLum = fd[ni]*0.299 + fd[ni+1]*0.587 + fd[ni+2]*0.114;
-            maxDiff = Math.max(maxDiff, Math.abs(lum - nLum));
+          if (fg < 0.05) {
+            // Background → dark atmospheric
+            const atm = opts.atmosphere;
+            d[i]   = Math.round(8 + d[i] * 0.03 * atm);
+            d[i+1] = Math.round(7 + d[i+1] * 0.02 * atm);
+            d[i+2] = Math.round(10 + d[i+2] * 0.04 * atm);
+            continue;
           }
 
-          // On strong edges of bright objects, add a subtle colored rim
-          if (maxDiff > 30 && lum > 40) {
-            const rimStrength = Math.min(1, (maxDiff - 30) / 80) * 0.15;
-            // Warm rim on bright side
-            if (lum > 100) {
-              fd[i] = Math.min(255, fd[i] + Math.round(40 * rimStrength));
-              fd[i+1] = Math.min(255, fd[i+1] + Math.round(15 * rimStrength));
+          let r = d[i], g = d[i+1], b = d[i+2];
+
+          // ── Contrast enhancement ──
+          const mid = 128;
+          r = Math.max(0, Math.min(255, mid + (r - mid) * opts.contrast));
+          g = Math.max(0, Math.min(255, mid + (g - mid) * opts.contrast));
+          b = Math.max(0, Math.min(255, mid + (b - mid) * opts.contrast));
+
+          // ── Warmth adjustment (subtle, not color replacement) ──
+          if (opts.warmth !== 0) {
+            const lum = r*0.299 + g*0.587 + b*0.114;
+            const lumNorm = lum / 255;
+            // Warmth affects highlights more than shadows
+            const warmEffect = opts.warmth * lumNorm * 0.015;
+            r = Math.max(0, Math.min(255, r + warmEffect * 40));
+            g = Math.max(0, Math.min(255, g + warmEffect * 10));
+            b = Math.max(0, Math.min(255, b - warmEffect * 15));
+          }
+
+          // ── Atmospheric darkening at edges of foreground ──
+          if (fg < 0.8) {
+            const edgeFade = fg;
+            const atm = opts.atmosphere * 0.5;
+            r = r * edgeFade + 8 * (1 - edgeFade) * atm + r * (1 - atm) * (1 - edgeFade);
+            g = g * edgeFade + 7 * (1 - edgeFade) * atm + g * (1 - atm) * (1 - edgeFade);
+            b = b * edgeFade + 10 * (1 - edgeFade) * atm + b * (1 - atm) * (1 - edgeFade);
+          }
+
+          d[i] = Math.round(Math.max(0, Math.min(255, r)));
+          d[i+1] = Math.round(Math.max(0, Math.min(255, g)));
+          d[i+2] = Math.round(Math.max(0, Math.min(255, b)));
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      // ── STEP 3: Edge-aware rim lighting ──
+      if (opts.rim > 0.05) {
+        const rimData = ctx.getImageData(0, 0, w, h);
+        const rd = rimData.data;
+        for (let y = 1; y < h-1; y++) {
+          for (let x = 1; x < w-1; x++) {
+            const idx = y * w + x;
+            const fg0 = fgMask[idx];
+            if (fg0 < 0.1) continue;
+
+            // Check foreground gradient (edge of object)
+            let maxFgDiff = 0;
+            let edgeDir = 0; // which side is the edge
+            for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+              const nIdx = (y+dy)*w+(x+dx);
+              const nFg = fgMask[nIdx] || 0;
+              const diff = fg0 - nFg;
+              if (diff > maxFgDiff) { maxFgDiff = diff; edgeDir = dx + dy; }
+            }
+
+            // Rim light on edges facing away from center
+            if (maxFgDiff > 0.15) {
+              const i = idx * 4;
+              const rimStr = Math.min(1, (maxFgDiff - 0.15) / 0.5) * opts.rim;
+              // Use the pixel's own color but brightened for the rim
+              const lum = rd[i]*0.299 + rd[i+1]*0.587 + rd[i+2]*0.114;
+              const boost = rimStr * (60 + lum * 0.3);
+              rd[i]   = Math.min(255, rd[i]   + Math.round(boost * 1.0));
+              rd[i+1] = Math.min(255, rd[i+1] + Math.round(boost * 0.9));
+              rd[i+2] = Math.min(255, rd[i+2] + Math.round(boost * 1.05));
             }
           }
         }
+        ctx.putImageData(rimData, 0, 0);
       }
-      ctx.putImageData(finalData, 0, 0);
 
-      return canvas;
+      // ── STEP 4: Depth vignette ──
+      if (opts.depth > 0.05) {
+        const vg = ctx.createRadialGradient(w/2, h/2, Math.min(w,h)*0.2, w/2, h/2, Math.max(w,h)*0.65);
+        vg.addColorStop(0, 'rgba(0,0,0,0)');
+        vg.addColorStop(1, `rgba(0,0,0,${opts.depth * 0.6})`);
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // ── STEP 5: Selective bloom (only bright areas) ──
+      if (opts.bloom > 0.05) {
+        // Extract bright regions
+        const brightC = document.createElement('canvas');
+        brightC.width = w; brightC.height = h;
+        const bCtx = brightC.getContext('2d');
+        const bData = ctx.getImageData(0, 0, w, h);
+        const bd = bData.data;
+        const threshold = 160;
+        for (let i = 0; i < bd.length; i += 4) {
+          const lum = bd[i]*0.299 + bd[i+1]*0.587 + bd[i+2]*0.114;
+          if (lum < threshold) {
+            bd[i] = 0; bd[i+1] = 0; bd[i+2] = 0; bd[i+3] = 0;
+          }
+        }
+        bCtx.putImageData(bData, 0, 0);
+
+        // Bloom passes
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+
+        ctx.filter = `blur(${4}px)`;
+        ctx.globalAlpha = opts.bloom * 0.35;
+        ctx.drawImage(brightC, 0, 0);
+
+        ctx.filter = `blur(${12}px)`;
+        ctx.globalAlpha = opts.bloom * 0.2;
+        ctx.drawImage(brightC, 0, 0);
+
+        ctx.filter = `blur(${30}px)`;
+        ctx.globalAlpha = opts.bloom * 0.08;
+        ctx.drawImage(brightC, 0, 0);
+
+        ctx.restore();
+      }
+
+      // ── STEP 6: Subtle unsharp mask (sharpening for clean detail) ──
+      ctx.save();
+      const sharpC = document.createElement('canvas');
+      sharpC.width = w; sharpC.height = h;
+      const sCtx = sharpC.getContext('2d');
+      sCtx.filter = 'blur(1px)';
+      sCtx.drawImage(c, 0, 0);
+      // Subtract blurred from original for high-pass, add back
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 0.12;
+      ctx.drawImage(c, 0, 0); // slight self-brightening as substitute for unsharp
+      ctx.restore();
+
+      return c;
     }
 
-    // ── Render both subjects ──
+    // ── Render ──
     function render() {
+      const opts = getOpts();
       const output = document.getElementById('output');
       output.innerHTML = '';
 
@@ -278,13 +313,14 @@
         // Source
         const srcPanel = document.createElement('div');
         srcPanel.className = 'panel';
-        srcPanel.innerHTML = '<h3>SOURCE</h3>';
+        srcPanel.innerHTML = '<h3>ORIGINAL</h3>';
         const srcC = document.createElement('canvas');
-        const srcSize = 250;
-        const srcAspect = img.naturalWidth / img.naturalHeight;
+        const dispSize = 380;
+        const aspect = img.naturalWidth / img.naturalHeight;
+        const dispW = aspect >= 1 ? dispSize : dispSize * aspect;
+        const dispH = aspect >= 1 ? dispSize / aspect : dispSize;
         srcC.width = img.naturalWidth; srcC.height = img.naturalHeight;
-        srcC.style.width = (srcAspect >= 1 ? srcSize : srcSize * srcAspect) + 'px';
-        srcC.style.height = (srcAspect >= 1 ? srcSize / srcAspect : srcSize) + 'px';
+        srcC.style.width = dispW + 'px'; srcC.style.height = dispH + 'px';
         srcC.getContext('2d').drawImage(img, 0, 0);
         srcPanel.appendChild(srcC);
         const srcInfo = document.createElement('div');
@@ -294,110 +330,79 @@
         panels.appendChild(srcPanel);
 
         // Converted
-        const converted = convertSleek(img, info.size);
-
+        const converted = convertAsset(img, opts);
         const convPanel = document.createElement('div');
         convPanel.className = 'panel';
         convPanel.innerHTML = '<h3>STYLED</h3>';
         const convC = document.createElement('canvas');
         convC.width = converted.width; convC.height = converted.height;
-        convC.style.width = (converted.width * 1.5) + 'px';
-        convC.style.height = (converted.height * 1.5) + 'px';
+        convC.style.width = dispW + 'px'; convC.style.height = dispH + 'px';
         convC.getContext('2d').drawImage(converted, 0, 0);
         convPanel.appendChild(convC);
         const convInfo = document.createElement('div');
         convInfo.className = 'info';
-        convInfo.textContent = `${converted.width}×${converted.height} styled`;
+        convInfo.textContent = `${converted.width}×${converted.height} // cinematic`;
         convPanel.appendChild(convInfo);
         panels.appendChild(convPanel);
 
-        // On HUD panel (game context)
-        const hudPanel = document.createElement('div');
-        hudPanel.className = 'panel';
-        hudPanel.innerHTML = '<h3>HUD CONTEXT</h3>';
-        const hudW = converted.width + 40;
-        const hudH = converted.height + 60;
-        const hudC = document.createElement('canvas');
-        hudC.width = hudW; hudC.height = hudH;
-        hudC.style.width = (hudW * 1.5) + 'px';
-        hudC.style.height = (hudH * 1.5) + 'px';
-        const hCtx = hudC.getContext('2d');
+        // Context: on dark background with subtle environment
+        const ctxPanel = document.createElement('div');
+        ctxPanel.className = 'panel';
+        ctxPanel.innerHTML = '<h3>IN CONTEXT</h3>';
+        const pad = 40;
+        const ctxW = converted.width + pad*2;
+        const ctxH = converted.height + pad*2;
+        const ctxC = document.createElement('canvas');
+        ctxC.width = ctxW; ctxC.height = ctxH;
+        ctxC.style.width = (dispW + pad*2 * dispW/converted.width) + 'px';
+        ctxC.style.height = (dispH + pad*2 * dispH/converted.height) + 'px';
+        const cCtx = ctxC.getContext('2d');
 
-        // Dark background
-        hCtx.fillStyle = '#080608';
-        hCtx.fillRect(0, 0, hudW, hudH);
+        // Dark environment
+        cCtx.fillStyle = '#08070a';
+        cCtx.fillRect(0, 0, ctxW, ctxH);
 
-        // Grid underlay
-        hCtx.strokeStyle = 'rgba(200, 40, 40, 0.04)';
-        hCtx.lineWidth = 0.5;
-        for (let gx = 0; gx < hudW; gx += 20) { hCtx.beginPath(); hCtx.moveTo(gx, 0); hCtx.lineTo(gx, hudH); hCtx.stroke(); }
-        for (let gy = 0; gy < hudH; gy += 20) { hCtx.beginPath(); hCtx.moveTo(0, gy); hCtx.lineTo(hudW, gy); hCtx.stroke(); }
+        // Subtle ambient glow behind asset (from its own colors)
+        cCtx.save();
+        cCtx.filter = 'blur(40px)';
+        cCtx.globalAlpha = 0.06;
+        cCtx.drawImage(converted, pad-10, pad-10, converted.width+20, converted.height+20);
+        cCtx.restore();
 
-        // Outer frame
-        hCtx.strokeStyle = 'rgba(200, 40, 40, 0.3)';
-        hCtx.lineWidth = 1;
-        hCtx.shadowColor = 'rgba(200, 40, 40, 0.2)';
-        hCtx.shadowBlur = 8;
-        hCtx.strokeRect(4, 4, hudW - 8, hudH - 8);
+        // The asset
+        cCtx.drawImage(converted, pad, pad);
 
-        // Inner frame
-        hCtx.strokeStyle = 'rgba(200, 40, 40, 0.1)';
-        hCtx.lineWidth = 0.5;
-        hCtx.shadowBlur = 0;
-        hCtx.strokeRect(8, 8, hudW - 16, hudH - 16);
+        // Subtle reflection below (if there's space)
+        cCtx.save();
+        cCtx.globalAlpha = 0.04;
+        cCtx.translate(0, ctxH);
+        cCtx.scale(1, -0.3);
+        cCtx.filter = 'blur(2px)';
+        cCtx.drawImage(converted, pad, -(converted.height + pad));
+        cCtx.restore();
 
-        // Draw converted image
-        hCtx.drawImage(converted, 20, 30);
-
-        // Title bar
-        hCtx.fillStyle = 'rgba(200, 40, 40, 0.06)';
-        hCtx.fillRect(4, 4, hudW - 8, 20);
-        hCtx.font = '8px "Orbitron", sans-serif';
-        hCtx.fillStyle = 'rgba(200, 50, 50, 0.6)';
-        hCtx.textAlign = 'center';
-        hCtx.shadowColor = 'rgba(200, 40, 40, 0.3)';
-        hCtx.shadowBlur = 4;
-        hCtx.fillText(info.name + '  //  ASSET DATABASE', hudW/2, 17);
-
-        // Bottom bar
-        hCtx.fillStyle = 'rgba(200, 40, 40, 0.04)';
-        hCtx.fillRect(4, hudH - 24, hudW - 8, 20);
-        hCtx.font = '7px "Share Tech Mono", monospace';
-        hCtx.fillStyle = 'rgba(60, 180, 180, 0.45)';
-        hCtx.textAlign = 'left';
-        hCtx.fillText('STATUS: NOMINAL', 12, hudH - 10);
-        hCtx.textAlign = 'right';
-        hCtx.fillStyle = 'rgba(200, 50, 50, 0.45)';
-        hCtx.fillText('SYS ONLINE', hudW - 12, hudH - 10);
-
-        // Status dots
-        hCtx.shadowBlur = 6;
-        hCtx.fillStyle = 'rgba(60, 200, 60, 0.6)';
-        hCtx.beginPath(); hCtx.arc(hudW - 80, hudH - 13, 2, 0, Math.PI * 2); hCtx.fill();
-        hCtx.fillStyle = 'rgba(200, 50, 50, 0.6)';
-        hCtx.beginPath(); hCtx.arc(12, 13, 2, 0, Math.PI * 2); hCtx.fill();
-
-        // Bloom on HUD
-        hCtx.save();
-        hCtx.globalCompositeOperation = 'lighter';
-        hCtx.filter = 'blur(10px)';
-        hCtx.globalAlpha = 0.04;
-        hCtx.drawImage(hudC, 0, 0);
-        hCtx.restore();
-
-        hudPanel.appendChild(hudC);
-        const hudInfo = document.createElement('div');
-        hudInfo.className = 'info';
-        hudInfo.textContent = 'HOLOGRAPHIC DISPLAY';
-        hudPanel.appendChild(hudInfo);
-        panels.appendChild(hudPanel);
+        ctxPanel.appendChild(ctxC);
+        const ctxInfo = document.createElement('div');
+        ctxInfo.className = 'info';
+        ctxInfo.textContent = 'ambient glow + reflection';
+        ctxPanel.appendChild(ctxInfo);
+        panels.appendChild(ctxPanel);
 
         section.appendChild(panels);
         output.appendChild(section);
       }
 
-      document.getElementById('status').textContent = 'SYSTEMS NOMINAL  //  CONVERSION COMPLETE';
+      document.getElementById('status').textContent = 'PIPELINE COMPLETE';
     }
+
+    let debounce;
+    document.querySelectorAll('input[type=range]').forEach(el => {
+      el.addEventListener('input', () => {
+        getOpts();
+        clearTimeout(debounce);
+        debounce = setTimeout(render, 150);
+      });
+    });
   </script>
 </body>
 </html>
