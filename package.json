@@ -42,6 +42,7 @@
     "test:menu": "npx http-server tests/menu-gen -p 8086 -o",
     "test:icons": "npx http-server tests/icons -p 8087 -o",
     "test:space": "npx http-server tests/space-scene -p 8088 -o",
+    "test:charizard2": "npx http-server tests/charizard-sprite -p 8089 -o",
     "typecheck": "tsc --noEmit"
   },
   "files": [
