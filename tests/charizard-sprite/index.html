@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcade Engine - Charizard Sprite Conversion</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#1a1530;color:#fff;font-family:'Press Start 2P',monospace;padding:20px;display:flex;flex-direction:column;align-items:center}
+    h1{font-size:11px;color:#e8a0ff;text-shadow:0 0 8px rgba(232,160,255,0.3);margin-bottom:4px}
+    .sub{font-size:7px;color:#666;margin-bottom:16px;text-align:center;line-height:1.8}
+    .row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-bottom:16px;align-items:start}
+    .panel{background:rgba(255,255,255,0.02);border:1px solid #2a2540;padding:12px;text-align:center}
+    .panel h3{font-size:8px;color:#888;margin-bottom:8px}
+    .panel canvas{border:1px solid #1a1530;image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:0 auto 6px}
+    .panel .info{font-size:5px;color:#555;line-height:1.6}
+    #status{font-size:7px;color:#88dd88;text-shadow:0 0 4px rgba(136,221,136,0.3);margin:8px 0}
+  </style>
+</head>
+<body>
+  <h1>CHARIZARD SPRITE CONVERSION</h1>
+  <p class="sub">Source image -> Region analysis -> Multi-palette pixel art re-rendering</p>
+  <div class="row" id="output"></div>
+  <p id="status">Loading source image...</p>
+
+  <script>
+    // ── Engine ──
+    function hash(x,y,s){let h=(x*374761393+y*668265263+s*1274126177)|0;h=((h^(h>>13))*1274126177)|0;return((h^(h>>16))&0x7fffffff)/0x7fffffff}
+    function noise2d(x,y,s){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;const sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);return hash(ix,iy,s)+(hash(ix+1,iy,s)-hash(ix,iy,s))*sx+(hash(ix,iy+1,s)-hash(ix,iy,s))*sy+(hash(ix,iy,s)-hash(ix+1,iy,s)-hash(ix,iy+1,s)+hash(ix+1,iy+1,s))*sx*sy}
+    function fbm(x,y,oct,s){let v=0,a=1,f=1,m=0;for(let i=0;i<oct;i++){v+=noise2d(x*f,y*f,s+i*31)*a;m+=a;a*=0.5;f*=2.1}return v/m}
+    function hsl2rgb(h,s,l){h=((h%360)+360)%360;s=Math.max(0,Math.min(100,s))/100;l=Math.max(0,Math.min(100,l))/100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return[(r+m)*255+0.5|0,(g+m)*255+0.5|0,(b+m)*255+0.5|0]}
+    function rgb2hsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let h=0,s=0;if(mx!==mn){const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);if(mx===r)h=((g-b)/d+(g<b?6:0))*60;else if(mx===g)h=((b-r)/d+2)*60;else h=((r-g)/d+4)*60}return[h,s*100,l*100]}
+    function makePal(bh,bs,bl,n){const p=[];for(let i=0;i<n;i++){const t=i/(n-1);const hs=t<0.5?-22*(1-t*2):12*(t-0.5)*2;const h=bh+hs;const sb=t<0.3?8*(1-t/0.3):t>0.8?-15*(t-0.8)/0.2:0;const s=Math.max(0,Math.min(100,bs+sb));const l=Math.min(92,5+t*(bl+15));p.push(hsl2rgb(h,s,l))}return p}
+    const B4=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+    function dithPick(x,y,t){return t>B4[y&3][x&3]/16}
+
+    // ── Region classification: analyze source pixel color to determine material ──
+    function classifyPixel(r, g, b, a) {
+      if (a < 30) return 'bg';
+      const [h, s, l] = rgb2hsl(r, g, b);
+
+      // White/very light = highlight
+      if (l > 85 && s < 20) return 'highlight';
+
+      // Very dark = outline in source
+      if (l < 15) return 'dark';
+
+      // Cream/yellow belly: high lightness, warm hue, lower saturation
+      if (l > 65 && h > 30 && h < 65 && s < 60) return 'belly';
+      if (l > 55 && h > 35 && h < 55 && s < 45) return 'belly';
+
+      // Flame: very warm (red-yellow), high saturation, high lightness
+      if (h < 45 && s > 60 && l > 55) return 'flame';
+      if (h > 340 && s > 50 && l > 40) return 'flame';
+
+      // Teal/cyan wings: hue 150-210, moderate saturation
+      if (h > 140 && h < 220 && s > 20) return 'wing';
+
+      // Orange body: hue 15-45, high saturation
+      if (h > 10 && h < 50 && s > 45) return 'body';
+
+      // Brownish (wing edges, dark orange)
+      if (h > 20 && h < 45 && s > 30 && l < 45) return 'wingEdge';
+
+      // Claws: light, low saturation
+      if (l > 50 && s < 30) return 'claw';
+
+      // Fallback based on dominant channel
+      if (r > g && r > b) return 'body';
+      if (g > r && g > b) return 'wing';
+      return 'body';
+    }
+
+    // ── Material palettes for each region ──
+    const MATERIALS = {
+      body: {
+        pals: [
+          makePal(25, 80, 55, 10),   // orange
+          makePal(15, 70, 45, 8),    // darker orange
+          makePal(35, 65, 50, 8),    // warm amber accent
+        ],
+        outlineColor: [20, 12, 8],
+      },
+      wing: {
+        pals: [
+          makePal(185, 45, 40, 10),  // teal
+          makePal(200, 35, 32, 8),   // blue-teal accent
+          makePal(170, 40, 35, 8),   // green-teal accent
+        ],
+        outlineColor: [12, 18, 20],
+      },
+      wingEdge: {
+        pals: [
+          makePal(30, 65, 42, 8),    // dark orange-brown
+          makePal(20, 55, 35, 6),    // deep brown
+          makePal(40, 50, 38, 6),    // warm brown accent
+        ],
+        outlineColor: [18, 12, 8],
+      },
+      belly: {
+        pals: [
+          makePal(45, 50, 72, 8),    // cream
+          makePal(38, 40, 65, 6),    // warm cream
+          makePal(55, 35, 68, 6),    // pale yellow accent
+        ],
+        outlineColor: [25, 20, 12],
+      },
+      flame: {
+        pals: [
+          makePal(35, 95, 65, 8),    // bright yellow-orange
+          makePal(15, 90, 55, 8),    // red-orange
+          makePal(50, 85, 70, 6),    // bright yellow
+        ],
+        outlineColor: [30, 10, 5],
+      },
+      claw: {
+        pals: [
+          makePal(40, 15, 60, 6),    // pale gray-cream
+          makePal(30, 20, 52, 6),    // warm gray
+          makePal(50, 10, 55, 6),    // cool cream
+        ],
+        outlineColor: [20, 18, 15],
+      },
+      highlight: {
+        pals: [
+          makePal(40, 15, 82, 5),    // near white
+          makePal(45, 20, 78, 5),    // warm white
+        ],
+        outlineColor: [30, 25, 20],
+      },
+      dark: {
+        pals: [
+          makePal(20, 25, 12, 5),
+          makePal(280, 20, 10, 4),
+        ],
+        outlineColor: [5, 3, 3],
+      },
+    };
+
+    // ── Edge detection for outlines ──
+    function isEdgePixel(srcData, x, y, w, h) {
+      const i = (y * w + x) * 4;
+      const a = srcData[i + 3];
+      if (a < 30) return false;
+
+      // Check if any neighbor is transparent or very different region
+      const myRegion = classifyPixel(srcData[i], srcData[i+1], srcData[i+2], a);
+      for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) return true;
+        const ni = (ny * w + nx) * 4;
+        if (srcData[ni + 3] < 30) return true;
+        const nRegion = classifyPixel(srcData[ni], srcData[ni+1], srcData[ni+2], srcData[ni+3]);
+        if (nRegion !== myRegion && nRegion !== 'bg') return 'inner';
+      }
+      return false;
+    }
+
+    // ── Inner detail line detection (brightness transitions within same region) ──
+    function isDetailLine(srcData, x, y, w, h) {
+      const i = (y * w + x) * 4;
+      if (srcData[i+3] < 30) return false;
+      const lum = srcData[i]*0.299 + srcData[i+1]*0.587 + srcData[i+2]*0.114;
+      let maxDiff = 0;
+      for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+        const nx = x+dx, ny = y+dy;
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        const ni = (ny*w+nx)*4;
+        if (srcData[ni+3] < 30) continue;
+        const nLum = srcData[ni]*0.299 + srcData[ni+1]*0.587 + srcData[ni+2]*0.114;
+        maxDiff = Math.max(maxDiff, Math.abs(lum - nLum));
+      }
+      return maxDiff > 55;
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // MAIN CONVERSION PIPELINE
+    // ══════════════════════════════════════════════════════════════════
+
+    function convertSprite(srcData, w, h) {
+      const out = new Uint8ClampedArray(w * h * 4);
+      const lightX = -0.6, lightY = -0.7; // top-left light
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = (y * w + x) * 4;
+          const sr = srcData[i], sg = srcData[i+1], sb = srcData[i+2], sa = srcData[i+3];
+
+          if (sa < 30) continue; // transparent
+
+          const region = classifyPixel(sr, sg, sb, sa);
+          if (region === 'bg') continue;
+
+          const mat = MATERIALS[region] || MATERIALS.body;
+          const [srcH, srcS, srcL] = rgb2hsl(sr, sg, sb);
+
+          // Check if this is an edge pixel
+          const edge = isEdgePixel(srcData, x, y, w, h);
+          const detail = !edge && isDetailLine(srcData, x, y, w, h);
+
+          // Outline pixels
+          if (edge === true) {
+            const [or, og, ob] = mat.outlineColor;
+            out[i] = or; out[i+1] = og; out[i+2] = ob; out[i+3] = 255;
+            continue;
+          }
+
+          // Inner region boundary (slightly brighter outline)
+          if (edge === 'inner') {
+            const [or, og, ob] = mat.outlineColor;
+            out[i] = or + 12; out[i+1] = og + 8; out[i+2] = ob + 6; out[i+3] = 255;
+            continue;
+          }
+
+          // ── Compute lightness from source ──
+          let L = srcL / 100;
+
+          // Add surface noise (multi-octave)
+          L += (fbm(x * 0.12, y * 0.12, 5, 100) - 0.5) * 0.12;
+          L += (fbm(x * 0.3, y * 0.3, 4, 101) - 0.5) * 0.06;
+          L += (fbm(x * 0.7, y * 0.7, 3, 102) - 0.5) * 0.03;
+
+          // Detail lines get darker
+          if (detail) L -= 0.08;
+
+          L = Math.max(0.02, Math.min(0.98, L));
+
+          // ── Select palette via independent hue noise ──
+          const hueNoise = fbm(x * 0.08, y * 0.08, 4, 200 + region.length);
+          const finNoise = hash(x, y, 300 + region.length);
+
+          const pals = mat.pals;
+          let pal;
+          if (hueNoise < 0.35) pal = pals[0];
+          else if (hueNoise < 0.65) pal = pals[Math.min(1, pals.length - 1)];
+          else pal = pals[Math.min(2, pals.length - 1)];
+
+          // Palette index from lightness
+          const pLen = pal.length;
+          const rawIdx = L * (pLen - 0.01);
+          const palIdx = rawIdx | 0;
+          const nextIdx = Math.min(palIdx + 1, pLen - 1);
+          const bandT = rawIdx - palIdx;
+
+          let [r, g, b] = dithPick(x, y, bandT) ? pal[nextIdx] : pal[palIdx];
+
+          // ── Per-pixel palette switching (~12% of pixels) ──
+          if (finNoise > 0.88) {
+            const altPal = pals[((finNoise * 10) | 0) % pals.length];
+            const altIdx = Math.min(altPal.length - 1, (L * altPal.length) | 0);
+            [r, g, b] = altPal[altIdx];
+          }
+
+          // ── Micro-detail: occasional single-pixel shade bumps ──
+          if (hash(x, y, 400) > 0.9) {
+            const bump = hash(x, y, 401) > 0.5 ? 1 : -1;
+            const adjIdx = Math.max(0, Math.min(pLen - 1, palIdx + bump));
+            const [ar, ag, ab] = pal[adjIdx];
+            // 50% chance full replace vs blend
+            if (hash(x, y, 402) > 0.5) {
+              r = ar; g = ag; b = ab;
+            } else {
+              r = (r + ar) >> 1; g = (g + ag) >> 1; b = (b + ab) >> 1;
+            }
+          }
+
+          // ── Scattered accent from a different region's palette (rare, adds depth) ──
+          if (hash(x, y, 500) > 0.95) {
+            const accentMats = Object.values(MATERIALS);
+            const accentMat = accentMats[(hash(x, y, 501) * accentMats.length) | 0];
+            const accentPal = accentMat.pals[0];
+            const accentIdx = Math.min(accentPal.length - 1, (L * accentPal.length) | 0);
+            const [ar, ag, ab] = accentPal[accentIdx];
+            r = (r * 0.7 + ar * 0.3) | 0;
+            g = (g * 0.7 + ag * 0.3) | 0;
+            b = (b * 0.7 + ab * 0.3) | 0;
+          }
+
+          out[i] = r; out[i+1] = g; out[i+2] = b; out[i+3] = 255;
+        }
+      }
+
+      return out;
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // LOAD AND RENDER
+    // ══════════════════════════════════════════════════════════════════
+
+    const img = new Image();
+    img.src = './charizard.png';
+    img.onload = () => {
+      const w = img.naturalWidth, h = img.naturalHeight;
+      const status = document.getElementById('status');
+      const output = document.getElementById('output');
+
+      // Get source pixel data
+      const srcCanvas = document.createElement('canvas');
+      srcCanvas.width = w; srcCanvas.height = h;
+      const srcCtx = srcCanvas.getContext('2d');
+      srcCtx.drawImage(img, 0, 0);
+      const srcData = srcCtx.getImageData(0, 0, w, h).data;
+
+      status.textContent = 'Analyzing regions and converting...';
+
+      setTimeout(() => {
+        // Convert
+        const converted = convertSprite(srcData, w, h);
+
+        // Show source
+        const srcPanel = document.createElement('div');
+        srcPanel.className = 'panel';
+        srcPanel.innerHTML = '<h3>SOURCE</h3>';
+        const srcC = document.createElement('canvas');
+        srcC.width = w; srcC.height = h;
+        srcC.style.width = (w * 2) + 'px'; srcC.style.height = (h * 2) + 'px';
+        srcC.getContext('2d').drawImage(img, 0, 0);
+        srcPanel.appendChild(srcC);
+        srcPanel.innerHTML += `<div class="info">${w}x${h} original</div>`;
+        output.appendChild(srcPanel);
+
+        // Show region map
+        const regionColors = {
+          body: [230, 130, 40], wing: [60, 160, 160], wingEdge: [140, 90, 50],
+          belly: [240, 220, 160], flame: [255, 180, 50], claw: [200, 190, 180],
+          highlight: [255, 250, 240], dark: [30, 20, 20], bg: [0, 0, 0],
+        };
+        const regionBuf = new Uint8ClampedArray(w * h * 4);
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 4;
+            const region = classifyPixel(srcData[i], srcData[i+1], srcData[i+2], srcData[i+3]);
+            const [r, g, b] = regionColors[region] || [128, 128, 128];
+            regionBuf[i] = r; regionBuf[i+1] = g; regionBuf[i+2] = b;
+            regionBuf[i+3] = srcData[i+3] > 30 ? 255 : 0;
+          }
+        }
+        const regPanel = document.createElement('div');
+        regPanel.className = 'panel';
+        regPanel.innerHTML = '<h3>REGION MAP</h3>';
+        const regC = document.createElement('canvas');
+        regC.width = w; regC.height = h;
+        regC.style.width = (w * 2) + 'px'; regC.style.height = (h * 2) + 'px';
+        regC.getContext('2d').putImageData(new ImageData(regionBuf, w, h), 0, 0);
+        regPanel.appendChild(regC);
+        const regionCounts = {};
+        for (let i = 0; i < regionBuf.length; i += 4) {
+          if (regionBuf[i+3] < 10) continue;
+          const key = `${regionBuf[i]},${regionBuf[i+1]},${regionBuf[i+2]}`;
+          for (const [name, [r,g,b]] of Object.entries(regionColors)) {
+            if (r === regionBuf[i] && g === regionBuf[i+1] && b === regionBuf[i+2]) {
+              regionCounts[name] = (regionCounts[name] || 0) + 1;
+            }
+          }
+        }
+        let regInfo = '';
+        for (const [name, count] of Object.entries(regionCounts)) {
+          if (count > 10) regInfo += `${name}: ${count}px  `;
+        }
+        regPanel.innerHTML += `<div class="info">${regInfo}</div>`;
+        output.appendChild(regPanel);
+
+        // Show converted
+        const convPanel = document.createElement('div');
+        convPanel.className = 'panel';
+        convPanel.innerHTML = '<h3>ENGINE OUTPUT</h3>';
+        const convC = document.createElement('canvas');
+        convC.width = w; convC.height = h;
+        convC.style.width = (w * 2) + 'px'; convC.style.height = (h * 2) + 'px';
+        convC.getContext('2d').putImageData(new ImageData(converted, w, h), 0, 0);
+        convPanel.appendChild(convC);
+
+        // Count unique colors in output
+        const colorSet = new Set();
+        for (let i = 0; i < converted.length; i += 4) {
+          if (converted[i+3] < 10) continue;
+          colorSet.add(`${converted[i]>>2},${converted[i+1]>>2},${converted[i+2]>>2}`);
+        }
+        convPanel.innerHTML += `<div class="info">${colorSet.size} unique color groups | Multi-palette pixel art</div>`;
+        output.appendChild(convPanel);
+
+        // Show on dark background (game context)
+        const gamePanel = document.createElement('div');
+        gamePanel.className = 'panel';
+        gamePanel.style.background = '#0e0a1e';
+        gamePanel.innerHTML = '<h3>IN-GAME CONTEXT</h3>';
+        const gameC = document.createElement('canvas');
+        gameC.width = w; gameC.height = h;
+        gameC.style.width = (w * 2) + 'px'; gameC.style.height = (h * 2) + 'px';
+        const gameCtx = gameC.getContext('2d');
+        gameCtx.fillStyle = '#0e0a1e';
+        gameCtx.fillRect(0, 0, w, h);
+        gameCtx.putImageData(new ImageData(new Uint8ClampedArray(converted), w, h), 0, 0);
+        gamePanel.appendChild(gameC);
+        gamePanel.innerHTML += `<div class="info">On dark game background</div>`;
+        output.appendChild(gamePanel);
+
+        status.textContent = `Done — ${w}x${h} → ${colorSet.size} color groups | Regions: ${Object.keys(regionCounts).filter(k => (regionCounts[k]||0) > 10).join(', ')}`;
+      }, 50);
+    };
+  </script>
+</body>
+</html>
