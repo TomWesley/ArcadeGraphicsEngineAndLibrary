@@ -42,6 +42,63 @@
   <p id="status">Loading assets...</p>
 
   <script>
+    // ── Style Validator (inlined from src/style/validator.ts) ──
+    function runValidator(imageData) {
+      const w = imageData.width, h = imageData.height, d = imageData.data;
+      const total = w * h;
+      let pureBlack=0, pureWhite=0, transparent=0, darkPx=0, midPx=0, brightPx=0;
+      let satSum=0, satCount=0, lumSum=0, lumSqSum=0, vis=0;
+      const hueBuckets = new Float64Array(12);
+      for (let i=0;i<d.length;i+=4) {
+        const r=d[i],g=d[i+1],b=d[i+2],a=d[i+3];
+        if(a<10){transparent++;continue}
+        vis++;
+        const lum=r*0.299+g*0.587+b*0.114;
+        lumSum+=lum; lumSqSum+=lum*lum;
+        if(r<10&&g<10&&b<10)pureBlack++;
+        if(r>245&&g>245&&b>245)pureWhite++;
+        if(lum<60)darkPx++;else if(lum<170)midPx++;else brightPx++;
+        const rn=r/255,gn=g/255,bn=b/255,mx=Math.max(rn,gn,bn),mn=Math.min(rn,gn,bn),l=(mx+mn)/2;
+        if(mx!==mn){const delta=mx-mn,s=l>0.5?delta/(2-mx-mn):delta/(mx+mn);
+          satSum+=s*100;satCount++;
+          let hue=0;if(mx===rn)hue=((gn-bn)/delta+(gn<bn?6:0))*60;else if(mx===gn)hue=((bn-rn)/delta+2)*60;else hue=((rn-gn)/delta+4)*60;
+          if(s>0.08)hueBuckets[Math.floor(hue/30)%12]++}
+      }
+      if(vis<10)return{passed:false,score:0,checks:[{name:'Visibility',passed:false,score:0,detail:'Nearly empty'}],suggestions:['Image has almost no visible pixels']};
+      const checks=[], suggestions=[];
+      // Contrast
+      const avgL=lumSum/vis,stdL=Math.sqrt(lumSqSum/vis-avgL*avgL),cr=stdL/128;
+      const crOk=cr>=0.3&&cr<=0.85;
+      checks.push({name:'Contrast',passed:crOk,score:crOk?100:Math.round(Math.max(0,100-Math.abs(cr-0.5)*200)),detail:`Ratio: ${cr.toFixed(3)} (0.30-0.85)`});
+      if(!crOk)suggestions.push(cr<0.3?'Increase contrast':'Reduce contrast');
+      // Black/white
+      const bkP=(pureBlack/vis)*100,wtP=(pureWhite/vis)*100;
+      checks.push({name:'Black levels',passed:bkP<=5,score:bkP<=5?100:Math.max(0,Math.round(100-(bkP-5)*10)),detail:`Pure black: ${bkP.toFixed(1)}% (max 5%)`});
+      checks.push({name:'White levels',passed:wtP<=3,score:wtP<=3?100:Math.max(0,Math.round(100-(wtP-3)*10)),detail:`Pure white: ${wtP.toFixed(1)}% (max 3%)`});
+      if(bkP>5)suggestions.push('Too much pure black');
+      if(wtP>3)suggestions.push('Too much pure white');
+      // Hue variety
+      const activeH=hueBuckets.filter(v=>v>vis*0.005).length;
+      checks.push({name:'Color variety',passed:activeH>=2,score:activeH>=2?Math.min(100,activeH*15):Math.round(activeH/2*100),detail:`${activeH} hue ranges (min 2)`});
+      if(activeH<2)suggestions.push('Too monochromatic');
+      // Brightness distribution
+      const dkP=(darkPx/vis)*100,mdP=(midPx/vis)*100,brP=(brightPx/vis)*100;
+      const distOk=Math.abs(dkP-45)<=20&&Math.abs(mdP-35)<=20&&Math.abs(brP-20)<=20;
+      const distScore=Math.max(0,Math.round(100-(Math.max(0,Math.abs(dkP-45)-10)+Math.max(0,Math.abs(mdP-35)-10)+Math.max(0,Math.abs(brP-20)-10))*2));
+      checks.push({name:'Brightness dist',passed:distOk,score:distScore,detail:`D${dkP.toFixed(0)}% M${mdP.toFixed(0)}% B${brP.toFixed(0)}% (45/35/20 ±20)`});
+      if(!distOk)suggestions.push('Brightness distribution off target');
+      // Saturation
+      const avgS=satCount>0?satSum/satCount:0;
+      const satOk=avgS>=15&&avgS<=75;
+      checks.push({name:'Saturation',passed:satOk,score:satOk?100:Math.max(0,Math.round(100-Math.abs(avgS-45)*2)),detail:`Avg: ${avgS.toFixed(1)}% (15-75%)`});
+      if(avgS<15)suggestions.push('Too desaturated');if(avgS>75)suggestions.push('Oversaturated');
+      // Background
+      const bgP=(transparent/total)*100;
+      checks.push({name:'Background ratio',passed:bgP<=70,score:bgP<=70?100:Math.max(0,Math.round(100-(bgP-70)*2)),detail:`BG: ${bgP.toFixed(0)}% (max 70%)`});
+      const totalScore=Math.round(checks.reduce((s,c)=>s+c.score,0)/checks.length);
+      return{passed:checks.every(c=>c.passed),score:totalScore,checks,suggestions};
+    }
+
     // ══════════════════════════════════════════════════════════════════
     // STYLE UNIVERSE ENGINE
     //
@@ -60,6 +117,7 @@
     const IMAGES = [
       { src: './spaceship.png', name: 'SPACESHIP' },
       { src: './PotionBottle.png', name: 'POTION BOTTLE' },
+      { src: './charizard.png', name: 'CHARIZARD' },
     ];
     const loaded = {};
     let loadCount = 0;
@@ -388,11 +446,39 @@
         ctxPanel.appendChild(ctxInfo);
         panels.appendChild(ctxPanel);
 
+        // ── STYLE VALIDATOR ──
+        const valPanel = document.createElement('div');
+        valPanel.className = 'panel';
+        valPanel.innerHTML = '<h3>VALIDATION</h3>';
+        const valData = cCtx.getImageData(0, 0, ctxW, ctxH);
+        const valResult = runValidator(valData);
+        const valDiv = document.createElement('div');
+        valDiv.style.cssText = 'text-align:left;padding:4px;min-width:180px';
+
+        const scoreColor = valResult.score >= 70 ? '#4a4' : valResult.score >= 45 ? '#aa4' : '#a44';
+        valDiv.innerHTML = `<div style="font-size:16px;color:${scoreColor};font-family:Orbitron,sans-serif;text-align:center;margin-bottom:6px">${valResult.score}<span style="font-size:8px;color:#555">/100</span></div>`;
+        valDiv.innerHTML += `<div style="font-size:8px;color:${valResult.passed?'#4a4':'#a44'};text-align:center;margin-bottom:8px">${valResult.passed?'✓ PASSED':'✗ FAILED'}</div>`;
+
+        for (const check of valResult.checks) {
+          const cColor = check.passed ? '#4a4' : check.score > 50 ? '#aa4' : '#a44';
+          valDiv.innerHTML += `<div style="font-size:6px;color:${cColor};margin-bottom:3px;line-height:1.4">${check.passed?'✓':'✗'} ${check.name}: ${check.score}<br><span style="color:#444">${check.detail}</span></div>`;
+        }
+
+        if (valResult.suggestions.length > 0) {
+          valDiv.innerHTML += '<div style="font-size:6px;color:#aa4;margin-top:6px;border-top:1px solid #222;padding-top:4px">SUGGESTIONS:</div>';
+          for (const s of valResult.suggestions) {
+            valDiv.innerHTML += `<div style="font-size:5px;color:#886;margin-top:2px">→ ${s}</div>`;
+          }
+        }
+
+        valPanel.appendChild(valDiv);
+        panels.appendChild(valPanel);
+
         section.appendChild(panels);
         output.appendChild(section);
       }
 
-      document.getElementById('status').textContent = 'PIPELINE COMPLETE';
+      document.getElementById('status').textContent = 'PIPELINE COMPLETE — VALIDATION CHECKED';
     }
 
     let debounce;
