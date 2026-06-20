@@ -9,7 +9,8 @@
       "Bash(npx tsup:*)",
       "Bash(identify \"/Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/Sample PixelArt.png\")",
       "Bash(sips -g pixelWidth -g pixelHeight \"/Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/Sample PixelArt.png\")",
-      "Bash(sips:*)"
+      "Bash(sips:*)",
+      "Bash(grep -i -E '\\\\.\\(png|jpg|jpeg|webp|avif|gif|svg\\)$')"
     ]
   }
 }
