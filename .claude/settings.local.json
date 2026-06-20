@@ -12,7 +12,13 @@
       "Bash(sips:*)",
       "Bash(grep -i -E '\\\\.\\(png|jpg|jpeg|webp|avif|gif|svg\\)$')",
       "Bash(sed \"1d;$d\")",
-      "Bash(node -c /tmp/iconcheck.js)"
+      "Bash(node -c /tmp/iconcheck.js)",
+      "Bash(sed -i '' \"s/rgba\\(220,180,60,0\\\\./rgba\\(220,180,60,/g; s/rgba\\(220,180,60,\\\\\\([0-9.]*\\\\\\)\\)/rgba\\(255,210,70,\\\\1\\)/g\" /Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/tests/icon-library/index.html)",
+      "Bash(sed -i '' \"s/rgba\\(220,70,70,0\\\\.\\\\\\([0-9]*\\\\\\)\\)/rgba\\(255,80,80,0.\\\\1\\)/g\" /Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/tests/icon-library/index.html)",
+      "Bash(sed -i '' \"s/rgba\\(220,80,100,0\\\\.\\\\\\([0-9]*\\\\\\)\\)/rgba\\(255,90,120,0.\\\\1\\)/g\" /Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/tests/icon-library/index.html)",
+      "Bash(sed -i '' \"s/rgba\\(220,200,80,0\\\\.\\\\\\([0-9]*\\\\\\)\\)/rgba\\(255,230,90,0.\\\\1\\)/g\" /Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/tests/icon-library/index.html)",
+      "Bash(sed -i '' \"s/rgba\\(220,190,60,0\\\\.\\\\\\([0-9]*\\\\\\)\\)/rgba\\(255,220,70,0.\\\\1\\)/g\" /Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/tests/icon-library/index.html)",
+      "Bash(node -c /tmp/ic.js)"
     ]
   }
 }
