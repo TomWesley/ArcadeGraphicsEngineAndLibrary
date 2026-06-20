@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcade Engine - Source Image Conversion</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#1a1530;color:#fff;font-family:'Press Start 2P',monospace;padding:16px;display:flex;flex-direction:column;align-items:center}
+    h1{font-size:11px;color:#e8a0ff;margin-bottom:12px}
+    .sub{font-size:7px;color:#666;margin-bottom:16px;text-align:center;line-height:1.8;max-width:800px}
+    .subject{margin-bottom:24px;width:100%}
+    .subject h2{font-size:9px;color:#888;margin-bottom:8px;text-align:center}
+    .panels{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+    .panel{background:rgba(255,255,255,0.02);border:1px solid #2a2540;padding:10px;text-align:center}
+    .panel h3{font-size:7px;color:#777;margin-bottom:6px}
+    .panel canvas{border:1px solid #1a1530;image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:0 auto}
+    .panel .info{font-size:5px;color:#555;margin-top:4px;line-height:1.6}
+    .controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+    .ctrl{display:flex;flex-direction:column;align-items:center;gap:2px}
+    .ctrl label{font-size:5px;color:#444}
+    .ctrl span{font-size:5px;color:#666}
+    input[type=range]{width:80px;accent-color:#e8a0ff}
+    #status{font-size:7px;color:#88dd88;text-shadow:0 0 4px rgba(136,221,136,0.3);margin:8px 0}
+  </style>
+</head>
+<body>
+  <h1>SOURCE → PIXEL ART CONVERSION</h1>
+  <p class="sub">Photorealistic images downscaled and restyled into our pixel art aesthetic. No pure black. Multi-hue surfaces. Dithered transitions. Colored outlines.</p>
+
+  <div class="controls">
+    <div class="ctrl"><label>TARGET SIZE</label><input type="range" id="targetSize" min="64" max="200" value="128"><span id="targetSizeV">128px</span></div>
+    <div class="ctrl"><label>OUTLINE STRENGTH</label><input type="range" id="outlineStr" min="20" max="80" value="45"><span id="outlineStrV">45</span></div>
+    <div class="ctrl"><label>COLOR RICHNESS</label><input type="range" id="colorRich" min="5" max="20" value="12"><span id="colorRichV">12</span></div>
+    <div class="ctrl"><label>NOISE TEXTURE</label><input type="range" id="noiseTex" min="0" max="100" value="50"><span id="noiseTexV">50</span></div>
+    <div class="ctrl"><label>DITHER</label><input type="range" id="ditherAmt" min="0" max="100" value="40"><span id="ditherAmtV">40</span></div>
+  </div>
+
+  <div id="output"></div>
+  <p id="status">Loading images...</p>
+
+  <script>
+    // ── Engine ──
+    function hash(x,y,s){let h=(x*374761393+y*668265263+s*1274126177)|0;h=((h^(h>>13))*1274126177)|0;return((h^(h>>16))&0x7fffffff)/0x7fffffff}
+    function noise2d(x,y,s){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;const sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);return hash(ix,iy,s)+(hash(ix+1,iy,s)-hash(ix,iy,s))*sx+(hash(ix,iy+1,s)-hash(ix,iy,s))*sy+(hash(ix,iy,s)-hash(ix+1,iy,s)-hash(ix,iy+1,s)+hash(ix+1,iy+1,s))*sx*sy}
+    function fbm(x,y,oct,s){let v=0,a=1,f=1,m=0;for(let i=0;i<oct;i++){v+=noise2d(x*f,y*f,s+i*31)*a;m+=a;a*=0.5;f*=2.1}return v/m}
+    function hsl2rgb(h,s,l){h=((h%360)+360)%360;s=Math.max(0,Math.min(100,s))/100;l=Math.max(0,Math.min(100,l))/100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return[(r+m)*255+0.5|0,(g+m)*255+0.5|0,(b+m)*255+0.5|0]}
+    function rgb2hsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let h=0,s=0;if(mx!==mn){const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);if(mx===r)h=((g-b)/d+(g<b?6:0))*60;else if(mx===g)h=((b-r)/d+2)*60;else h=((r-g)/d+4)*60}return[h,s*100,l*100]}
+    const B4=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+    function dithPick(x,y,t){return t>B4[y&3][x&3]/16}
+
+    // ── Downscale with area averaging ──
+    function downscale(srcData, srcW, srcH, tgtW, tgtH) {
+      const out = new Uint8ClampedArray(tgtW * tgtH * 4);
+      const xr = srcW / tgtW, yr = srcH / tgtH;
+      for (let ty = 0; ty < tgtH; ty++) {
+        for (let tx = 0; tx < tgtW; tx++) {
+          const sx0 = Math.floor(tx * xr), sy0 = Math.floor(ty * yr);
+          const sx1 = Math.min(srcW, Math.ceil((tx + 1) * xr));
+          const sy1 = Math.min(srcH, Math.ceil((ty + 1) * yr));
+          let r = 0, g = 0, b = 0, a = 0, count = 0;
+          for (let sy = sy0; sy < sy1; sy++) {
+            for (let sx = sx0; sx < sx1; sx++) {
+              const si = (sy * srcW + sx) * 4;
+              r += srcData[si]; g += srcData[si+1]; b += srcData[si+2]; a += srcData[si+3];
+              count++;
+            }
+          }
+          const ti = (ty * tgtW + tx) * 4;
+          out[ti] = r/count|0; out[ti+1] = g/count|0; out[ti+2] = b/count|0; out[ti+3] = a/count|0;
+        }
+      }
+      return out;
+    }
+
+    // ── Edge detection (Sobel magnitude) ──
+    function sobelEdges(data, w, h) {
+      const edges = new Float64Array(w * h);
+      for (let y = 1; y < h-1; y++) {
+        for (let x = 1; x < w-1; x++) {
+          const lum = (px, py) => {
+            const i = (py*w+px)*4;
+            return data[i]*0.299 + data[i+1]*0.587 + data[i+2]*0.114;
+          };
+          const gx = -lum(x-1,y-1)+lum(x+1,y-1)-2*lum(x-1,y)+2*lum(x+1,y)-lum(x-1,y+1)+lum(x+1,y+1);
+          const gy = -lum(x-1,y-1)-2*lum(x,y-1)-lum(x+1,y-1)+lum(x-1,y+1)+2*lum(x,y+1)+lum(x+1,y+1);
+          edges[y*w+x] = Math.sqrt(gx*gx+gy*gy);
+        }
+      }
+      return edges;
+    }
+
+    // ── MAIN CONVERSION PIPELINE ──
+    function convertToPixelArt(srcData, srcW, srcH, opts) {
+      const { targetSize, outlineStr, colorRich, noiseTex, ditherAmt } = opts;
+
+      // 1. Calculate target dimensions preserving aspect ratio
+      const aspect = srcW / srcH;
+      const tgtW = aspect >= 1 ? targetSize : Math.round(targetSize * aspect);
+      const tgtH = aspect >= 1 ? Math.round(targetSize / aspect) : targetSize;
+
+      // 2. Downscale
+      const small = downscale(srcData, srcW, srcH, tgtW, tgtH);
+
+      // 3. Detect edges
+      const edges = sobelEdges(small, tgtW, tgtH);
+      let maxEdge = 0;
+      for (const e of edges) maxEdge = Math.max(maxEdge, e);
+
+      // 4. Detect background (corners)
+      const cornerSamples = [];
+      for (const [cx,cy] of [[0,0],[tgtW-1,0],[0,tgtH-1],[tgtW-1,tgtH-1]]) {
+        const ci = (cy*tgtW+cx)*4;
+        cornerSamples.push([small[ci], small[ci+1], small[ci+2], small[ci+3]]);
+      }
+      // Average corner color as background reference
+      const bgR = cornerSamples.reduce((s,c)=>s+c[0],0)/4;
+      const bgG = cornerSamples.reduce((s,c)=>s+c[1],0)/4;
+      const bgB = cornerSamples.reduce((s,c)=>s+c[2],0)/4;
+
+      // 5. Build palette from image — cluster dominant colors
+      // Quantize to N levels for our stepped look
+      const levels = colorRich;
+
+      // 6. Per-pixel conversion
+      const out = new Uint8ClampedArray(tgtW * tgtH * 4);
+
+      for (let y = 0; y < tgtH; y++) {
+        for (let x = 0; x < tgtW; x++) {
+          const i = (y * tgtW + x) * 4;
+          const sr = small[i], sg = small[i+1], sb = small[i+2], sa = small[i+3];
+
+          // Background detection: similar to corner color
+          const bgDist = Math.sqrt((sr-bgR)**2 + (sg-bgG)**2 + (sb-bgB)**2);
+          if (bgDist < 35 || sa < 30) continue;
+
+          const [h, s, l] = rgb2hsl(sr, sg, sb);
+          const edgeVal = edges[y * tgtW + x] / (maxEdge + 1);
+
+          // ── Is this an outline pixel? ──
+          const isOutline = edgeVal > (outlineStr / 100);
+
+          if (isOutline) {
+            // COLORED dark outline — NOT black!
+            // Use the pixel's own hue but very dark and slightly saturated
+            const outH = h;
+            const outS = Math.max(15, s * 0.5);
+            const outL = 8 + (1 - edgeVal) * 8; // 8-16% lightness, never black
+            const [or, og, ob] = hsl2rgb(outH, outS, outL);
+            out[i] = or; out[i+1] = og; out[i+2] = ob; out[i+3] = 255;
+            continue;
+          }
+
+          // ── Surface pixel: multi-channel color computation ──
+
+          // Channel 1: Base lightness from source (quantized to bands)
+          let L = l / 100;
+
+          // Add noise texture (multi-octave)
+          const noiseAmt = noiseTex / 100;
+          L += (fbm(x*0.15, y*0.15, 5, 100) - 0.5) * 0.12 * noiseAmt;
+          L += (fbm(x*0.4, y*0.4, 4, 101) - 0.5) * 0.06 * noiseAmt;
+          L += (fbm(x*0.9, y*0.9, 3, 102) - 0.5) * 0.03 * noiseAmt;
+
+          L = Math.max(0.04, Math.min(0.96, L));
+
+          // Channel 2: Hue variation (independent of lightness)
+          let H = h;
+          // Warm highlights, cool shadows
+          if (L > 0.6) {
+            H = (H + 12 * (L - 0.6) / 0.4 + 360) % 360; // shift warm
+          } else if (L < 0.35) {
+            H = (H - 20 * (0.35 - L) / 0.35 + 360) % 360; // shift cool
+          }
+          // Per-pixel hue noise (creates color variety within same-brightness regions)
+          const hueNoise = (fbm(x*0.08, y*0.08, 4, 200) - 0.5) * 15;
+          H = (H + hueNoise + 360) % 360;
+
+          // Channel 3: Saturation
+          let S = s;
+          // Boost saturation slightly for more vibrant pixel art look
+          S = Math.min(100, S * 1.15 + 5);
+          // Desaturate highlights
+          if (L > 0.75) S *= 0.7;
+          // Saturate shadows slightly
+          if (L < 0.3) S = Math.min(100, S * 1.1);
+
+          // ── Quantize lightness to discrete bands (pixel art stepping) ──
+          const bandIdx = (L * levels) | 0;
+          const nextBand = Math.min(bandIdx + 1, levels);
+          const bandL0 = bandIdx / levels;
+          const bandL1 = nextBand / levels;
+          const bandT = (L - bandL0) / (1/levels);
+
+          // Dither between adjacent bands
+          const dAmt = ditherAmt / 100;
+          const usedL = dithPick(x, y, bandT * dAmt + bandT * (1-dAmt)) ? bandL1 : bandL0;
+
+          // Convert back to RGB
+          let [r, g, b] = hsl2rgb(H, S, usedL * 92 + 4); // 4-96% lightness range (no black, no white)
+
+          // ── Per-pixel palette jitter (~12% of pixels) ──
+          if (hash(x, y, 300) > 0.88) {
+            const jitterH = (H + (hash(x,y,301) - 0.5) * 25 + 360) % 360;
+            const jitterL = usedL + (hash(x,y,302) - 0.5) * 0.08;
+            const [jr, jg, jb] = hsl2rgb(jitterH, S, Math.max(4, Math.min(92, jitterL * 92 + 4)));
+            if (hash(x, y, 303) > 0.5) {
+              r = jr; g = jg; b = jb;
+            } else {
+              r = (r + jr) >> 1; g = (g + jg) >> 1; b = (b + jb) >> 1;
+            }
+          }
+
+          // ── Micro-detail: subtle per-pixel noise ──
+          if (hash(x, y, 400) > 0.9) {
+            const bump = hash(x, y, 401) > 0.5 ? 8 : -8;
+            r = Math.max(10, Math.min(245, r + bump));
+            g = Math.max(10, Math.min(245, g + bump));
+            b = Math.max(10, Math.min(245, b + bump));
+          }
+
+          out[i] = r; out[i+1] = g; out[i+2] = b; out[i+3] = 255;
+        }
+      }
+
+      return { data: out, w: tgtW, h: tgtH };
+    }
+
+    // ── Loading and rendering ──
+    const IMAGES = [
+      { src: './spaceship.png', name: 'SPACESHIP' },
+      { src: './PotionBottle.png', name: 'POTION BOTTLE' },
+    ];
+
+    const loadedImages = {};
+    let loadCount = 0;
+
+    for (const imgInfo of IMAGES) {
+      const img = new Image();
+      img.src = imgInfo.src;
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        loadedImages[imgInfo.name] = {
+          data: ctx.getImageData(0, 0, c.width, c.height).data,
+          w: c.width, h: c.height, img
+        };
+        loadCount++;
+        if (loadCount === IMAGES.length) {
+          document.getElementById('status').textContent = 'Images loaded. Processing...';
+          setTimeout(render, 50);
+        }
+      };
+    }
+
+    function getOpts() {
+      const o = {
+        targetSize: parseInt(document.getElementById('targetSize').value),
+        outlineStr: parseInt(document.getElementById('outlineStr').value),
+        colorRich: parseInt(document.getElementById('colorRich').value),
+        noiseTex: parseInt(document.getElementById('noiseTex').value),
+        ditherAmt: parseInt(document.getElementById('ditherAmt').value),
+      };
+      document.getElementById('targetSizeV').textContent = o.targetSize + 'px';
+      document.getElementById('outlineStrV').textContent = o.outlineStr;
+      document.getElementById('colorRichV').textContent = o.colorRich;
+      document.getElementById('noiseTexV').textContent = o.noiseTex;
+      document.getElementById('ditherAmtV').textContent = o.ditherAmt;
+      return o;
+    }
+
+    function render() {
+      const opts = getOpts();
+      const container = document.getElementById('output');
+      container.innerHTML = '';
+
+      for (const imgInfo of IMAGES) {
+        const src = loadedImages[imgInfo.name];
+        if (!src) continue;
+
+        const section = document.createElement('div');
+        section.className = 'subject';
+        section.innerHTML = `<h2>${imgInfo.name}</h2>`;
+        const panels = document.createElement('div');
+        panels.className = 'panels';
+
+        // Source thumbnail
+        const srcPanel = document.createElement('div');
+        srcPanel.className = 'panel';
+        srcPanel.innerHTML = '<h3>SOURCE</h3>';
+        const srcC = document.createElement('canvas');
+        const srcDispSize = 200;
+        const srcAspect = src.w / src.h;
+        srcC.width = src.w; srcC.height = src.h;
+        srcC.style.width = (srcAspect >= 1 ? srcDispSize : srcDispSize * srcAspect) + 'px';
+        srcC.style.height = (srcAspect >= 1 ? srcDispSize / srcAspect : srcDispSize) + 'px';
+        srcC.getContext('2d').drawImage(src.img, 0, 0);
+        srcPanel.appendChild(srcC);
+        const srcInfo = document.createElement('div');
+        srcInfo.className = 'info';
+        srcInfo.textContent = `${src.w}x${src.h} original`;
+        srcPanel.appendChild(srcInfo);
+        panels.appendChild(srcPanel);
+
+        // Convert
+        const result = convertToPixelArt(src.data, src.w, src.h, opts);
+
+        // Converted at 1x
+        const conv1Panel = document.createElement('div');
+        conv1Panel.className = 'panel';
+        conv1Panel.innerHTML = '<h3>CONVERTED 1x</h3>';
+        const conv1C = document.createElement('canvas');
+        conv1C.width = result.w; conv1C.height = result.h;
+        conv1C.style.width = result.w + 'px'; conv1C.style.height = result.h + 'px';
+        conv1C.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(result.data), result.w, result.h), 0, 0);
+        conv1Panel.appendChild(conv1C);
+        const conv1Info = document.createElement('div');
+        conv1Info.className = 'info';
+        conv1Info.textContent = `${result.w}x${result.h} native`;
+        conv1Panel.appendChild(conv1Info);
+        panels.appendChild(conv1Panel);
+
+        // Converted at 2x
+        const conv2Panel = document.createElement('div');
+        conv2Panel.className = 'panel';
+        conv2Panel.innerHTML = '<h3>CONVERTED 2x</h3>';
+        const conv2C = document.createElement('canvas');
+        conv2C.width = result.w; conv2C.height = result.h;
+        conv2C.style.width = (result.w * 2) + 'px'; conv2C.style.height = (result.h * 2) + 'px';
+        conv2C.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(result.data), result.w, result.h), 0, 0);
+        conv2Panel.appendChild(conv2C);
+        const conv2Info = document.createElement('div');
+        conv2Info.className = 'info';
+        conv2Info.textContent = `${result.w}x${result.h} at 2x scale`;
+        conv2Panel.appendChild(conv2Info);
+        panels.appendChild(conv2Panel);
+
+        // On colored background (game context)
+        const bgPanel = document.createElement('div');
+        bgPanel.className = 'panel';
+        bgPanel.style.background = '#12102a';
+        bgPanel.innerHTML = '<h3>GAME CONTEXT</h3>';
+        const bgC = document.createElement('canvas');
+        const bgPad = 20;
+        bgC.width = result.w + bgPad*2; bgC.height = result.h + bgPad*2;
+        bgC.style.width = (bgC.width * 2) + 'px'; bgC.style.height = (bgC.height * 2) + 'px';
+        const bgCtx = bgC.getContext('2d');
+        bgCtx.fillStyle = '#12102a';
+        bgCtx.fillRect(0, 0, bgC.width, bgC.height);
+        bgCtx.putImageData(new ImageData(new Uint8ClampedArray(result.data), result.w, result.h), bgPad, bgPad);
+        bgPanel.appendChild(bgC);
+        const bgInfo = document.createElement('div');
+        bgInfo.className = 'info';
+        bgInfo.textContent = 'On game background';
+        bgPanel.appendChild(bgInfo);
+        panels.appendChild(bgPanel);
+
+        // Color analysis
+        const colorSet = new Set();
+        let totalPx = 0;
+        for (let ci = 0; ci < result.data.length; ci += 4) {
+          if (result.data[ci+3] < 10) continue;
+          totalPx++;
+          colorSet.add(`${result.data[ci]>>3},${result.data[ci+1]>>3},${result.data[ci+2]>>3}`);
+        }
+        const statsPanel = document.createElement('div');
+        statsPanel.className = 'panel';
+        statsPanel.innerHTML = '<h3>STATS</h3>';
+        const statsInfo = document.createElement('div');
+        statsInfo.className = 'info';
+        statsInfo.style.fontSize = '6px';
+        statsInfo.style.lineHeight = '2';
+        statsInfo.innerHTML = `
+          Pixels: ${totalPx}<br>
+          Colors: ${colorSet.size}<br>
+          Bands: ${opts.colorRich}<br>
+          Noise: ${opts.noiseTex}%<br>
+          Dither: ${opts.ditherAmt}%
+        `;
+        statsPanel.appendChild(statsInfo);
+        panels.appendChild(statsPanel);
+
+        section.appendChild(panels);
+        container.appendChild(section);
+      }
+
+      document.getElementById('status').textContent = 'Done — adjust sliders to iterate';
+    }
+
+    let debounce;
+    document.querySelectorAll('input[type=range]').forEach(el => {
+      el.addEventListener('input', () => {
+        getOpts();
+        clearTimeout(debounce);
+        debounce = setTimeout(render, 200);
+      });
+    });
+  </script>
+</body>
+</html>
