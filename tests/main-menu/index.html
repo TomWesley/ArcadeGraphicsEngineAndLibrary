@@ -6,138 +6,88 @@
   <title>VOID SECTOR — Main Menu</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    body{background:#04030a;font-family:'Rajdhani',sans-serif;height:100vh;overflow:hidden;display:flex;justify-content:center;align-items:center}
+    canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
 
-    :root {
-      /* ── THEME: Lavender Purple + Mint Green ── */
-      --primary-h: 270;
-      --primary: rgba(170, 140, 220, 1);
-      --primary-bright: rgba(200, 175, 245, 1);
-      --primary-dim: rgba(120, 95, 170, 1);
-      --primary-ghost: rgba(170, 140, 220, 0.08);
-      --secondary-h: 160;
-      --secondary: rgba(100, 210, 180, 1);
-      --secondary-bright: rgba(140, 235, 210, 1);
-      --secondary-dim: rgba(60, 150, 120, 1);
-      --secondary-ghost: rgba(100, 210, 180, 0.08);
-      --bg-deep: #06050c;
-      --bg-mid: #0a0912;
-      --text: rgba(210, 200, 230, 0.85);
-      --text-dim: rgba(170, 155, 200, 0.45);
+    .menu{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:100%;max-width:600px;padding:0 20px}
+
+    .logo-mark{width:70px;height:70px;margin-bottom:16px}
+    .logo-mark canvas{width:100%;height:100%}
+
+    .game-title{
+      font-family:'Orbitron',sans-serif;font-weight:800;font-size:46px;
+      letter-spacing:14px;text-align:center;margin-bottom:2px;
+      background:linear-gradient(135deg,#c8a0ff,#70e8c8);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+      filter:drop-shadow(0 0 25px rgba(160,120,240,0.25)) drop-shadow(0 0 50px rgba(100,220,180,0.1));
+    }
+    .game-subtitle{
+      font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:9px;
+      color:rgba(140,200,180,0.35);text-align:center;margin-bottom:44px;
     }
 
-    body {
-      background: var(--bg-deep);
-      color: var(--text);
-      font-family: 'Rajdhani', sans-serif;
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    .menu-items{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:44px}
+
+    .menu-btn{
+      position:relative;display:flex;align-items:center;width:100%;
+      gap:20px;padding:12px 20px;background:rgba(140,110,200,0.02);
+      border:1px solid rgba(160,130,220,0.1);color:rgba(190,175,225,0.5);
+      font-family:'Rajdhani',sans-serif;font-weight:500;font-size:16px;
+      letter-spacing:3px;cursor:pointer;transition:all 0.3s;text-transform:uppercase;overflow:hidden;
     }
-
-    canvas#bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
-
-    .menu-container {
-      position: relative; z-index: 1;
-      display: flex; flex-direction: column; align-items: center;
-      width: 100%; max-width: 540px; padding: 0 24px;
+    .menu-btn::before{content:'';position:absolute;left:0;top:0;bottom:0;width:0;
+      background:linear-gradient(90deg,rgba(140,110,220,0.08),rgba(90,210,170,0.03),transparent);
+      transition:width 0.4s}
+    .menu-btn:hover{
+      border-color:rgba(160,130,220,0.3);color:rgba(230,220,250,0.9);
+      background:rgba(140,110,200,0.04);
+      box-shadow:0 0 20px rgba(140,110,220,0.06),inset 0 0 30px rgba(140,110,220,0.03);
     }
+    .menu-btn:hover::before{width:100%}
+    .menu-btn:hover .btn-icon canvas{filter:brightness(1.5) drop-shadow(0 0 6px rgba(100,220,180,0.4))}
+    .menu-btn:hover .btn-arrow{opacity:0.6;transform:translateX(4px)}
+    .menu-btn.primary{border-color:rgba(160,130,220,0.2);color:rgba(220,210,245,0.7);
+      box-shadow:0 0 15px rgba(140,110,220,0.03)}
+    .menu-btn.primary:hover{border-color:rgba(170,140,230,0.4);color:#ece5f8;
+      box-shadow:0 0 30px rgba(140,110,220,0.08),0 0 60px rgba(100,220,180,0.03)}
 
-    .logo-mark { width: 60px; height: 60px; margin-bottom: 14px; }
-    .logo-mark canvas { width: 100%; height: 100%; }
+    .btn-icon{width:48px;height:48px;flex-shrink:0}
+    .btn-icon canvas{width:100%;height:100%;transition:filter 0.3s}
+    .btn-label{flex:1}
+    .btn-arrow{font-size:16px;opacity:0;transition:all 0.3s;color:rgba(100,210,180,0.5)}
 
-    .game-title {
-      font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 42px;
-      letter-spacing: 12px; text-align: center; margin-bottom: 2px;
-      background: linear-gradient(135deg, var(--primary-bright), var(--secondary));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-      filter: drop-shadow(0 0 30px rgba(170, 140, 220, 0.12)) drop-shadow(0 0 60px rgba(100, 210, 180, 0.05));
-    }
+    .footer{display:flex;justify-content:center;gap:40px}
+    .footer-text{font-family:'Share Tech Mono',monospace;font-size:9px;color:rgba(130,115,165,0.22);letter-spacing:2px}
 
-    .game-subtitle {
-      font-family: 'Share Tech Mono', monospace; font-size: 11px;
-      letter-spacing: 8px; color: var(--text-dim); text-align: center; margin-bottom: 50px;
-    }
+    .corner{position:fixed;z-index:1}.corner svg{width:45px;height:45px}
+    .corner-tl{top:16px;left:16px}.corner-tr{top:16px;right:16px;transform:scaleX(-1)}
+    .corner-bl{bottom:16px;left:16px;transform:scaleY(-1)}.corner-br{bottom:16px;right:16px;transform:scale(-1,-1)}
 
-    .menu-items { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px; margin-bottom: 50px; }
-
-    .menu-btn {
-      position: relative; display: flex; align-items: center; width: 100%;
-      gap: 18px; padding: 15px 24px;
-      background: transparent;
-      border: 1px solid rgba(170, 140, 220, 0.07);
-      color: var(--text-dim);
-      font-family: 'Rajdhani', sans-serif; font-weight: 500; font-size: 15px;
-      letter-spacing: 3px; cursor: pointer; transition: all 0.35s ease;
-      text-transform: uppercase; overflow: hidden;
-    }
-    .menu-btn::before {
-      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 0;
-      background: linear-gradient(90deg, rgba(170, 140, 220, 0.06), rgba(100, 210, 180, 0.02), transparent);
-      transition: width 0.4s ease;
-    }
-    .menu-btn:hover {
-      border-color: rgba(170, 140, 220, 0.2);
-      color: var(--text);
-      background: rgba(170, 140, 220, 0.02);
-    }
-    .menu-btn:hover::before { width: 100%; }
-    .menu-btn:hover .btn-icon canvas { filter: brightness(1.6) drop-shadow(0 0 4px rgba(100, 210, 180, 0.25)); }
-    .menu-btn:hover .btn-arrow { opacity: 0.45; transform: translateX(3px); }
-    .menu-btn.primary { border-color: rgba(170, 140, 220, 0.15); color: rgba(210, 200, 235, 0.7); }
-    .menu-btn.primary:hover {
-      border-color: rgba(170, 140, 220, 0.3); color: #e8e0f5;
-      box-shadow: 0 0 25px rgba(170, 140, 220, 0.05), 0 0 50px rgba(100, 210, 180, 0.02);
-    }
-
-    .btn-icon { width: 36px; height: 36px; flex-shrink: 0; }
-    .btn-icon canvas { width: 100%; height: 100%; transition: filter 0.3s; }
-    .btn-label { flex: 1; }
-    .btn-arrow { font-size: 14px; opacity: 0; transition: all 0.3s; color: var(--secondary-dim); }
-
-    .footer { display: flex; justify-content: center; gap: 40px; width: 100%; }
-    .footer-text { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: rgba(140, 120, 170, 0.25); letter-spacing: 2px; }
-
-    .corner { position: fixed; z-index: 1; }
-    .corner svg { width: 40px; height: 40px; }
-    .corner-tl { top: 20px; left: 20px; }
-    .corner-tr { top: 20px; right: 20px; transform: scaleX(-1); }
-    .corner-bl { bottom: 20px; left: 20px; transform: scaleY(-1); }
-    .corner-br { bottom: 20px; right: 20px; transform: scale(-1, -1); }
-
-    .scanlines {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 2; pointer-events: none;
-      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 4px);
-    }
+    .scanlines{position:fixed;inset:0;z-index:2;pointer-events:none;
+      background:repeating-linear-gradient(0deg,rgba(0,0,0,0.015) 0px,rgba(0,0,0,0.015) 1px,transparent 1px,transparent 4px)}
   </style>
 </head>
 <body>
   <canvas id="bg"></canvas>
   <div class="scanlines"></div>
+  <div class="corner corner-tl"><svg viewBox="0 0 45 45"><path d="M1 35 L1 1 L35 1" stroke="rgba(100,220,180,0.15)" stroke-width="1" fill="none"/><path d="M6 1 L6 6 L1 6" stroke="rgba(160,130,220,0.1)" stroke-width="0.5" fill="none"/><circle cx="1" cy="1" r="2" fill="rgba(100,220,180,0.2)"/></svg></div>
+  <div class="corner corner-tr"><svg viewBox="0 0 45 45"><path d="M1 35 L1 1 L35 1" stroke="rgba(100,220,180,0.15)" stroke-width="1" fill="none"/><path d="M6 1 L6 6 L1 6" stroke="rgba(160,130,220,0.1)" stroke-width="0.5" fill="none"/><circle cx="1" cy="1" r="2" fill="rgba(100,220,180,0.2)"/></svg></div>
+  <div class="corner corner-bl"><svg viewBox="0 0 45 45"><path d="M1 35 L1 1 L35 1" stroke="rgba(100,220,180,0.15)" stroke-width="1" fill="none"/><path d="M6 1 L6 6 L1 6" stroke="rgba(160,130,220,0.1)" stroke-width="0.5" fill="none"/><circle cx="1" cy="1" r="2" fill="rgba(100,220,180,0.2)"/></svg></div>
+  <div class="corner corner-br"><svg viewBox="0 0 45 45"><path d="M1 35 L1 1 L35 1" stroke="rgba(100,220,180,0.15)" stroke-width="1" fill="none"/><path d="M6 1 L6 6 L1 6" stroke="rgba(160,130,220,0.1)" stroke-width="0.5" fill="none"/><circle cx="1" cy="1" r="2" fill="rgba(100,220,180,0.2)"/></svg></div>
 
-  <div class="corner corner-tl"><svg viewBox="0 0 40 40"><path d="M1 28 L1 1 L28 1" stroke="rgba(100,210,180,0.12)" stroke-width="1" fill="none"/><path d="M5 1 L5 5 L1 5" stroke="rgba(170,140,220,0.08)" stroke-width="0.5" fill="none"/><circle cx="1" cy="1" r="1.5" fill="rgba(100,210,180,0.18)"/></svg></div>
-  <div class="corner corner-tr"><svg viewBox="0 0 40 40"><path d="M1 28 L1 1 L28 1" stroke="rgba(100,210,180,0.12)" stroke-width="1" fill="none"/><path d="M5 1 L5 5 L1 5" stroke="rgba(170,140,220,0.08)" stroke-width="0.5" fill="none"/><circle cx="1" cy="1" r="1.5" fill="rgba(100,210,180,0.18)"/></svg></div>
-  <div class="corner corner-bl"><svg viewBox="0 0 40 40"><path d="M1 28 L1 1 L28 1" stroke="rgba(100,210,180,0.12)" stroke-width="1" fill="none"/><path d="M5 1 L5 5 L1 5" stroke="rgba(170,140,220,0.08)" stroke-width="0.5" fill="none"/><circle cx="1" cy="1" r="1.5" fill="rgba(100,210,180,0.18)"/></svg></div>
-  <div class="corner corner-br"><svg viewBox="0 0 40 40"><path d="M1 28 L1 1 L28 1" stroke="rgba(100,210,180,0.12)" stroke-width="1" fill="none"/><path d="M5 1 L5 5 L1 5" stroke="rgba(170,140,220,0.08)" stroke-width="0.5" fill="none"/><circle cx="1" cy="1" r="1.5" fill="rgba(100,210,180,0.18)"/></svg></div>
-
-  <div class="menu-container">
-    <div class="logo-mark"><canvas id="logoCanvas" width="100" height="100"></canvas></div>
+  <div class="menu">
+    <div class="logo-mark"><canvas id="logoCanvas" width="120" height="120"></canvas></div>
     <div class="game-title">VOID SECTOR</div>
     <div class="game-subtitle">BEYOND THE RIM</div>
-
     <div class="menu-items">
-      <button class="menu-btn primary" data-icon="play"><span class="btn-icon"><canvas width="60" height="60"></canvas></span><span class="btn-label">New Campaign</span><span class="btn-arrow">›</span></button>
-      <button class="menu-btn" data-icon="continue"><span class="btn-icon"><canvas width="60" height="60"></canvas></span><span class="btn-label">Continue</span><span class="btn-arrow">›</span></button>
-      <button class="menu-btn" data-icon="fleet"><span class="btn-icon"><canvas width="60" height="60"></canvas></span><span class="btn-label">Fleet Manager</span><span class="btn-arrow">›</span></button>
-      <button class="menu-btn" data-icon="leaderboard"><span class="btn-icon"><canvas width="60" height="60"></canvas></span><span class="btn-label">Leaderboard</span><span class="btn-arrow">›</span></button>
-      <button class="menu-btn" data-icon="settings"><span class="btn-icon"><canvas width="60" height="60"></canvas></span><span class="btn-label">Settings</span><span class="btn-arrow">›</span></button>
-      <button class="menu-btn" data-icon="quit"><span class="btn-icon"><canvas width="60" height="60"></canvas></span><span class="btn-label">Quit to Desktop</span><span class="btn-arrow">›</span></button>
+      <button class="menu-btn primary" data-icon="play"><span class="btn-icon"><canvas width="80" height="80"></canvas></span><span class="btn-label">New Campaign</span><span class="btn-arrow">›</span></button>
+      <button class="menu-btn" data-icon="continue"><span class="btn-icon"><canvas width="80" height="80"></canvas></span><span class="btn-label">Continue</span><span class="btn-arrow">›</span></button>
+      <button class="menu-btn" data-icon="fleet"><span class="btn-icon"><canvas width="80" height="80"></canvas></span><span class="btn-label">Fleet Manager</span><span class="btn-arrow">›</span></button>
+      <button class="menu-btn" data-icon="leaderboard"><span class="btn-icon"><canvas width="80" height="80"></canvas></span><span class="btn-label">Leaderboard</span><span class="btn-arrow">›</span></button>
+      <button class="menu-btn" data-icon="settings"><span class="btn-icon"><canvas width="80" height="80"></canvas></span><span class="btn-label">Settings</span><span class="btn-arrow">›</span></button>
+      <button class="menu-btn" data-icon="quit"><span class="btn-icon"><canvas width="80" height="80"></canvas></span><span class="btn-label">Quit to Desktop</span><span class="btn-arrow">›</span></button>
     </div>
-
     <div class="footer">
       <span class="footer-text">v0.4.1 // BUILD 2847</span>
       <span class="footer-text">© 2026 VOID INTERACTIVE</span>
@@ -145,327 +95,244 @@
   </div>
 
   <script>
-    // ── Theme colors ──
-    const PRI = [170, 140, 220];
-    const SEC = [100, 210, 180];
+    const P = [160,130,220], S = [100,220,180];
+    const pc = (a) => `rgba(${P[0]},${P[1]},${P[2]},${a})`;
+    const sc = (a) => `rgba(${S[0]},${S[1]},${S[2]},${a})`;
 
-    // ══════════════════════════════════════════════════════════════════
-    // BACKGROUND
-    // ══════════════════════════════════════════════════════════════════
-    const bg = document.getElementById('bg');
-    const bCtx = bg.getContext('2d');
-    let W, H;
-    function resizeBg() { W = bg.width = window.innerWidth; H = bg.height = window.innerHeight; }
-    window.addEventListener('resize', resizeBg); resizeBg();
-
-    const stars = [];
-    for (let i = 0; i < 200; i++) stars.push({ x:Math.random(), y:Math.random(), s:0.3+Math.random()*1.2, b:0.12+Math.random()*0.35, ts:0.5+Math.random()*2, tp:Math.random()*Math.PI*2 });
-
-    let time = 0;
-    function renderBg() {
-      time += 1/60;
-      const g = bCtx.createRadialGradient(W*0.5,H*0.38,0, W*0.5,H*0.38,W*0.7);
-      g.addColorStop(0,'#0d0a16'); g.addColorStop(0.5,'#080710'); g.addColorStop(1,'#050409');
-      bCtx.fillStyle = g; bCtx.fillRect(0,0,W,H);
-
-      // Nebula: lavender + mint
-      const n1x = W*0.35+Math.sin(time*0.07)*60, n1y = H*0.3+Math.cos(time*0.05)*40;
-      const n1 = bCtx.createRadialGradient(n1x,n1y,0, n1x,n1y,W*0.3);
-      n1.addColorStop(0,`rgba(${PRI[0]},${PRI[1]},${PRI[2]},0.02)`); n1.addColorStop(1,'rgba(0,0,0,0)');
-      bCtx.fillStyle = n1; bCtx.fillRect(0,0,W,H);
-
-      const n2x = W*0.65+Math.sin(time*0.06)*50, n2y = H*0.55+Math.cos(time*0.09)*35;
-      const n2 = bCtx.createRadialGradient(n2x,n2y,0, n2x,n2y,W*0.25);
-      n2.addColorStop(0,`rgba(${SEC[0]},${SEC[1]},${SEC[2]},0.015)`); n2.addColorStop(1,'rgba(0,0,0,0)');
-      bCtx.fillStyle = n2; bCtx.fillRect(0,0,W,H);
-
-      for (const st of stars) {
-        const tw = 0.6+Math.sin(time*st.ts+st.tp)*0.4, a = st.b*tw;
-        const x=st.x*W, y=st.y*H;
-        // Alternate star colors between lavender and mint
-        const col = st.tp > Math.PI ? PRI : (st.s > 0.9 ? SEC : [200,195,215]);
-        bCtx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${a})`;
-        bCtx.fillRect(Math.round(x),Math.round(y), st.s>1?1.5:1, st.s>1?1.5:1);
-        if(st.s>1&&a>0.28){bCtx.fillStyle=`rgba(${col[0]},${col[1]},${col[2]},${a*0.18})`;bCtx.fillRect(Math.round(x)-1,Math.round(y),3,1);bCtx.fillRect(Math.round(x),Math.round(y)-1,1,3)}
-      }
-
-      // Dust
-      for(let i=0;i<12;i++){
-        const px=((i*137.5+time*2.5)%W), py=((i*89.3+time*1.2+Math.sin(time*0.25+i)*25)%H);
-        const dc = i%3===0 ? SEC : PRI;
-        bCtx.fillStyle=`rgba(${dc[0]},${dc[1]},${dc[2]},0.04)`;
-        bCtx.beginPath();bCtx.arc(px,py,0.7,0,Math.PI*2);bCtx.fill();
-      }
+    // ── Background ──
+    const bg=document.getElementById('bg'),bx=bg.getContext('2d');let W,H;
+    function rsz(){W=bg.width=innerWidth;H=bg.height=innerHeight}addEventListener('resize',rsz);rsz();
+    const stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random(),y:Math.random(),s:0.3+Math.random()*1.3,b:0.1+Math.random()*0.35,ts:0.4+Math.random()*2,tp:Math.random()*Math.PI*2});
+    let t=0;
+    function renderBg(){
+      t+=1/60;
+      const g=bx.createRadialGradient(W*0.5,H*0.36,0,W*0.5,H*0.36,W*0.72);
+      g.addColorStop(0,'#0c0918');g.addColorStop(0.5,'#070610');g.addColorStop(1,'#040308');
+      bx.fillStyle=g;bx.fillRect(0,0,W,H);
+      // Nebulae
+      [[W*0.35+Math.sin(t*0.07)*60,H*0.28+Math.cos(t*0.05)*40,P,0.03,W*0.3],
+       [W*0.6+Math.sin(t*0.06)*50,H*0.5+Math.cos(t*0.08)*35,S,0.02,W*0.25]].forEach(([nx,ny,c,a,r])=>{
+        const n=bx.createRadialGradient(nx,ny,0,nx,ny,r);
+        n.addColorStop(0,`rgba(${c[0]},${c[1]},${c[2]},${a})`);n.addColorStop(1,'rgba(0,0,0,0)');
+        bx.fillStyle=n;bx.fillRect(0,0,W,H);
+      });
+      for(const s of stars){const tw=0.6+Math.sin(t*s.ts+s.tp)*0.4,a=s.b*tw,x=s.x*W,y=s.y*H;
+        const c=s.tp>Math.PI?P:s.s>0.9?S:[195,190,215];
+        bx.fillStyle=`rgba(${c[0]},${c[1]},${c[2]},${a})`;bx.fillRect(Math.round(x),Math.round(y),s.s>1?1.5:1,s.s>1?1.5:1);
+        if(s.s>1.1&&a>0.25){bx.fillStyle=`rgba(${c[0]},${c[1]},${c[2]},${a*0.15})`;bx.fillRect(Math.round(x)-1,Math.round(y),3,1);bx.fillRect(Math.round(x),Math.round(y)-1,1,3)}}
       requestAnimationFrame(renderBg);
     }
     renderBg();
 
-    // ══════════════════════════════════════════════════════════════════
-    // ICONS — richer, multi-layer, dual-color, with fills and depth
-    // ══════════════════════════════════════════════════════════════════
+    // ── Icons: HUD-instrument style — bright, glowing, detailed ──
+    function drawIcon(cv, type) {
+      const ctx = cv.getContext('2d');
+      const s = cv.width, u = s/80;
+      ctx.clearRect(0,0,s,s);
+      const cx=s/2, cy=s/2;
 
-    function drawIcon(canvas, type) {
-      const ctx = canvas.getContext('2d');
-      const s = canvas.width;
-      const u = s / 60; // finer unit for more detail
-      ctx.clearRect(0, 0, s, s);
-      const cx = s/2, cy = s/2;
+      function glow(c,blur,a=0.5){ctx.shadowColor=`rgba(${c[0]},${c[1]},${c[2]},${a})`;ctx.shadowBlur=blur}
+      function noGlow(){ctx.shadowColor='transparent';ctx.shadowBlur=0}
 
-      // Shared: primary and secondary strokes
-      const priStr = `rgba(${PRI[0]},${PRI[1]},${PRI[2]},`;
-      const secStr = `rgba(${SEC[0]},${SEC[1]},${SEC[2]},`;
-
-      function priStroke(a=0.55, w=u*1.2) { ctx.strokeStyle=priStr+a+')'; ctx.lineWidth=w; ctx.lineCap='round'; ctx.lineJoin='round'; }
-      function secStroke(a=0.45, w=u*1) { ctx.strokeStyle=secStr+a+')'; ctx.lineWidth=w; ctx.lineCap='round'; ctx.lineJoin='round'; }
-      function priFill(a=0.08) { ctx.fillStyle=priStr+a+')'; }
-      function secFill(a=0.06) { ctx.fillStyle=secStr+a+')'; }
-      function glow(col, blur=6, a=0.3) { ctx.shadowColor=`rgba(${col[0]},${col[1]},${col[2]},${a})`; ctx.shadowBlur=blur; }
-      function noGlow() { ctx.shadowColor='transparent'; ctx.shadowBlur=0; }
-
-      switch(type) {
-        case 'play': {
-          // Outer circle (secondary, thin)
-          secStroke(0.15, u*0.8);
-          ctx.beginPath(); ctx.arc(cx, cy, u*12, 0, Math.PI*2); ctx.stroke();
-          // Inner circle (primary)
-          priStroke(0.12, u*0.6);
-          ctx.beginPath(); ctx.arc(cx, cy, u*9, 0, Math.PI*2); ctx.stroke();
-          // Triangle fill
-          priFill(0.1);
-          ctx.beginPath(); ctx.moveTo(cx-u*3.5, cy-u*5.5); ctx.lineTo(cx+u*6, cy); ctx.lineTo(cx-u*3.5, cy+u*5.5); ctx.closePath();
+      switch(type){
+        case 'play':{
+          // Outer rotating ring with tick marks
+          glow(S,10,0.2);
+          ctx.strokeStyle=sc(0.2);ctx.lineWidth=u*0.8;
+          ctx.beginPath();ctx.arc(cx,cy,u*30,0,Math.PI*2);ctx.stroke();
+          noGlow();
+          // Tick marks (every 30°)
+          for(let i=0;i<12;i++){const a=(i/12)*Math.PI*2,major=i%3===0;
+            ctx.strokeStyle=major?sc(0.4):pc(0.1);ctx.lineWidth=major?u*1:u*0.5;
+            ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*u*27,cy+Math.sin(a)*u*27);
+            ctx.lineTo(cx+Math.cos(a)*u*(major?32:30),cy+Math.sin(a)*u*(major?32:30));ctx.stroke()}
+          // Inner circle
+          ctx.strokeStyle=pc(0.15);ctx.lineWidth=u*0.6;
+          ctx.beginPath();ctx.arc(cx,cy,u*22,0,Math.PI*2);ctx.stroke();
+          // Triangle — FILLED with gradient, GLOWING
+          const triGrad=ctx.createLinearGradient(cx-u*8,cy-u*12,cx+u*14,cy+u*8);
+          triGrad.addColorStop(0,pc(0.2));triGrad.addColorStop(1,sc(0.15));
+          ctx.fillStyle=triGrad;
+          ctx.beginPath();ctx.moveTo(cx-u*8,cy-u*12);ctx.lineTo(cx+u*14,cy);ctx.lineTo(cx-u*8,cy+u*12);ctx.closePath();
           ctx.fill();
-          // Triangle stroke with glow
-          glow(SEC, 8, 0.2);
-          secStroke(0.5, u*1.2);
-          ctx.stroke();
+          glow(S,12,0.4);
+          ctx.strokeStyle=sc(0.7);ctx.lineWidth=u*1.2;ctx.stroke();
           noGlow();
-          // Center accent dot
-          glow(PRI, 6, 0.3);
-          ctx.fillStyle = priStr+'0.35)';
-          ctx.beginPath(); ctx.arc(cx+u*1, cy, u*1.2, 0, Math.PI*2); ctx.fill();
+          // Inner triangle echo
+          ctx.strokeStyle=pc(0.2);ctx.lineWidth=u*0.5;
+          ctx.beginPath();ctx.moveTo(cx-u*4,cy-u*7);ctx.lineTo(cx+u*8,cy);ctx.lineTo(cx-u*4,cy+u*7);ctx.closePath();ctx.stroke();
+          // Center bright dot
+          glow(S,8,0.5);ctx.fillStyle=sc(0.6);ctx.beginPath();ctx.arc(cx+u*2,cy,u*1.8,0,Math.PI*2);ctx.fill();noGlow();
+          break}
+
+        case 'continue':{
+          // Progress ring (thick, partial)
+          ctx.strokeStyle=pc(0.08);ctx.lineWidth=u*3;ctx.lineCap='round';
+          ctx.beginPath();ctx.arc(cx,cy,u*26,-Math.PI/2,Math.PI*1.5);ctx.stroke();
+          glow(S,10,0.35);
+          ctx.strokeStyle=sc(0.5);ctx.lineWidth=u*3;
+          ctx.beginPath();ctx.arc(cx,cy,u*26,-Math.PI/2,-Math.PI/2+Math.PI*1.3);ctx.stroke();
           noGlow();
-          // Decorative tick marks on outer circle
-          for (let i = 0; i < 12; i++) {
-            const a = (i/12)*Math.PI*2;
-            const inner = u*11, outer = u*12.5;
-            ctx.strokeStyle = priStr+(i%3===0?'0.2':'0.06')+')';
-            ctx.lineWidth = i%3===0 ? u*0.8 : u*0.4;
-            ctx.beginPath();
-            ctx.moveTo(cx+Math.cos(a)*inner, cy+Math.sin(a)*inner);
-            ctx.lineTo(cx+Math.cos(a)*outer, cy+Math.sin(a)*outer);
-            ctx.stroke();
-          }
-          break;
-        }
-        case 'continue': {
-          // Circular progress track
-          secStroke(0.08, u*1.5);
-          ctx.beginPath(); ctx.arc(cx, cy, u*11, 0, Math.PI*2); ctx.stroke();
-          // Progress arc (~65%)
-          glow(SEC, 6, 0.2);
-          secStroke(0.4, u*1.5);
-          ctx.beginPath(); ctx.arc(cx, cy, u*11, -Math.PI/2, -Math.PI/2 + Math.PI*1.3); ctx.stroke();
+          // End cap glow
+          const ea=-Math.PI/2+Math.PI*1.3;
+          glow(S,10,0.5);ctx.fillStyle=sc(0.7);
+          ctx.beginPath();ctx.arc(cx+Math.cos(ea)*u*26,cy+Math.sin(ea)*u*26,u*2.5,0,Math.PI*2);ctx.fill();noGlow();
+          // Start cap
+          ctx.fillStyle=pc(0.3);ctx.beginPath();ctx.arc(cx,cy-u*26,u*1.5,0,Math.PI*2);ctx.fill();
+          // Center arrow
+          glow(P,6,0.25);
+          ctx.strokeStyle=pc(0.6);ctx.lineWidth=u*1.5;ctx.lineCap='round';
+          ctx.beginPath();ctx.moveTo(cx-u*6,cy-u*8);ctx.lineTo(cx+u*8,cy);ctx.lineTo(cx-u*6,cy+u*8);ctx.stroke();
           noGlow();
-          // End dot on progress
-          const endA = -Math.PI/2 + Math.PI*1.3;
-          glow(SEC, 5, 0.35);
-          ctx.fillStyle = secStr+'0.5)';
-          ctx.beginPath(); ctx.arc(cx+Math.cos(endA)*u*11, cy+Math.sin(endA)*u*11, u*1.5, 0, Math.PI*2); ctx.fill();
-          noGlow();
-          // Arrow in center
-          priStroke(0.45, u*1.2);
-          ctx.beginPath();
-          ctx.moveTo(cx-u*3, cy-u*4); ctx.lineTo(cx+u*4, cy); ctx.lineTo(cx-u*3, cy+u*4);
-          ctx.stroke();
-          // Inner line
-          secStroke(0.15, u*0.6);
-          ctx.beginPath(); ctx.moveTo(cx-u*1, cy-u*2.5); ctx.lineTo(cx+u*2.5, cy); ctx.lineTo(cx-u*1, cy+u*2.5); ctx.stroke();
-          // Percentage text
-          ctx.font = `${u*4}px 'Share Tech Mono', monospace`;
-          ctx.fillStyle = priStr+'0.3)';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText('65%', cx, cy+u*5.5);
-          break;
-        }
-        case 'fleet': {
+          // Inner echo
+          ctx.strokeStyle=sc(0.15);ctx.lineWidth=u*0.6;
+          ctx.beginPath();ctx.moveTo(cx-u*2,cy-u*4);ctx.lineTo(cx+u*5,cy);ctx.lineTo(cx-u*2,cy+u*4);ctx.stroke();
+          // Percentage
+          ctx.font=`${u*6}px 'Share Tech Mono',monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.fillStyle=pc(0.25);ctx.fillText('65%',cx,cy+u*12);
+          break}
+
+        case 'fleet':{
+          // Radar sweep circle behind
+          ctx.strokeStyle=pc(0.06);ctx.lineWidth=u*0.5;
+          ctx.beginPath();ctx.arc(cx,cy,u*28,0,Math.PI*2);ctx.stroke();
+          ctx.beginPath();ctx.arc(cx,cy,u*20,0,Math.PI*2);ctx.stroke();
+          // Grid crosshair
+          ctx.strokeStyle=pc(0.05);ctx.lineWidth=u*0.4;
+          ctx.beginPath();ctx.moveTo(cx-u*30,cy);ctx.lineTo(cx+u*30,cy);ctx.moveTo(cx,cy-u*30);ctx.lineTo(cx,cy+u*30);ctx.stroke();
           // Ship body
-          glow(PRI, 4, 0.15);
-          priFill(0.08);
-          ctx.beginPath();
-          ctx.moveTo(cx, cy-u*10); ctx.lineTo(cx+u*3, cy-u*4); ctx.lineTo(cx+u*6, cy+u*2);
-          ctx.lineTo(cx+u*3, cy+u*1); ctx.lineTo(cx+u*3, cy+u*6);
-          ctx.lineTo(cx-u*3, cy+u*6); ctx.lineTo(cx-u*3, cy+u*1); ctx.lineTo(cx-u*6, cy+u*2);
-          ctx.lineTo(cx-u*3, cy-u*4);
-          ctx.closePath(); ctx.fill();
-          priStroke(0.4, u*1); ctx.stroke();
+          glow(P,8,0.3);
+          const shipGrad=ctx.createLinearGradient(cx,cy-u*16,cx,cy+u*10);
+          shipGrad.addColorStop(0,pc(0.25));shipGrad.addColorStop(1,pc(0.08));
+          ctx.fillStyle=shipGrad;
+          ctx.beginPath();ctx.moveTo(cx,cy-u*16);ctx.lineTo(cx+u*5,cy-u*6);ctx.lineTo(cx+u*10,cy+u*4);
+          ctx.lineTo(cx+u*4,cy+u*3);ctx.lineTo(cx+u*4,cy+u*10);ctx.lineTo(cx-u*4,cy+u*10);
+          ctx.lineTo(cx-u*4,cy+u*3);ctx.lineTo(cx-u*10,cy+u*4);ctx.lineTo(cx-u*5,cy-u*6);ctx.closePath();
+          ctx.fill();ctx.strokeStyle=pc(0.5);ctx.lineWidth=u*1;ctx.stroke();
           noGlow();
           // Cockpit
-          secFill(0.15);
-          ctx.beginPath(); ctx.ellipse(cx, cy-u*4, u*1.5, u*2.5, 0, 0, Math.PI*2); ctx.fill();
-          secStroke(0.3, u*0.6); ctx.stroke();
-          // Engine glow
-          glow(SEC, 8, 0.3);
-          secFill(0.2);
-          ctx.beginPath(); ctx.ellipse(cx-u*1.5, cy+u*7, u*1, u*2, 0, 0, Math.PI*2); ctx.fill();
-          ctx.beginPath(); ctx.ellipse(cx+u*1.5, cy+u*7, u*1, u*2, 0, 0, Math.PI*2); ctx.fill();
+          glow(S,6,0.3);ctx.fillStyle=sc(0.25);
+          ctx.beginPath();ctx.ellipse(cx,cy-u*6,u*2.5,u*4,0,0,Math.PI*2);ctx.fill();
+          ctx.strokeStyle=sc(0.5);ctx.lineWidth=u*0.6;ctx.stroke();noGlow();
+          // Engines
+          glow(S,10,0.5);ctx.fillStyle=sc(0.5);
+          ctx.beginPath();ctx.ellipse(cx-u*2.5,cy+u*12,u*1.5,u*3,0,0,Math.PI*2);ctx.fill();
+          ctx.beginPath();ctx.ellipse(cx+u*2.5,cy+u*12,u*1.5,u*3,0,0,Math.PI*2);ctx.fill();
           noGlow();
-          // Wing detail lines
-          priStroke(0.15, u*0.4);
-          ctx.beginPath(); ctx.moveTo(cx-u*1.5, cy-u*3); ctx.lineTo(cx-u*5, cy+u*1.5); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(cx+u*1.5, cy-u*3); ctx.lineTo(cx+u*5, cy+u*1.5); ctx.stroke();
-          // Radar dish detail
-          secStroke(0.12, u*0.4);
-          ctx.beginPath(); ctx.arc(cx, cy-u*7, u*1.5, Math.PI*0.8, Math.PI*0.2); ctx.stroke();
-          break;
-        }
-        case 'leaderboard': {
-          const barW = u*5, gap = u*1.5;
-          const bx = [cx-barW-gap, cx-barW/2, cx+gap];
-          const bh = [u*10, u*16, u*7];
-          const base = cy+u*9;
-          // Bar fills with gradient
-          for (let i = 0; i < 3; i++) {
-            const grad = ctx.createLinearGradient(bx[i], base-bh[i], bx[i], base);
-            const col = i===1 ? SEC : PRI;
-            grad.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},0.18)`);
-            grad.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0.04)`);
-            ctx.fillStyle = grad;
-            ctx.fillRect(bx[i], base-bh[i], barW, bh[i]);
-            // Border
-            const bCol = i===1 ? secStr : priStr;
-            ctx.strokeStyle = bCol+(i===1?'0.35':'0.2')+')';
-            ctx.lineWidth = u*0.7;
-            ctx.strokeRect(bx[i], base-bh[i], barW, bh[i]);
-            // Top bright edge
-            ctx.strokeStyle = bCol+'0.35)';
-            ctx.lineWidth = u*0.5;
-            ctx.beginPath(); ctx.moveTo(bx[i], base-bh[i]); ctx.lineTo(bx[i]+barW, base-bh[i]); ctx.stroke();
+          // Wing detail
+          ctx.strokeStyle=pc(0.15);ctx.lineWidth=u*0.4;
+          ctx.beginPath();ctx.moveTo(cx-u*2,cy-u*5);ctx.lineTo(cx-u*8,cy+u*3);ctx.stroke();
+          ctx.beginPath();ctx.moveTo(cx+u*2,cy-u*5);ctx.lineTo(cx+u*8,cy+u*3);ctx.stroke();
+          break}
+
+        case 'leaderboard':{
+          const bW=u*10, gap=u*3;
+          const bx=[cx-bW-gap/2, cx-bW/2, cx+gap/2];
+          const bh=[u*18, u*28, u*13];
+          const base=cy+u*16;
+          for(let i=0;i<3;i++){
+            const top=base-bh[i], isFirst=i===1;
+            const col=isFirst?S:P;
+            const grad=ctx.createLinearGradient(bx[i],top,bx[i],base);
+            grad.addColorStop(0,`rgba(${col[0]},${col[1]},${col[2]},${isFirst?0.3:0.15})`);
+            grad.addColorStop(1,`rgba(${col[0]},${col[1]},${col[2]},0.03)`);
+            ctx.fillStyle=grad;ctx.fillRect(bx[i],top,bW,bh[i]);
+            glow(col,isFirst?8:4,isFirst?0.3:0.15);
+            ctx.strokeStyle=`rgba(${col[0]},${col[1]},${col[2]},${isFirst?0.5:0.25})`;
+            ctx.lineWidth=u*0.8;ctx.strokeRect(bx[i],top,bW,bh[i]);
+            noGlow();
+            // Top bright line
+            ctx.strokeStyle=`rgba(${col[0]},${col[1]},${col[2]},${isFirst?0.6:0.3})`;
+            ctx.lineWidth=u*0.6;ctx.beginPath();ctx.moveTo(bx[i],top);ctx.lineTo(bx[i]+bW,top);ctx.stroke();
+            // Horizontal segment lines
+            ctx.strokeStyle=`rgba(${col[0]},${col[1]},${col[2]},0.06)`;ctx.lineWidth=u*0.3;
+            for(let sy=top+u*4;sy<base;sy+=u*4){ctx.beginPath();ctx.moveTo(bx[i]+u*1,sy);ctx.lineTo(bx[i]+bW-u*1,sy);ctx.stroke()}
+            // Rank
+            ctx.font=`${u*5}px 'Orbitron',sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+            ctx.fillStyle=`rgba(${col[0]},${col[1]},${col[2]},${isFirst?0.6:0.3})`;
+            ctx.fillText(['3','1','2'][i],bx[i]+bW/2,top+u*5);
           }
-          // Rank numbers
-          ctx.font = `${u*3.5}px 'Orbitron', sans-serif`;
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillStyle = priStr+'0.3)'; ctx.fillText('3', bx[0]+barW/2, base-bh[0]+u*4);
-          ctx.fillStyle = secStr+'0.5)'; ctx.fillText('1', bx[1]+barW/2, base-bh[1]+u*4);
-          ctx.fillStyle = priStr+'0.3)'; ctx.fillText('2', bx[2]+barW/2, base-bh[2]+u*4);
-          // Crown on #1
-          glow(SEC, 5, 0.2);
-          secStroke(0.4, u*0.8);
-          const crY = base-bh[1]-u*2;
-          ctx.beginPath();
-          ctx.moveTo(cx-u*3, crY); ctx.lineTo(cx-u*3, crY-u*3); ctx.lineTo(cx-u*1, crY-u*1.5);
-          ctx.lineTo(cx, crY-u*4); ctx.lineTo(cx+u*1, crY-u*1.5);
-          ctx.lineTo(cx+u*3, crY-u*3); ctx.lineTo(cx+u*3, crY);
-          ctx.stroke();
+          // Crown
+          glow(S,8,0.35);ctx.strokeStyle=sc(0.6);ctx.lineWidth=u*1;ctx.lineCap='round';
+          const crY=base-bh[1]-u*4;
+          ctx.beginPath();ctx.moveTo(cx-u*4,crY);ctx.lineTo(cx-u*4,crY-u*5);ctx.lineTo(cx-u*1.5,crY-u*2.5);
+          ctx.lineTo(cx,crY-u*6);ctx.lineTo(cx+u*1.5,crY-u*2.5);ctx.lineTo(cx+u*4,crY-u*5);ctx.lineTo(cx+u*4,crY);ctx.stroke();
+          // Crown gem
+          ctx.fillStyle=sc(0.5);ctx.beginPath();ctx.arc(cx,crY-u*5.5,u*1,0,Math.PI*2);ctx.fill();
           noGlow();
           // Base line
-          priStroke(0.15, u*0.5);
-          ctx.beginPath(); ctx.moveTo(cx-u*11, base); ctx.lineTo(cx+u*11, base); ctx.stroke();
-          break;
-        }
-        case 'settings': {
-          // Outer ring
-          secStroke(0.1, u*0.6);
-          ctx.beginPath(); ctx.arc(cx, cy, u*13, 0, Math.PI*2); ctx.stroke();
-          // Gear teeth
-          const teeth = 8, or = u*10, ir = u*7.5, tw = Math.PI/teeth*0.45;
+          ctx.strokeStyle=pc(0.15);ctx.lineWidth=u*0.5;ctx.beginPath();ctx.moveTo(cx-u*22,base);ctx.lineTo(cx+u*22,base);ctx.stroke();
+          break}
+
+        case 'settings':{
+          // Outer dashed ring
+          ctx.setLineDash([u*3,u*4]);ctx.strokeStyle=pc(0.1);ctx.lineWidth=u*0.5;
+          ctx.beginPath();ctx.arc(cx,cy,u*32,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+          // Gear
+          const teeth=8,or=u*22,ir=u*16,tw=Math.PI/teeth*0.4;
           ctx.beginPath();
-          for (let i = 0; i < teeth; i++) {
-            const a = (i/teeth)*Math.PI*2-Math.PI/2;
-            ctx.lineTo(cx+Math.cos(a-tw)*ir, cy+Math.sin(a-tw)*ir);
-            ctx.lineTo(cx+Math.cos(a-tw*0.8)*or, cy+Math.sin(a-tw*0.8)*or);
-            ctx.lineTo(cx+Math.cos(a+tw*0.8)*or, cy+Math.sin(a+tw*0.8)*or);
-            ctx.lineTo(cx+Math.cos(a+tw)*ir, cy+Math.sin(a+tw)*ir);
-          }
+          for(let i=0;i<teeth;i++){const a=(i/teeth)*Math.PI*2-Math.PI/2;
+            ctx.lineTo(cx+Math.cos(a-tw)*ir,cy+Math.sin(a-tw)*ir);ctx.lineTo(cx+Math.cos(a-tw*0.7)*or,cy+Math.sin(a-tw*0.7)*or);
+            ctx.lineTo(cx+Math.cos(a+tw*0.7)*or,cy+Math.sin(a+tw*0.7)*or);ctx.lineTo(cx+Math.cos(a+tw)*ir,cy+Math.sin(a+tw)*ir)}
           ctx.closePath();
-          priFill(0.06); ctx.fill();
-          priStroke(0.3, u*0.8); ctx.stroke();
-          // Inner circles
-          priStroke(0.15, u*0.5);
-          ctx.beginPath(); ctx.arc(cx, cy, u*5, 0, Math.PI*2); ctx.stroke();
-          // Center filled circle
-          glow(SEC, 5, 0.2);
-          secFill(0.12);
-          ctx.beginPath(); ctx.arc(cx, cy, u*3, 0, Math.PI*2); ctx.fill();
-          secStroke(0.3, u*0.6); ctx.stroke();
-          noGlow();
+          const gearGrad=ctx.createRadialGradient(cx-u*5,cy-u*5,0,cx,cy,or);
+          gearGrad.addColorStop(0,pc(0.12));gearGrad.addColorStop(1,pc(0.03));
+          ctx.fillStyle=gearGrad;ctx.fill();
+          glow(P,8,0.25);ctx.strokeStyle=pc(0.45);ctx.lineWidth=u*0.8;ctx.stroke();noGlow();
+          // Inner ring
+          ctx.strokeStyle=pc(0.2);ctx.lineWidth=u*0.5;ctx.beginPath();ctx.arc(cx,cy,u*10,0,Math.PI*2);ctx.stroke();
+          // Center
+          glow(S,8,0.3);ctx.fillStyle=sc(0.2);ctx.beginPath();ctx.arc(cx,cy,u*6,0,Math.PI*2);ctx.fill();
+          ctx.strokeStyle=sc(0.45);ctx.lineWidth=u*0.7;ctx.stroke();noGlow();
           // Center dot
-          ctx.fillStyle = secStr+'0.3)';
-          ctx.beginPath(); ctx.arc(cx, cy, u*1, 0, Math.PI*2); ctx.fill();
-          // Dial marks inside
-          for (let i = 0; i < 4; i++) {
-            const a = (i/4)*Math.PI*2 + Math.PI/4;
-            priStroke(0.1, u*0.3);
-            ctx.beginPath();
-            ctx.moveTo(cx+Math.cos(a)*u*5.5, cy+Math.sin(a)*u*5.5);
-            ctx.lineTo(cx+Math.cos(a)*u*7, cy+Math.sin(a)*u*7);
-            ctx.stroke();
-          }
-          break;
-        }
-        case 'quit': {
-          // Door frame
-          priFill(0.04);
-          ctx.fillRect(cx-u*7, cy-u*9, u*10, u*18);
-          priStroke(0.25, u*0.8);
-          ctx.strokeRect(cx-u*7, cy-u*9, u*10, u*18);
-          // Door panel detail
-          priStroke(0.08, u*0.4);
-          ctx.strokeRect(cx-u*5.5, cy-u*7, u*7, u*6);
-          ctx.strokeRect(cx-u*5.5, cy+u*1, u*7, u*6);
+          glow(S,5,0.4);ctx.fillStyle=sc(0.5);ctx.beginPath();ctx.arc(cx,cy,u*2,0,Math.PI*2);ctx.fill();noGlow();
+          // Spokes
+          for(let i=0;i<4;i++){const a=(i/4)*Math.PI*2+Math.PI/8;ctx.strokeStyle=pc(0.1);ctx.lineWidth=u*0.4;
+            ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*u*10.5,cy+Math.sin(a)*u*10.5);ctx.lineTo(cx+Math.cos(a)*u*15,cy+Math.sin(a)*u*15);ctx.stroke()}
+          break}
+
+        case 'quit':{
+          // Door frame with depth
+          const doorGrad=ctx.createLinearGradient(cx-u*12,cy,cx+u*4,cy);
+          doorGrad.addColorStop(0,pc(0.08));doorGrad.addColorStop(1,pc(0.02));
+          ctx.fillStyle=doorGrad;ctx.fillRect(cx-u*12,cy-u*16,u*16,u*32);
+          glow(P,4,0.15);ctx.strokeStyle=pc(0.35);ctx.lineWidth=u*0.8;ctx.strokeRect(cx-u*12,cy-u*16,u*16,u*32);noGlow();
+          // Door panels
+          ctx.strokeStyle=pc(0.1);ctx.lineWidth=u*0.4;
+          ctx.strokeRect(cx-u*10,cy-u*13,u*12,u*11);ctx.strokeRect(cx-u*10,cy+u*1,u*12,u*11);
           // Handle
-          secFill(0.2);
-          ctx.beginPath(); ctx.arc(cx+u*1.5, cy, u*0.8, 0, Math.PI*2); ctx.fill();
-          // Exit arrow
-          glow(SEC, 6, 0.25);
-          secStroke(0.5, u*1.2);
-          ctx.beginPath(); ctx.moveTo(cx+u*4, cy); ctx.lineTo(cx+u*11, cy); ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(cx+u*8.5, cy-u*3); ctx.lineTo(cx+u*11.5, cy); ctx.lineTo(cx+u*8.5, cy+u*3);
-          ctx.stroke();
+          glow(S,5,0.3);ctx.fillStyle=sc(0.4);ctx.beginPath();ctx.arc(cx+u*2,cy,u*1.5,0,Math.PI*2);ctx.fill();noGlow();
+          // EXIT arrow — big, glowing, punchy
+          glow(S,14,0.5);
+          ctx.strokeStyle=sc(0.7);ctx.lineWidth=u*1.8;ctx.lineCap='round';
+          ctx.beginPath();ctx.moveTo(cx+u*6,cy);ctx.lineTo(cx+u*20,cy);ctx.stroke();
+          ctx.beginPath();ctx.moveTo(cx+u*16,cy-u*5);ctx.lineTo(cx+u*21,cy);ctx.lineTo(cx+u*16,cy+u*5);ctx.stroke();
           noGlow();
-          // Arrow motion lines
-          secStroke(0.1, u*0.3);
-          ctx.beginPath(); ctx.moveTo(cx+u*5, cy-u*1.5); ctx.lineTo(cx+u*7, cy-u*1.5); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(cx+u*5.5, cy+u*1.5); ctx.lineTo(cx+u*7.5, cy+u*1.5); ctx.stroke();
-          break;
-        }
+          // Motion trails
+          ctx.strokeStyle=sc(0.15);ctx.lineWidth=u*0.5;
+          ctx.beginPath();ctx.moveTo(cx+u*8,cy-u*3);ctx.lineTo(cx+u*13,cy-u*3);ctx.stroke();
+          ctx.beginPath();ctx.moveTo(cx+u*9,cy+u*3);ctx.lineTo(cx+u*14,cy+u*3);ctx.stroke();
+          ctx.beginPath();ctx.moveTo(cx+u*7,cy-u*6);ctx.lineTo(cx+u*11,cy-u*6);ctx.stroke();
+          break}
       }
     }
 
-    // Draw all icons
-    document.querySelectorAll('.menu-btn').forEach(btn => {
-      const c = btn.querySelector('canvas');
-      if (c) drawIcon(c, btn.dataset.icon);
+    document.querySelectorAll('.menu-btn').forEach(b=>{
+      const c=b.querySelector('canvas');if(c)drawIcon(c,b.dataset.icon);
+      b.addEventListener('mouseenter',()=>{if(!c)return;drawIcon(c,b.dataset.icon)});
+      b.addEventListener('mouseleave',()=>{if(!c)return;drawIcon(c,b.dataset.icon)});
     });
 
-    // ══════════════════════════════════════════════════════════════════
-    // LOGO
-    // ══════════════════════════════════════════════════════════════════
-    const lC = document.getElementById('logoCanvas');
-    const lx = lC.getContext('2d');
-    const ls = lC.width, lu = ls/100;
-
-    // Hex frame
-    lx.strokeStyle = secStr+'0.2)'; lx.lineWidth = lu*1;
-    lx.beginPath();
-    for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2-Math.PI/2,r=lu*38;i===0?lx.moveTo(ls/2+Math.cos(a)*r,ls/2+Math.sin(a)*r):lx.lineTo(ls/2+Math.cos(a)*r,ls/2+Math.sin(a)*r);}
-    lx.closePath(); lx.stroke();
-    // Inner hex
-    lx.strokeStyle = priStr+'0.1)'; lx.lineWidth = lu*0.5;
-    lx.beginPath();
-    for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2,r=lu*28;i===0?lx.moveTo(ls/2+Math.cos(a)*r,ls/2+Math.sin(a)*r):lx.lineTo(ls/2+Math.cos(a)*r,ls/2+Math.sin(a)*r);}
-    lx.closePath(); lx.stroke();
-    // V mark
-    lx.shadowColor=`rgba(${SEC[0]},${SEC[1]},${SEC[2]},0.2)`; lx.shadowBlur=8;
-    lx.strokeStyle = secStr+'0.4)'; lx.lineWidth = lu*1.8; lx.lineCap='round';
-    lx.beginPath(); lx.moveTo(ls/2-lu*12,ls/2-lu*10); lx.lineTo(ls/2,ls/2+lu*8); lx.lineTo(ls/2+lu*12,ls/2-lu*10); lx.stroke();
+    // ── Logo ──
+    const lC=document.getElementById('logoCanvas'),lx=lC.getContext('2d'),ls=lC.width,lu=ls/120;
+    lx.strokeStyle=sc(0.2);lx.lineWidth=lu*1;
+    lx.beginPath();for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2-Math.PI/2,r=lu*45;i===0?lx.moveTo(ls/2+Math.cos(a)*r,ls/2+Math.sin(a)*r):lx.lineTo(ls/2+Math.cos(a)*r,ls/2+Math.sin(a)*r)}lx.closePath();lx.stroke();
+    lx.strokeStyle=pc(0.1);lx.lineWidth=lu*0.5;
+    lx.beginPath();for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2,r=lu*33;i===0?lx.moveTo(ls/2+Math.cos(a)*r,ls/2+Math.sin(a)*r):lx.lineTo(ls/2+Math.cos(a)*r,ls/2+Math.sin(a)*r)}lx.closePath();lx.stroke();
+    lx.shadowColor=sc(0.3);lx.shadowBlur=10;lx.strokeStyle=sc(0.5);lx.lineWidth=lu*2;lx.lineCap='round';
+    lx.beginPath();lx.moveTo(ls/2-lu*14,ls/2-lu*12);lx.lineTo(ls/2,ls/2+lu*10);lx.lineTo(ls/2+lu*14,ls/2-lu*12);lx.stroke();
     lx.shadowBlur=0;
-    // Dot
-    lx.fillStyle = secStr+'0.3)';
-    lx.beginPath(); lx.arc(ls/2,ls/2+lu*10, lu*2.5, 0, Math.PI*2); lx.fill();
-    // Decorative ring
-    lx.strokeStyle = priStr+'0.06)'; lx.lineWidth = lu*0.4;
-    lx.beginPath(); lx.arc(ls/2,ls/2, lu*45, 0, Math.PI*2); lx.stroke();
+    lx.shadowColor=sc(0.3);lx.shadowBlur=6;lx.fillStyle=sc(0.4);lx.beginPath();lx.arc(ls/2,ls/2+lu*12,lu*3,0,Math.PI*2);lx.fill();lx.shadowBlur=0;
   </script>
 </body>
 </html>
