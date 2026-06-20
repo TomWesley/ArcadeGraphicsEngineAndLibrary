@@ -317,7 +317,10 @@
         srcC.style.width = (w * 2) + 'px'; srcC.style.height = (h * 2) + 'px';
         srcC.getContext('2d').drawImage(img, 0, 0);
         srcPanel.appendChild(srcC);
-        srcPanel.innerHTML += `<div class="info">${w}x${h} original</div>`;
+        const srcInfo = document.createElement('div');
+        srcInfo.className = 'info';
+        srcInfo.textContent = `${w}x${h} original`;
+        srcPanel.appendChild(srcInfo);
         output.appendChild(srcPanel);
 
         // Show region map
@@ -347,18 +350,20 @@
         const regionCounts = {};
         for (let i = 0; i < regionBuf.length; i += 4) {
           if (regionBuf[i+3] < 10) continue;
-          const key = `${regionBuf[i]},${regionBuf[i+1]},${regionBuf[i+2]}`;
           for (const [name, [r,g,b]] of Object.entries(regionColors)) {
             if (r === regionBuf[i] && g === regionBuf[i+1] && b === regionBuf[i+2]) {
               regionCounts[name] = (regionCounts[name] || 0) + 1;
             }
           }
         }
-        let regInfo = '';
+        let regInfoText = '';
         for (const [name, count] of Object.entries(regionCounts)) {
-          if (count > 10) regInfo += `${name}: ${count}px  `;
+          if (count > 10) regInfoText += `${name}: ${count}px  `;
         }
-        regPanel.innerHTML += `<div class="info">${regInfo}</div>`;
+        const regInfoEl = document.createElement('div');
+        regInfoEl.className = 'info';
+        regInfoEl.textContent = regInfoText;
+        regPanel.appendChild(regInfoEl);
         output.appendChild(regPanel);
 
         // Show converted
@@ -377,7 +382,10 @@
           if (converted[i+3] < 10) continue;
           colorSet.add(`${converted[i]>>2},${converted[i+1]>>2},${converted[i+2]>>2}`);
         }
-        convPanel.innerHTML += `<div class="info">${colorSet.size} unique color groups | Multi-palette pixel art</div>`;
+        const convInfo = document.createElement('div');
+        convInfo.className = 'info';
+        convInfo.textContent = `${colorSet.size} unique color groups | Multi-palette pixel art`;
+        convPanel.appendChild(convInfo);
         output.appendChild(convPanel);
 
         // Show on dark background (game context)
@@ -393,7 +401,10 @@
         gameCtx.fillRect(0, 0, w, h);
         gameCtx.putImageData(new ImageData(new Uint8ClampedArray(converted), w, h), 0, 0);
         gamePanel.appendChild(gameC);
-        gamePanel.innerHTML += `<div class="info">On dark game background</div>`;
+        const gameInfo = document.createElement('div');
+        gameInfo.className = 'info';
+        gameInfo.textContent = 'On dark game background';
+        gamePanel.appendChild(gameInfo);
         output.appendChild(gamePanel);
 
         status.textContent = `Done — ${w}x${h} → ${colorSet.size} color groups | Regions: ${Object.keys(regionCounts).filter(k => (regionCounts[k]||0) > 10).join(', ')}`;
