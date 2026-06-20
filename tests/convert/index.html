@@ -3,401 +3,401 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arcade Engine - Source Image Conversion</title>
+  <title>Arcade Engine - Sleek Futuristic Conversion</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
-    body{background:#1a1530;color:#fff;font-family:'Press Start 2P',monospace;padding:16px;display:flex;flex-direction:column;align-items:center}
-    h1{font-size:11px;color:#e8a0ff;margin-bottom:12px}
-    .sub{font-size:7px;color:#666;margin-bottom:16px;text-align:center;line-height:1.8;max-width:800px}
-    .subject{margin-bottom:24px;width:100%}
-    .subject h2{font-size:9px;color:#888;margin-bottom:8px;text-align:center}
-    .panels{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-    .panel{background:rgba(255,255,255,0.02);border:1px solid #2a2540;padding:10px;text-align:center}
-    .panel h3{font-size:7px;color:#777;margin-bottom:6px}
-    .panel canvas{border:1px solid #1a1530;image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:0 auto}
-    .panel .info{font-size:5px;color:#555;margin-top:4px;line-height:1.6}
-    .controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;align-items:center}
-    .ctrl{display:flex;flex-direction:column;align-items:center;gap:2px}
-    .ctrl label{font-size:5px;color:#444}
-    .ctrl span{font-size:5px;color:#666}
-    input[type=range]{width:80px;accent-color:#e8a0ff}
-    #status{font-size:7px;color:#88dd88;text-shadow:0 0 4px rgba(136,221,136,0.3);margin:8px 0}
+    body{background:#080608;color:#fff;font-family:'Share Tech Mono',monospace;padding:20px;display:flex;flex-direction:column;align-items:center}
+    h1{font-size:14px;font-family:'Orbitron',sans-serif;color:#cc3333;letter-spacing:4px;text-shadow:0 0 12px rgba(200,50,50,0.4);margin-bottom:4px}
+    .sub{font-size:10px;color:#553333;margin-bottom:20px;letter-spacing:2px}
+    .subject{margin-bottom:32px;width:100%}
+    .subject h2{font-size:11px;font-family:'Orbitron',sans-serif;color:#993333;letter-spacing:3px;margin-bottom:12px;text-align:center}
+    .panels{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+    .panel{text-align:center}
+    .panel h3{font-size:9px;color:#664444;letter-spacing:2px;margin-bottom:6px;font-family:'Orbitron',sans-serif}
+    .panel canvas{display:block;margin:0 auto}
+    .panel .info{font-size:8px;color:#553333;margin-top:4px}
+    #status{font-size:9px;color:#cc4444;text-shadow:0 0 6px rgba(200,50,50,0.3);margin:12px 0}
+    .ref-panel{border:1px solid #331515;padding:12px;background:rgba(200,30,30,0.02);margin-bottom:24px;text-align:center}
+    .ref-panel img{max-width:700px;width:100%;border:1px solid #221010}
+    .ref-panel .label{font-size:8px;color:#663333;margin-top:6px;letter-spacing:2px}
   </style>
 </head>
 <body>
-  <h1>SOURCE → PIXEL ART CONVERSION</h1>
-  <p class="sub">Photorealistic images downscaled and restyled into our pixel art aesthetic. No pure black. Multi-hue surfaces. Dithered transitions. Colored outlines.</p>
+  <h1>STYLE CONVERSION v3</h1>
+  <p class="sub">ULTRA-SLEEK  //  FUTURISTIC  //  HOLOGRAPHIC</p>
 
-  <div class="controls">
-    <div class="ctrl"><label>TARGET SIZE</label><input type="range" id="targetSize" min="64" max="200" value="128"><span id="targetSizeV">128px</span></div>
-    <div class="ctrl"><label>OUTLINE STRENGTH</label><input type="range" id="outlineStr" min="20" max="80" value="45"><span id="outlineStrV">45</span></div>
-    <div class="ctrl"><label>COLOR RICHNESS</label><input type="range" id="colorRich" min="5" max="20" value="12"><span id="colorRichV">12</span></div>
-    <div class="ctrl"><label>NOISE TEXTURE</label><input type="range" id="noiseTex" min="0" max="100" value="50"><span id="noiseTexV">50</span></div>
-    <div class="ctrl"><label>DITHER</label><input type="range" id="ditherAmt" min="0" max="100" value="40"><span id="ditherAmtV">40</span></div>
+  <div class="ref-panel">
+    <img src="./FINALSAMPLE.jpg" alt="Style Reference">
+    <div class="label">STYLE REFERENCE — COCKPIT HUD AESTHETIC</div>
   </div>
 
   <div id="output"></div>
-  <p id="status">Loading images...</p>
+  <p id="status">INITIALIZING SYSTEMS...</p>
 
   <script>
-    // ── Engine ──
-    function hash(x,y,s){let h=(x*374761393+y*668265263+s*1274126177)|0;h=((h^(h>>13))*1274126177)|0;return((h^(h>>16))&0x7fffffff)/0x7fffffff}
-    function noise2d(x,y,s){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;const sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);return hash(ix,iy,s)+(hash(ix+1,iy,s)-hash(ix,iy,s))*sx+(hash(ix,iy+1,s)-hash(ix,iy,s))*sy+(hash(ix,iy,s)-hash(ix+1,iy,s)-hash(ix,iy+1,s)+hash(ix+1,iy+1,s))*sx*sy}
-    function fbm(x,y,oct,s){let v=0,a=1,f=1,m=0;for(let i=0;i<oct;i++){v+=noise2d(x*f,y*f,s+i*31)*a;m+=a;a*=0.5;f*=2.1}return v/m}
+    // ══════════════════════════════════════════════════════════════════
+    // STYLE v3: Ultra-sleek futuristic / near-photorealistic
+    //
+    // Key principles from reference:
+    // - Dark backgrounds with warm subtle tint
+    // - Thin red/crimson wireframe UI overlays (1-2px)
+    // - Cyan/teal secondary accents (sparse)
+    // - Holographic translucent panels
+    // - Selective glow/bloom on bright elements
+    // - Clean, smooth — no pixellation, no noise
+    // - Depth via vignette, subtle gradients
+    // - Scan-line / holographic interference effects
+    // ══════════════════════════════════════════════════════════════════
+
     function hsl2rgb(h,s,l){h=((h%360)+360)%360;s=Math.max(0,Math.min(100,s))/100;l=Math.max(0,Math.min(100,l))/100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return[(r+m)*255+0.5|0,(g+m)*255+0.5|0,(b+m)*255+0.5|0]}
     function rgb2hsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let h=0,s=0;if(mx!==mn){const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);if(mx===r)h=((g-b)/d+(g<b?6:0))*60;else if(mx===g)h=((b-r)/d+2)*60;else h=((r-g)/d+4)*60}return[h,s*100,l*100]}
-    const B4=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
-    function dithPick(x,y,t){return t>B4[y&3][x&3]/16}
 
-    // ── Downscale with area averaging ──
-    function downscale(srcData, srcW, srcH, tgtW, tgtH) {
-      const out = new Uint8ClampedArray(tgtW * tgtH * 4);
-      const xr = srcW / tgtW, yr = srcH / tgtH;
-      for (let ty = 0; ty < tgtH; ty++) {
-        for (let tx = 0; tx < tgtW; tx++) {
-          const sx0 = Math.floor(tx * xr), sy0 = Math.floor(ty * yr);
-          const sx1 = Math.min(srcW, Math.ceil((tx + 1) * xr));
-          const sy1 = Math.min(srcH, Math.ceil((ty + 1) * yr));
-          let r = 0, g = 0, b = 0, a = 0, count = 0;
-          for (let sy = sy0; sy < sy1; sy++) {
-            for (let sx = sx0; sx < sx1; sx++) {
-              const si = (sy * srcW + sx) * 4;
-              r += srcData[si]; g += srcData[si+1]; b += srcData[si+2]; a += srcData[si+3];
-              count++;
-            }
-          }
-          const ti = (ty * tgtW + tx) * 4;
-          out[ti] = r/count|0; out[ti+1] = g/count|0; out[ti+2] = b/count|0; out[ti+3] = a/count|0;
-        }
-      }
-      return out;
-    }
-
-    // ── Edge detection (Sobel magnitude) ──
-    function sobelEdges(data, w, h) {
-      const edges = new Float64Array(w * h);
-      for (let y = 1; y < h-1; y++) {
-        for (let x = 1; x < w-1; x++) {
-          const lum = (px, py) => {
-            const i = (py*w+px)*4;
-            return data[i]*0.299 + data[i+1]*0.587 + data[i+2]*0.114;
-          };
-          const gx = -lum(x-1,y-1)+lum(x+1,y-1)-2*lum(x-1,y)+2*lum(x+1,y)-lum(x-1,y+1)+lum(x+1,y+1);
-          const gy = -lum(x-1,y-1)-2*lum(x,y-1)-lum(x+1,y-1)+lum(x-1,y+1)+2*lum(x,y+1)+lum(x+1,y+1);
-          edges[y*w+x] = Math.sqrt(gx*gx+gy*gy);
-        }
-      }
-      return edges;
-    }
-
-    // ── MAIN CONVERSION PIPELINE ──
-    function convertToPixelArt(srcData, srcW, srcH, opts) {
-      const { targetSize, outlineStr, colorRich, noiseTex, ditherAmt } = opts;
-
-      // 1. Calculate target dimensions preserving aspect ratio
-      const aspect = srcW / srcH;
-      const tgtW = aspect >= 1 ? targetSize : Math.round(targetSize * aspect);
-      const tgtH = aspect >= 1 ? Math.round(targetSize / aspect) : targetSize;
-
-      // 2. Downscale
-      const small = downscale(srcData, srcW, srcH, tgtW, tgtH);
-
-      // 3. Detect edges
-      const edges = sobelEdges(small, tgtW, tgtH);
-      let maxEdge = 0;
-      for (const e of edges) maxEdge = Math.max(maxEdge, e);
-
-      // 4. Detect background (corners)
-      const cornerSamples = [];
-      for (const [cx,cy] of [[0,0],[tgtW-1,0],[0,tgtH-1],[tgtW-1,tgtH-1]]) {
-        const ci = (cy*tgtW+cx)*4;
-        cornerSamples.push([small[ci], small[ci+1], small[ci+2], small[ci+3]]);
-      }
-      // Average corner color as background reference
-      const bgR = cornerSamples.reduce((s,c)=>s+c[0],0)/4;
-      const bgG = cornerSamples.reduce((s,c)=>s+c[1],0)/4;
-      const bgB = cornerSamples.reduce((s,c)=>s+c[2],0)/4;
-
-      // 5. Build palette from image — cluster dominant colors
-      // Quantize to N levels for our stepped look
-      const levels = colorRich;
-
-      // 6. Per-pixel conversion
-      const out = new Uint8ClampedArray(tgtW * tgtH * 4);
-
-      for (let y = 0; y < tgtH; y++) {
-        for (let x = 0; x < tgtW; x++) {
-          const i = (y * tgtW + x) * 4;
-          const sr = small[i], sg = small[i+1], sb = small[i+2], sa = small[i+3];
-
-          // Background detection: similar to corner color
-          const bgDist = Math.sqrt((sr-bgR)**2 + (sg-bgG)**2 + (sb-bgB)**2);
-          if (bgDist < 35 || sa < 30) continue;
-
-          const [h, s, l] = rgb2hsl(sr, sg, sb);
-          const edgeVal = edges[y * tgtW + x] / (maxEdge + 1);
-
-          // ── Is this an outline pixel? ──
-          const isOutline = edgeVal > (outlineStr / 100);
-
-          if (isOutline) {
-            // COLORED dark outline — NOT black!
-            // Use the pixel's own hue but very dark and slightly saturated
-            const outH = h;
-            const outS = Math.max(15, s * 0.5);
-            const outL = 8 + (1 - edgeVal) * 8; // 8-16% lightness, never black
-            const [or, og, ob] = hsl2rgb(outH, outS, outL);
-            out[i] = or; out[i+1] = og; out[i+2] = ob; out[i+3] = 255;
-            continue;
-          }
-
-          // ── Surface pixel: multi-channel color computation ──
-
-          // Channel 1: Base lightness from source (quantized to bands)
-          let L = l / 100;
-
-          // Add noise texture (multi-octave)
-          const noiseAmt = noiseTex / 100;
-          L += (fbm(x*0.15, y*0.15, 5, 100) - 0.5) * 0.12 * noiseAmt;
-          L += (fbm(x*0.4, y*0.4, 4, 101) - 0.5) * 0.06 * noiseAmt;
-          L += (fbm(x*0.9, y*0.9, 3, 102) - 0.5) * 0.03 * noiseAmt;
-
-          L = Math.max(0.04, Math.min(0.96, L));
-
-          // Channel 2: Hue variation (independent of lightness)
-          let H = h;
-          // Warm highlights, cool shadows
-          if (L > 0.6) {
-            H = (H + 12 * (L - 0.6) / 0.4 + 360) % 360; // shift warm
-          } else if (L < 0.35) {
-            H = (H - 20 * (0.35 - L) / 0.35 + 360) % 360; // shift cool
-          }
-          // Per-pixel hue noise (creates color variety within same-brightness regions)
-          const hueNoise = (fbm(x*0.08, y*0.08, 4, 200) - 0.5) * 15;
-          H = (H + hueNoise + 360) % 360;
-
-          // Channel 3: Saturation
-          let S = s;
-          // Boost saturation slightly for more vibrant pixel art look
-          S = Math.min(100, S * 1.15 + 5);
-          // Desaturate highlights
-          if (L > 0.75) S *= 0.7;
-          // Saturate shadows slightly
-          if (L < 0.3) S = Math.min(100, S * 1.1);
-
-          // ── Quantize lightness to discrete bands (pixel art stepping) ──
-          const bandIdx = (L * levels) | 0;
-          const nextBand = Math.min(bandIdx + 1, levels);
-          const bandL0 = bandIdx / levels;
-          const bandL1 = nextBand / levels;
-          const bandT = (L - bandL0) / (1/levels);
-
-          // Dither between adjacent bands
-          const dAmt = ditherAmt / 100;
-          const usedL = dithPick(x, y, bandT * dAmt + bandT * (1-dAmt)) ? bandL1 : bandL0;
-
-          // Convert back to RGB
-          let [r, g, b] = hsl2rgb(H, S, usedL * 92 + 4); // 4-96% lightness range (no black, no white)
-
-          // ── Per-pixel palette jitter (~12% of pixels) ──
-          if (hash(x, y, 300) > 0.88) {
-            const jitterH = (H + (hash(x,y,301) - 0.5) * 25 + 360) % 360;
-            const jitterL = usedL + (hash(x,y,302) - 0.5) * 0.08;
-            const [jr, jg, jb] = hsl2rgb(jitterH, S, Math.max(4, Math.min(92, jitterL * 92 + 4)));
-            if (hash(x, y, 303) > 0.5) {
-              r = jr; g = jg; b = jb;
-            } else {
-              r = (r + jr) >> 1; g = (g + jg) >> 1; b = (b + jb) >> 1;
-            }
-          }
-
-          // ── Micro-detail: subtle per-pixel noise ──
-          if (hash(x, y, 400) > 0.9) {
-            const bump = hash(x, y, 401) > 0.5 ? 8 : -8;
-            r = Math.max(10, Math.min(245, r + bump));
-            g = Math.max(10, Math.min(245, g + bump));
-            b = Math.max(10, Math.min(245, b + bump));
-          }
-
-          out[i] = r; out[i+1] = g; out[i+2] = b; out[i+3] = 255;
-        }
-      }
-
-      return { data: out, w: tgtW, h: tgtH };
-    }
-
-    // ── Loading and rendering ──
     const IMAGES = [
-      { src: './spaceship.png', name: 'SPACESHIP' },
-      { src: './PotionBottle.png', name: 'POTION BOTTLE' },
+      { src: './spaceship.png', name: 'SPACESHIP', size: 350 },
+      { src: './PotionBottle.png', name: 'POTION BOTTLE', size: 350 },
     ];
 
-    const loadedImages = {};
+    const loaded = {};
     let loadCount = 0;
 
-    for (const imgInfo of IMAGES) {
+    for (const info of IMAGES) {
       const img = new Image();
-      img.src = imgInfo.src;
+      img.src = info.src;
       img.onload = () => {
-        const c = document.createElement('canvas');
-        c.width = img.naturalWidth; c.height = img.naturalHeight;
-        const ctx = c.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        loadedImages[imgInfo.name] = {
-          data: ctx.getImageData(0, 0, c.width, c.height).data,
-          w: c.width, h: c.height, img
-        };
+        loaded[info.name] = img;
         loadCount++;
-        if (loadCount === IMAGES.length) {
-          document.getElementById('status').textContent = 'Images loaded. Processing...';
-          setTimeout(render, 50);
+        if (loadCount === IMAGES.length) setTimeout(render, 50);
+      };
+    }
+
+    // ── CONVERSION PIPELINE ──
+
+    function convertSleek(img, targetSize) {
+      // Determine output dimensions
+      const aspect = img.naturalWidth / img.naturalHeight;
+      const outW = aspect >= 1 ? targetSize : Math.round(targetSize * aspect);
+      const outH = aspect >= 1 ? Math.round(targetSize / aspect) : targetSize;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = outW; canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+
+      // ── Step 1: Draw source, downscaled ──
+      ctx.drawImage(img, 0, 0, outW, outH);
+
+      // ── Step 2: Color grade — shift toward dark cinematic red palette ──
+      const imgData = ctx.getImageData(0, 0, outW, outH);
+      const d = imgData.data;
+
+      // Detect background (corner sampling)
+      const corners = [[0,0],[outW-1,0],[0,outH-1],[outW-1,outH-1]];
+      let bgR=0,bgG=0,bgB=0;
+      for (const [cx,cy] of corners) {
+        const ci = (cy*outW+cx)*4;
+        bgR += d[ci]; bgG += d[ci+1]; bgB += d[ci+2];
+      }
+      bgR/=4; bgG/=4; bgB/=4;
+
+      for (let i = 0; i < d.length; i += 4) {
+        let r = d[i], g = d[i+1], b = d[i+2], a = d[i+3];
+
+        // Background detection — make truly dark
+        const bgDist = Math.sqrt((r-bgR)**2 + (g-bgG)**2 + (b-bgB)**2);
+        if (bgDist < 40) {
+          // Deep space dark with warm tint
+          d[i] = 8 + Math.round(r * 0.03);
+          d[i+1] = 5 + Math.round(g * 0.02);
+          d[i+2] = 6 + Math.round(b * 0.02);
+          continue;
         }
-      };
+
+        let [h, s, l] = rgb2hsl(r, g, b);
+
+        // Increase contrast
+        l = l < 50 ? l * 0.7 : 50 + (l - 50) * 1.2;
+        l = Math.max(0, Math.min(100, l));
+
+        // Boost saturation slightly
+        s = Math.min(100, s * 1.15);
+
+        // Warm shift: pull highlights toward amber/gold
+        if (l > 60) {
+          h = (h + (l - 60) * 0.3) % 360; // slight warm shift
+          s = Math.min(100, s + (l - 60) * 0.2);
+        }
+
+        // Cool darks: subtle blue-red tint in shadows
+        if (l < 30) {
+          h = (h * 0.7 + 350 * 0.3 + 360) % 360; // pull toward deep red
+          s = Math.min(100, s * 0.8 + 8);
+        }
+
+        const [nr, ng, nb] = hsl2rgb(h, s, l);
+        d[i] = nr; d[i+1] = ng; d[i+2] = nb;
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+
+      // ── Step 3: Vignette (dark edges) ──
+      const vg = ctx.createRadialGradient(outW/2, outH/2, Math.min(outW,outH)*0.25, outW/2, outH/2, Math.max(outW,outH)*0.65);
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, outW, outH);
+
+      // ── Step 4: Subtle scan lines (holographic interference) ──
+      ctx.save();
+      for (let y = 0; y < outH; y += 3) {
+        ctx.fillStyle = `rgba(0,0,0,${0.04 + Math.sin(y * 0.5) * 0.01})`;
+        ctx.fillRect(0, y, outW, 1);
+      }
+      ctx.restore();
+
+      // ── Step 5: Bloom on bright areas ──
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.filter = 'blur(8px) brightness(0.6)';
+      ctx.globalAlpha = 0.2;
+      ctx.drawImage(canvas, 0, 0);
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.filter = 'blur(20px) brightness(0.3)';
+      ctx.globalAlpha = 0.1;
+      ctx.drawImage(canvas, 0, 0);
+      ctx.restore();
+
+      // ── Step 6: Thin red wireframe overlay (HUD targeting frame) ──
+      ctx.save();
+      ctx.strokeStyle = 'rgba(200, 40, 40, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.shadowColor = 'rgba(200, 40, 40, 0.3)';
+      ctx.shadowBlur = 6;
+
+      // Corner brackets
+      const mg = 8, cs = 18;
+      // Top-left
+      ctx.beginPath(); ctx.moveTo(mg, mg+cs); ctx.lineTo(mg, mg); ctx.lineTo(mg+cs, mg); ctx.stroke();
+      // Top-right
+      ctx.beginPath(); ctx.moveTo(outW-mg-cs, mg); ctx.lineTo(outW-mg, mg); ctx.lineTo(outW-mg, mg+cs); ctx.stroke();
+      // Bottom-left
+      ctx.beginPath(); ctx.moveTo(mg, outH-mg-cs); ctx.lineTo(mg, outH-mg); ctx.lineTo(mg+cs, outH-mg); ctx.stroke();
+      // Bottom-right
+      ctx.beginPath(); ctx.moveTo(outW-mg-cs, outH-mg); ctx.lineTo(outW-mg, outH-mg); ctx.lineTo(outW-mg, outH-mg-cs); ctx.stroke();
+
+      // Center crosshair (subtle)
+      ctx.strokeStyle = 'rgba(200, 40, 40, 0.15)';
+      ctx.lineWidth = 0.5;
+      const chSize = 10;
+      ctx.beginPath();
+      ctx.moveTo(outW/2 - chSize, outH/2); ctx.lineTo(outW/2 - 3, outH/2);
+      ctx.moveTo(outW/2 + 3, outH/2); ctx.lineTo(outW/2 + chSize, outH/2);
+      ctx.moveTo(outW/2, outH/2 - chSize); ctx.lineTo(outW/2, outH/2 - 3);
+      ctx.moveTo(outW/2, outH/2 + 3); ctx.lineTo(outW/2, outH/2 + chSize);
+      ctx.stroke();
+
+      // Targeting circle
+      ctx.strokeStyle = 'rgba(200, 40, 40, 0.12)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.arc(outW/2, outH/2, Math.min(outW, outH) * 0.35, 0, Math.PI * 2); ctx.stroke();
+
+      ctx.restore();
+
+      // ── Step 7: Data readouts ──
+      ctx.save();
+      ctx.font = '7px "Share Tech Mono", monospace';
+      ctx.fillStyle = 'rgba(200, 50, 50, 0.5)';
+      ctx.shadowColor = 'rgba(200, 40, 40, 0.3)';
+      ctx.shadowBlur = 4;
+      ctx.textAlign = 'left';
+      ctx.fillText('SCAN ACTIVE', mg + 2, outH - mg - 4);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = 'rgba(60, 180, 180, 0.4)';
+      ctx.fillText('LOCKED', outW - mg - 2, outH - mg - 4);
+
+      // Top label
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(200, 50, 50, 0.4)';
+      ctx.font = '6px "Share Tech Mono", monospace';
+      ctx.fillText('◆  ASSET RENDER  ◆', outW/2, mg + 8);
+      ctx.restore();
+
+      // ── Step 8: Edge highlight glow (subtle rim light on the object) ──
+      // Re-read the image data and find bright edges to add a colored rim
+      const finalData = ctx.getImageData(0, 0, outW, outH);
+      const fd = finalData.data;
+      for (let y = 1; y < outH - 1; y++) {
+        for (let x = 1; x < outW - 1; x++) {
+          const i = (y * outW + x) * 4;
+          const lum = fd[i]*0.299 + fd[i+1]*0.587 + fd[i+2]*0.114;
+
+          // Find edges (brightness difference with neighbors)
+          let maxDiff = 0;
+          for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+            const ni = ((y+dy)*outW+(x+dx))*4;
+            const nLum = fd[ni]*0.299 + fd[ni+1]*0.587 + fd[ni+2]*0.114;
+            maxDiff = Math.max(maxDiff, Math.abs(lum - nLum));
+          }
+
+          // On strong edges of bright objects, add a subtle colored rim
+          if (maxDiff > 30 && lum > 40) {
+            const rimStrength = Math.min(1, (maxDiff - 30) / 80) * 0.15;
+            // Warm rim on bright side
+            if (lum > 100) {
+              fd[i] = Math.min(255, fd[i] + Math.round(40 * rimStrength));
+              fd[i+1] = Math.min(255, fd[i+1] + Math.round(15 * rimStrength));
+            }
+          }
+        }
+      }
+      ctx.putImageData(finalData, 0, 0);
+
+      return canvas;
     }
 
-    function getOpts() {
-      const o = {
-        targetSize: parseInt(document.getElementById('targetSize').value),
-        outlineStr: parseInt(document.getElementById('outlineStr').value),
-        colorRich: parseInt(document.getElementById('colorRich').value),
-        noiseTex: parseInt(document.getElementById('noiseTex').value),
-        ditherAmt: parseInt(document.getElementById('ditherAmt').value),
-      };
-      document.getElementById('targetSizeV').textContent = o.targetSize + 'px';
-      document.getElementById('outlineStrV').textContent = o.outlineStr;
-      document.getElementById('colorRichV').textContent = o.colorRich;
-      document.getElementById('noiseTexV').textContent = o.noiseTex;
-      document.getElementById('ditherAmtV').textContent = o.ditherAmt;
-      return o;
-    }
-
+    // ── Render both subjects ──
     function render() {
-      const opts = getOpts();
-      const container = document.getElementById('output');
-      container.innerHTML = '';
+      const output = document.getElementById('output');
+      output.innerHTML = '';
 
-      for (const imgInfo of IMAGES) {
-        const src = loadedImages[imgInfo.name];
-        if (!src) continue;
+      for (const info of IMAGES) {
+        const img = loaded[info.name];
+        if (!img) continue;
 
         const section = document.createElement('div');
         section.className = 'subject';
-        section.innerHTML = `<h2>${imgInfo.name}</h2>`;
+        const heading = document.createElement('h2');
+        heading.textContent = info.name;
+        section.appendChild(heading);
+
         const panels = document.createElement('div');
         panels.className = 'panels';
 
-        // Source thumbnail
+        // Source
         const srcPanel = document.createElement('div');
         srcPanel.className = 'panel';
         srcPanel.innerHTML = '<h3>SOURCE</h3>';
         const srcC = document.createElement('canvas');
-        const srcDispSize = 200;
-        const srcAspect = src.w / src.h;
-        srcC.width = src.w; srcC.height = src.h;
-        srcC.style.width = (srcAspect >= 1 ? srcDispSize : srcDispSize * srcAspect) + 'px';
-        srcC.style.height = (srcAspect >= 1 ? srcDispSize / srcAspect : srcDispSize) + 'px';
-        srcC.getContext('2d').drawImage(src.img, 0, 0);
+        const srcSize = 250;
+        const srcAspect = img.naturalWidth / img.naturalHeight;
+        srcC.width = img.naturalWidth; srcC.height = img.naturalHeight;
+        srcC.style.width = (srcAspect >= 1 ? srcSize : srcSize * srcAspect) + 'px';
+        srcC.style.height = (srcAspect >= 1 ? srcSize / srcAspect : srcSize) + 'px';
+        srcC.getContext('2d').drawImage(img, 0, 0);
         srcPanel.appendChild(srcC);
         const srcInfo = document.createElement('div');
         srcInfo.className = 'info';
-        srcInfo.textContent = `${src.w}x${src.h} original`;
+        srcInfo.textContent = `${img.naturalWidth}×${img.naturalHeight}`;
         srcPanel.appendChild(srcInfo);
         panels.appendChild(srcPanel);
 
-        // Convert
-        const result = convertToPixelArt(src.data, src.w, src.h, opts);
+        // Converted
+        const converted = convertSleek(img, info.size);
 
-        // Converted at 1x
-        const conv1Panel = document.createElement('div');
-        conv1Panel.className = 'panel';
-        conv1Panel.innerHTML = '<h3>CONVERTED 1x</h3>';
-        const conv1C = document.createElement('canvas');
-        conv1C.width = result.w; conv1C.height = result.h;
-        conv1C.style.width = result.w + 'px'; conv1C.style.height = result.h + 'px';
-        conv1C.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(result.data), result.w, result.h), 0, 0);
-        conv1Panel.appendChild(conv1C);
-        const conv1Info = document.createElement('div');
-        conv1Info.className = 'info';
-        conv1Info.textContent = `${result.w}x${result.h} native`;
-        conv1Panel.appendChild(conv1Info);
-        panels.appendChild(conv1Panel);
+        const convPanel = document.createElement('div');
+        convPanel.className = 'panel';
+        convPanel.innerHTML = '<h3>STYLED</h3>';
+        const convC = document.createElement('canvas');
+        convC.width = converted.width; convC.height = converted.height;
+        convC.style.width = (converted.width * 1.5) + 'px';
+        convC.style.height = (converted.height * 1.5) + 'px';
+        convC.getContext('2d').drawImage(converted, 0, 0);
+        convPanel.appendChild(convC);
+        const convInfo = document.createElement('div');
+        convInfo.className = 'info';
+        convInfo.textContent = `${converted.width}×${converted.height} styled`;
+        convPanel.appendChild(convInfo);
+        panels.appendChild(convPanel);
 
-        // Converted at 2x
-        const conv2Panel = document.createElement('div');
-        conv2Panel.className = 'panel';
-        conv2Panel.innerHTML = '<h3>CONVERTED 2x</h3>';
-        const conv2C = document.createElement('canvas');
-        conv2C.width = result.w; conv2C.height = result.h;
-        conv2C.style.width = (result.w * 2) + 'px'; conv2C.style.height = (result.h * 2) + 'px';
-        conv2C.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(result.data), result.w, result.h), 0, 0);
-        conv2Panel.appendChild(conv2C);
-        const conv2Info = document.createElement('div');
-        conv2Info.className = 'info';
-        conv2Info.textContent = `${result.w}x${result.h} at 2x scale`;
-        conv2Panel.appendChild(conv2Info);
-        panels.appendChild(conv2Panel);
+        // On HUD panel (game context)
+        const hudPanel = document.createElement('div');
+        hudPanel.className = 'panel';
+        hudPanel.innerHTML = '<h3>HUD CONTEXT</h3>';
+        const hudW = converted.width + 40;
+        const hudH = converted.height + 60;
+        const hudC = document.createElement('canvas');
+        hudC.width = hudW; hudC.height = hudH;
+        hudC.style.width = (hudW * 1.5) + 'px';
+        hudC.style.height = (hudH * 1.5) + 'px';
+        const hCtx = hudC.getContext('2d');
 
-        // On colored background (game context)
-        const bgPanel = document.createElement('div');
-        bgPanel.className = 'panel';
-        bgPanel.style.background = '#12102a';
-        bgPanel.innerHTML = '<h3>GAME CONTEXT</h3>';
-        const bgC = document.createElement('canvas');
-        const bgPad = 20;
-        bgC.width = result.w + bgPad*2; bgC.height = result.h + bgPad*2;
-        bgC.style.width = (bgC.width * 2) + 'px'; bgC.style.height = (bgC.height * 2) + 'px';
-        const bgCtx = bgC.getContext('2d');
-        bgCtx.fillStyle = '#12102a';
-        bgCtx.fillRect(0, 0, bgC.width, bgC.height);
-        bgCtx.putImageData(new ImageData(new Uint8ClampedArray(result.data), result.w, result.h), bgPad, bgPad);
-        bgPanel.appendChild(bgC);
-        const bgInfo = document.createElement('div');
-        bgInfo.className = 'info';
-        bgInfo.textContent = 'On game background';
-        bgPanel.appendChild(bgInfo);
-        panels.appendChild(bgPanel);
+        // Dark background
+        hCtx.fillStyle = '#080608';
+        hCtx.fillRect(0, 0, hudW, hudH);
 
-        // Color analysis
-        const colorSet = new Set();
-        let totalPx = 0;
-        for (let ci = 0; ci < result.data.length; ci += 4) {
-          if (result.data[ci+3] < 10) continue;
-          totalPx++;
-          colorSet.add(`${result.data[ci]>>3},${result.data[ci+1]>>3},${result.data[ci+2]>>3}`);
-        }
-        const statsPanel = document.createElement('div');
-        statsPanel.className = 'panel';
-        statsPanel.innerHTML = '<h3>STATS</h3>';
-        const statsInfo = document.createElement('div');
-        statsInfo.className = 'info';
-        statsInfo.style.fontSize = '6px';
-        statsInfo.style.lineHeight = '2';
-        statsInfo.innerHTML = `
-          Pixels: ${totalPx}<br>
-          Colors: ${colorSet.size}<br>
-          Bands: ${opts.colorRich}<br>
-          Noise: ${opts.noiseTex}%<br>
-          Dither: ${opts.ditherAmt}%
-        `;
-        statsPanel.appendChild(statsInfo);
-        panels.appendChild(statsPanel);
+        // Grid underlay
+        hCtx.strokeStyle = 'rgba(200, 40, 40, 0.04)';
+        hCtx.lineWidth = 0.5;
+        for (let gx = 0; gx < hudW; gx += 20) { hCtx.beginPath(); hCtx.moveTo(gx, 0); hCtx.lineTo(gx, hudH); hCtx.stroke(); }
+        for (let gy = 0; gy < hudH; gy += 20) { hCtx.beginPath(); hCtx.moveTo(0, gy); hCtx.lineTo(hudW, gy); hCtx.stroke(); }
+
+        // Outer frame
+        hCtx.strokeStyle = 'rgba(200, 40, 40, 0.3)';
+        hCtx.lineWidth = 1;
+        hCtx.shadowColor = 'rgba(200, 40, 40, 0.2)';
+        hCtx.shadowBlur = 8;
+        hCtx.strokeRect(4, 4, hudW - 8, hudH - 8);
+
+        // Inner frame
+        hCtx.strokeStyle = 'rgba(200, 40, 40, 0.1)';
+        hCtx.lineWidth = 0.5;
+        hCtx.shadowBlur = 0;
+        hCtx.strokeRect(8, 8, hudW - 16, hudH - 16);
+
+        // Draw converted image
+        hCtx.drawImage(converted, 20, 30);
+
+        // Title bar
+        hCtx.fillStyle = 'rgba(200, 40, 40, 0.06)';
+        hCtx.fillRect(4, 4, hudW - 8, 20);
+        hCtx.font = '8px "Orbitron", sans-serif';
+        hCtx.fillStyle = 'rgba(200, 50, 50, 0.6)';
+        hCtx.textAlign = 'center';
+        hCtx.shadowColor = 'rgba(200, 40, 40, 0.3)';
+        hCtx.shadowBlur = 4;
+        hCtx.fillText(info.name + '  //  ASSET DATABASE', hudW/2, 17);
+
+        // Bottom bar
+        hCtx.fillStyle = 'rgba(200, 40, 40, 0.04)';
+        hCtx.fillRect(4, hudH - 24, hudW - 8, 20);
+        hCtx.font = '7px "Share Tech Mono", monospace';
+        hCtx.fillStyle = 'rgba(60, 180, 180, 0.45)';
+        hCtx.textAlign = 'left';
+        hCtx.fillText('STATUS: NOMINAL', 12, hudH - 10);
+        hCtx.textAlign = 'right';
+        hCtx.fillStyle = 'rgba(200, 50, 50, 0.45)';
+        hCtx.fillText('SYS ONLINE', hudW - 12, hudH - 10);
+
+        // Status dots
+        hCtx.shadowBlur = 6;
+        hCtx.fillStyle = 'rgba(60, 200, 60, 0.6)';
+        hCtx.beginPath(); hCtx.arc(hudW - 80, hudH - 13, 2, 0, Math.PI * 2); hCtx.fill();
+        hCtx.fillStyle = 'rgba(200, 50, 50, 0.6)';
+        hCtx.beginPath(); hCtx.arc(12, 13, 2, 0, Math.PI * 2); hCtx.fill();
+
+        // Bloom on HUD
+        hCtx.save();
+        hCtx.globalCompositeOperation = 'lighter';
+        hCtx.filter = 'blur(10px)';
+        hCtx.globalAlpha = 0.04;
+        hCtx.drawImage(hudC, 0, 0);
+        hCtx.restore();
+
+        hudPanel.appendChild(hudC);
+        const hudInfo = document.createElement('div');
+        hudInfo.className = 'info';
+        hudInfo.textContent = 'HOLOGRAPHIC DISPLAY';
+        hudPanel.appendChild(hudInfo);
+        panels.appendChild(hudPanel);
 
         section.appendChild(panels);
-        container.appendChild(section);
+        output.appendChild(section);
       }
 
-      document.getElementById('status').textContent = 'Done — adjust sliders to iterate';
+      document.getElementById('status').textContent = 'SYSTEMS NOMINAL  //  CONVERSION COMPLETE';
     }
-
-    let debounce;
-    document.querySelectorAll('input[type=range]').forEach(el => {
-      el.addEventListener('input', () => {
-        getOpts();
-        clearTimeout(debounce);
-        debounce = setTimeout(render, 200);
-      });
-    });
   </script>
 </body>
 </html>
