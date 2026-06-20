@@ -45,6 +45,7 @@
     "test:charizard2": "npx http-server tests/charizard-sprite -p 8089 -o",
     "test:convert": "npx http-server tests/convert -p 8090 -o",
     "test:mainmenu": "npx http-server tests/main-menu -p 8091 -o",
+    "test:iconlib": "npx http-server tests/icon-library -p 8092 -o",
     "typecheck": "tsc --noEmit"
   },
   "files": [
