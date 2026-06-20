@@ -10,7 +10,9 @@
       "Bash(identify \"/Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/Sample PixelArt.png\")",
       "Bash(sips -g pixelWidth -g pixelHeight \"/Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/Sample PixelArt.png\")",
       "Bash(sips:*)",
-      "Bash(grep -i -E '\\\\.\\(png|jpg|jpeg|webp|avif|gif|svg\\)$')"
+      "Bash(grep -i -E '\\\\.\\(png|jpg|jpeg|webp|avif|gif|svg\\)$')",
+      "Bash(sed \"1d;$d\")",
+      "Bash(node -c /tmp/iconcheck.js)"
     ]
   }
 }
