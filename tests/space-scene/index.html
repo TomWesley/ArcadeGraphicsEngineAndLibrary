@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arcade Engine - Space Scene (Pixel Art Style)</title>
+  <title>Arcade Engine - Space Scene (High Detail)</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{background:#0a0818;overflow:hidden;display:flex;justify-content:center;align-items:center;height:100vh}
@@ -13,12 +13,12 @@
 <body>
   <canvas id="scene"></canvas>
   <script>
-    // ── Rendering at PIXEL level, not Canvas2D shapes ──
-    // Every edge is irregular. Every surface has pixel texture.
-    // No ctx.arc(), no createRadialGradient(). Just pixel placement.
+    // High-detail pixel-level rendering
+    // 480x320 native, 2x scale = 960x640 display
+    // Finer pixels, more noise octaves, richer palettes
 
-    const ART_W = 320, ART_H = 213; // Native pixel art resolution (low)
-    const SCALE = 3;
+    const ART_W = 480, ART_H = 320;
+    const SCALE = 2;
     const canvas = document.getElementById('scene');
     canvas.width = ART_W; canvas.height = ART_H;
     canvas.style.width = (ART_W * SCALE) + 'px';
@@ -26,453 +26,365 @@
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    // Work on raw pixel data
-    let imgData = ctx.createImageData(ART_W, ART_H);
-    const px = imgData.data;
+    // Frame buffer
+    let frame = ctx.createImageData(ART_W, ART_H);
+    const fp = frame.data;
 
-    function setP(x, y, r, g, b, a=255) {
-      x = Math.round(x); y = Math.round(y);
+    function setP(x, y, r, g, b, a) {
+      x |= 0; y |= 0;
       if (x < 0 || x >= ART_W || y < 0 || y >= ART_H) return;
-      const i = (y * ART_W + x) * 4;
-      if (a >= 255) { px[i]=r; px[i+1]=g; px[i+2]=b; px[i+3]=255; return; }
-      // Alpha blend
-      const sa = a / 255, da = px[i+3] / 255;
-      const oa = sa + da * (1 - sa);
-      if (oa < 0.001) return;
-      px[i]   = Math.round((r * sa + px[i]   * da * (1-sa)) / oa);
-      px[i+1] = Math.round((g * sa + px[i+1] * da * (1-sa)) / oa);
-      px[i+2] = Math.round((b * sa + px[i+2] * da * (1-sa)) / oa);
-      px[i+3] = Math.round(oa * 255);
+      const i = (y * ART_W + x) << 2;
+      if (a === undefined || a >= 255) { fp[i]=r; fp[i+1]=g; fp[i+2]=b; fp[i+3]=255; return; }
+      if (a < 1) return;
+      const sa=a/255, da=fp[i+3]/255, oa=sa+da*(1-sa);
+      if(oa<0.002)return;
+      fp[i]=((r*sa+fp[i]*da*(1-sa))/oa+0.5)|0;
+      fp[i+1]=((g*sa+fp[i+1]*da*(1-sa))/oa+0.5)|0;
+      fp[i+2]=((b*sa+fp[i+2]*da*(1-sa))/oa+0.5)|0;
+      fp[i+3]=(oa*255+0.5)|0;
     }
 
-    // ── Noise & hash functions ──
-    function hash(x, y, seed=0) {
-      let h = (x * 374761393 + y * 668265263 + seed * 1274126177) | 0;
-      h = ((h ^ (h >> 13)) * 1274126177) | 0;
-      return ((h ^ (h >> 16)) & 0x7fffffff) / 0x7fffffff;
-    }
+    // ── Noise ──
+    function hash(x,y,s){let h=(x*374761393+y*668265263+s*1274126177)|0;h=((h^(h>>13))*1274126177)|0;return((h^(h>>16))&0x7fffffff)/0x7fffffff}
+    function noise2d(x,y,s){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;const sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);const a=hash(ix,iy,s),b=hash(ix+1,iy,s),c=hash(ix,iy+1,s),d=hash(ix+1,iy+1,s);return a+(b-a)*sx+(c-a)*sy+(a-b-c+d)*sx*sy}
+    function fbm(x,y,oct,s){let v=0,a=1,f=1,m=0;for(let i=0;i<oct;i++){v+=noise2d(x*f,y*f,s+i*31)*a;m+=a;a*=0.5;f*=2.1}return v/m}
 
-    // Smooth value noise
-    function noise2d(x, y, seed=0) {
-      const ix = Math.floor(x), iy = Math.floor(y);
-      const fx = x - ix, fy = y - iy;
-      const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
-      const a = hash(ix, iy, seed), b = hash(ix+1, iy, seed);
-      const c = hash(ix, iy+1, seed), d = hash(ix+1, iy+1, seed);
-      return a + (b-a)*sx + (c-a)*sy + (a-b-c+d)*sx*sy;
-    }
+    // ── Color ──
+    function hsl2rgb(h,s,l){h=((h%360)+360)%360;s=Math.max(0,Math.min(100,s))/100;l=Math.max(0,Math.min(100,l))/100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return[(r+m)*255+0.5|0,(g+m)*255+0.5|0,(b+m)*255+0.5|0]}
 
-    // Fractal noise (multiple octaves for coastline-level detail)
-    function fbm(x, y, octaves=4, seed=0) {
-      let val = 0, amp = 1, freq = 1, max = 0;
-      for (let i = 0; i < octaves; i++) {
-        val += noise2d(x * freq, y * freq, seed + i * 31) * amp;
-        max += amp;
-        amp *= 0.5;
-        freq *= 2;
+    function makePal(bh,bs,bl,n){const p=[];for(let i=0;i<n;i++){const t=i/(n-1);const hs=t<0.5?-25*(1-t*2):15*(t-0.5)*2;const h=bh+hs;const sb=t<0.3?10*(1-t/0.3):t>0.8?-18*(t-0.8)/0.2:0;const s=Math.max(0,Math.min(100,bs+sb));const l=Math.min(92,5+t*(bl+15));p.push(hsl2rgb(h,s,l))}return p}
+
+    // Dithering
+    const B4=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+    function dithPick(x,y,t){return t>B4[y&3][x&3]/16}
+
+    function irregR(a,r,rough,seed){return r+fbm(Math.cos(a)*4,Math.sin(a)*4,5,seed)*rough*r}
+
+    // ══════════════════════════════════════════════════════════════════
+    // PRE-RENDERED LAYERS (computed once, composited per frame)
+    // ══════════════════════════════════════════════════════════════════
+
+    const CX = ART_W/2, CY = ART_H/2;
+    const PR = 55; // planet radius (bigger at higher res)
+
+    // ── Stars (static) ──
+    const starBuf = new Uint8ClampedArray(ART_W*ART_H*4);
+    {
+      for(let y=0;y<ART_H;y++)for(let x=0;x<ART_W;x++){
+        const i=(y*ART_W+x)*4;
+        const n=fbm(x*0.015,y*0.015,4,200);
+        starBuf[i]=8+n*10|0; starBuf[i+1]=6+n*6|0; starBuf[i+2]=16+n*14|0; starBuf[i+3]=255;
       }
-      return val / max;
-    }
-
-    // ── HSL to RGB ──
-    function hsl2rgb(h,s,l) {
-      h = ((h % 360) + 360) % 360;
-      s = Math.max(0, Math.min(100, s)) / 100;
-      l = Math.max(0, Math.min(100, l)) / 100;
-      const c = (1 - Math.abs(2*l-1)) * s, x = c * (1 - Math.abs((h/60)%2-1)), m = l - c/2;
-      let r=0,g=0,b=0;
-      if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}
-      else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}
-      return [Math.round((r+m)*255), Math.round((g+m)*255), Math.round((b+m)*255)];
-    }
-
-    // ── Material palette: flat color bands (NOT gradients) ──
-    function makePalette(baseH, baseS, baseL, n) {
-      const pal = [];
-      for (let i = 0; i < n; i++) {
-        const t = i / (n - 1);
-        const hShift = t < 0.5 ? -22*(1-t*2) : 12*(t-0.5)*2;
-        const h = baseH + hShift;
-        const sBump = t < 0.3 ? 8*(1-t/0.3) : t > 0.8 ? -15*(t-0.8)/0.2 : 0;
-        const s = Math.max(0, Math.min(100, baseS + sBump));
-        const l = Math.min(90, 6 + t * (baseL + 12));
-        pal.push(hsl2rgb(h, s, l));
+      // Nebula
+      for(let k=0;k<4;k++){
+        const nx=60+hash(k,0,300)*(ART_W-120),ny=40+hash(k,1,300)*(ART_H-80),nr=40+hash(k,2,300)*70;
+        const nh=[280,330,200,15][k];const[cr,cg,cb]=hsl2rgb(nh,30,16);
+        for(let y=Math.max(0,ny-nr|0);y<Math.min(ART_H,(ny+nr|0)+1);y++)for(let x=Math.max(0,nx-nr|0);x<Math.min(ART_W,(nx+nr|0)+1);x++){
+          const d=Math.sqrt((x-nx)**2+(y-ny)**2);if(d>nr)continue;const t=1-d/nr;const al=t*t*0.1;
+          const i=(y*ART_W+x)*4;
+          starBuf[i]=Math.min(255,starBuf[i]+(cr*al|0));starBuf[i+1]=Math.min(255,starBuf[i+1]+(cg*al|0));starBuf[i+2]=Math.min(255,starBuf[i+2]+(cb*al|0));
+        }
       }
-      return pal;
+      // Stars
+      for(let i=0;i<400;i++){
+        const x=hash(i,0,400)*ART_W|0,y=hash(i,1,400)*ART_H|0;
+        const br=80+hash(i,2,400)*175|0;const hu=hash(i,3,400)<0.3?220:hash(i,3,400)<0.5?40:0;
+        const sa=hash(i,4,400)*20|0;const[sr,sg,sb]=hsl2rgb(hu,sa,35+br/255*55);
+        const idx=(y*ART_W+x)*4;starBuf[idx]=sr;starBuf[idx+1]=sg;starBuf[idx+2]=sb;
+        if(br>180){const[dr,dg,db]=hsl2rgb(hu,sa,25+br/255*20);
+          for(const[dx,dy]of[[-1,0],[1,0],[0,-1],[0,1]]){const nx=x+dx,ny=y+dy;
+            if(nx>=0&&nx<ART_W&&ny>=0&&ny<ART_H){const ni=(ny*ART_W+nx)*4;
+              starBuf[ni]=Math.min(255,starBuf[ni]+(dr*0.25|0));starBuf[ni+1]=Math.min(255,starBuf[ni+1]+(dg*0.25|0));starBuf[ni+2]=Math.min(255,starBuf[ni+2]+(db*0.25|0))}}}
+      }
     }
 
-    // ── Dithered shade transition ──
-    // Instead of smooth blending, we pick between two flat shades
-    // using a Bayer pattern. This is how pixel art creates "in-between" tones.
-    const BAYER = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
-    function ditherPick(x, y, t) {
-      // t is 0-1, returns true/false for which shade to use
-      const threshold = BAYER[y & 3][x & 3] / 16;
-      return t > threshold;
-    }
+    // ── Planet (static — pre-rendered with maximum detail) ──
+    const planetPal = makePal(5, 68, 52, 12); // 12-shade red palette
+    const planetShadowPal = makePal(340, 40, 22, 8);
+    const planetBuf = new Int32Array(ART_W * ART_H); // -1 = no planet pixel, otherwise packed RGB
+    const planetAlpha = new Uint8Array(ART_W * ART_H); // for atmosphere rim
+    {
+      planetBuf.fill(-1);
+      const lightX = Math.cos(-0.8), lightY = Math.sin(-0.8);
 
-    // ── Irregular edge: perturb a circle radius with noise ──
-    function irregularRadius(angle, baseR, roughness, seed) {
-      return baseR + fbm(Math.cos(angle) * 3, Math.sin(angle) * 3, 4, seed) * roughness * baseR;
+      for(let py=-PR-4;py<=PR+4;py++)for(let px=-PR-4;px<=PR+4;px++){
+        const x=(CX+px)|0, y=(CY+py)|0;
+        if(x<0||x>=ART_W||y<0||y>=ART_H)continue;
+        const dist=Math.sqrt(px*px+py*py);
+        const angle=Math.atan2(py,px);
+        const edgeR=irregR(angle,PR,0.05,42);
+        const idx=y*ART_W+x;
+
+        // Atmosphere rim (outside edge)
+        if(dist>edgeR&&dist<edgeR+4){
+          const rimT=1-(dist-edgeR)/4;
+          const ld=(px*lightX+py*lightY)/dist;
+          if(ld>-0.3){
+            const rimB=rimT*(0.25+ld*0.35);
+            const[rr,rg,rb]=planetPal[9];
+            planetBuf[idx]=(rr<<16)|(rg<<8)|rb;
+            planetAlpha[idx]=rimB*90|0;
+          }
+          continue;
+        }
+        if(dist>edgeR)continue;
+
+        // Outline
+        if(dist>edgeR-0.8){
+          planetBuf[idx]=(10<<16)|(5<<8)|7;
+          planetAlpha[idx]=255;
+          continue;
+        }
+
+        const normD=dist/edgeR;
+        const ld=(px*lightX+py*lightY)/(dist+0.001);
+
+        // Base lighting
+        let shade=0.22+ld*0.33+(1-normD)*0.12;
+
+        // Multi-octave surface noise
+        shade+=(fbm(px*0.1,py*0.1,6,77)-0.5)*0.18;
+
+        // Fine grain detail (higher frequency noise)
+        shade+=(fbm(px*0.35,py*0.35,4,78)-0.5)*0.08;
+
+        // Very fine pixel-level texture
+        shade+=(fbm(px*0.8,py*0.8,3,79)-0.5)*0.04;
+
+        // Atmospheric bands
+        const bandN=fbm(px*0.04+py*0.001,py*0.12,4,123);
+        shade+=(bandN-0.5)*0.07;
+        // Band color variation (some bands are slightly different hue)
+        const bandHueShift=(fbm(py*0.08,0,3,124)-0.5)*8;
+
+        // Craters (more of them, more varied)
+        for(let ci=0;ci<14;ci++){
+          const ca=hash(ci,0,888)*Math.PI*2,cd=hash(ci,1,888)*0.8;
+          const cr=1.5+hash(ci,2,888)*8;
+          const ccx=Math.cos(ca)*cd*PR,ccy=Math.sin(ca)*cd*PR;
+          const cdist=Math.sqrt((px-ccx)**2+(py-ccy)**2);
+          const crEdge=irregR(Math.atan2(py-ccy,px-ccx),cr,0.2,888+ci);
+          if(cdist<crEdge){
+            const crT=cdist/crEdge;
+            if(crT>0.75){
+              const rimL=((px-ccx)*lightX+(py-ccy)*lightY)/(cdist+0.01);
+              shade+=0.06+rimL*0.05;
+            } else if(crT>0.5){
+              shade-=0.04;
+              // Inner ring detail
+              if(hash(x,y,900+ci)>0.7)shade-=0.05;
+            } else {
+              shade-=0.18*(1-crT/0.5);
+              // Floor texture
+              shade+=(hash(x,y,901+ci)-0.5)*0.06;
+            }
+          }
+        }
+
+        // Surface features: ridges and valleys
+        const ridge=fbm(px*0.2,py*0.15,4,200);
+        if(ridge>0.58&&ridge<0.62)shade-=0.08; // valley line
+        if(ridge>0.72&&ridge<0.75)shade+=0.05; // ridge highlight
+
+        // Scattered surface marks
+        if(hash(x,y,555)>0.92){shade+=(hash(x,y,556)-0.5)*0.15}
+
+        // Terminator
+        if(ld<-0.05)shade*=0.3+0.7*Math.max(0,(ld+0.05)/0.05+0.3);
+
+        shade=Math.max(0,Math.min(1,shade));
+
+        // Choose palette (shadow side gets cooler palette)
+        const isShadow = ld < -0.15;
+        const pal = isShadow ? planetShadowPal : planetPal;
+        const pLen = pal.length;
+
+        // Color band selection with per-pixel hue variation
+        const rawIdx = shade * (pLen - 0.01);
+        const palIdx = rawIdx | 0;
+        const nextIdx = Math.min(palIdx + 1, pLen - 1);
+        const bandT = rawIdx - palIdx;
+
+        let [r,g,b] = dithPick(x,y,bandT) ? pal[nextIdx] : pal[palIdx];
+
+        // Per-pixel hue shift (band color variation)
+        if(Math.abs(bandHueShift)>1){
+          const shiftAmt=bandHueShift*0.4;
+          // Simple hue shift approximation: rotate R/B slightly
+          const nr=Math.max(0,Math.min(255,r+shiftAmt*2));
+          const nb=Math.max(0,Math.min(255,b-shiftAmt*1.5));
+          r=nr|0; b=nb|0;
+        }
+
+        // Micro-texture: random shade jitter on ~12% of pixels
+        if(hash(x,y,557)>0.88){
+          const jDir=hash(x,y,558)>0.5?1:-1;
+          const adjIdx=Math.max(0,Math.min(pLen-1,palIdx+jDir));
+          [r,g,b]=pal[adjIdx];
+        }
+
+        planetBuf[idx]=(r<<16)|(g<<8)|b;
+        planetAlpha[idx]=255;
+      }
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // SCENE OBJECTS (generated once, rendered per frame)
+    // DYNAMIC OBJECTS
     // ══════════════════════════════════════════════════════════════════
 
-    const CX = ART_W / 2, CY = ART_H / 2;
-
-    // Planet parameters
-    const PLANET_R = 36;
-    const planetPal = makePalette(5, 65, 50, 8);
-    const planetDarkPal = makePalette(340, 45, 25, 5); // shadow side
-
-    // Asteroids
-    const asteroids = [];
-    for (let i = 0; i < 10; i++) {
-      const h = hash(i, 0, 55);
-      const orbitR = 52 + h * 70;
-      const speed = (0.1 + hash(i,1,55) * 0.25) * (hash(i,2,55) < 0.3 ? -1 : 1);
-      const size = 3 + Math.floor(hash(i,3,55) * 10);
-      const pal = makePalette(25 + hash(i,4,55)*30, 15 + hash(i,5,55)*20, 35 + hash(i,6,55)*15, 6);
-      const seed = i * 137;
-      const tilt = 0.7 + hash(i,7,55) * 0.3;
-      asteroids.push({ orbitR, speed, size, pal, seed, tilt, phase: hash(i,8,55) * Math.PI * 2, rotSpeed: (hash(i,9,55)-0.5)*3 });
-    }
-
-    // Comets
-    const comets = [];
-    const cometHues = [185, 42, 275];
-    for (let i = 0; i < 3; i++) {
-      const h = cometHues[i];
-      comets.push({
-        orbitR: 65 + i * 30, speed: 0.35 + hash(i,0,99)*0.2,
-        phase: hash(i,1,99) * Math.PI * 2, tilt: 0.6 + hash(i,2,99)*0.35,
-        size: 2 + Math.floor(hash(i,3,99)*2),
-        pal: makePalette(h, 75, 60, 5),
-        seed: 500 + i,
-        trail: [],
+    // Asteroids (richer, more detailed)
+    const asteroids=[];
+    for(let i=0;i<14;i++){
+      const h=hash(i,0,55);
+      asteroids.push({
+        orbitR:72+h*120, speed:(0.08+hash(i,1,55)*0.2)*(hash(i,2,55)<0.3?-1:1),
+        size:4+Math.floor(hash(i,3,55)*14),
+        pal:makePal(20+hash(i,4,55)*40, 12+hash(i,5,55)*25, 32+hash(i,6,55)*18, 8),
+        seed:i*137, tilt:0.65+hash(i,7,55)*0.35,
+        phase:hash(i,8,55)*Math.PI*2, rotSpeed:(hash(i,9,55)-0.5)*2.5
       });
     }
 
-    // Stars (pre-rendered into a static buffer)
-    const starBuf = new Uint8ClampedArray(ART_W * ART_H * 4);
-    function renderStars() {
-      // Background fill
-      for (let y = 0; y < ART_H; y++) {
-        for (let x = 0; x < ART_W; x++) {
-          const i = (y * ART_W + x) * 4;
-          // Subtle color variation in space (not flat)
-          const n = fbm(x * 0.02, y * 0.02, 3, 200);
-          const r = 10 + Math.round(n * 8);
-          const g = 8 + Math.round(n * 5);
-          const b = 20 + Math.round(n * 12);
-          starBuf[i] = r; starBuf[i+1] = g; starBuf[i+2] = b; starBuf[i+3] = 255;
+    function drawAsteroid(a,t){
+      const ox=CX+Math.cos(a.phase+t*a.speed)*a.orbitR;
+      const oy=CY+Math.sin(a.phase+t*a.speed)*a.orbitR*a.tilt;
+      const rot=t*a.rotSpeed;const sz=a.size;const pal=a.pal;const cr=Math.cos(rot),sr=Math.sin(rot);
+
+      for(let py=-sz-3;py<=sz+3;py++)for(let px=-sz-3;px<=sz+3;px++){
+        const rpx=px*cr-py*sr, rpy=px*sr+py*cr;
+        const x=(ox+px)|0, y=(oy+py)|0;
+        if(x<0||x>=ART_W||y<0||y>=ART_H)continue;
+
+        const dist=Math.sqrt(rpx*rpx+rpy*rpy);
+        const angle=Math.atan2(rpy,rpx);
+        const edgeR=irregR(angle,sz*0.7,0.4,a.seed);
+
+        if(dist>edgeR+0.5)continue;
+        if(dist>edgeR-0.5){setP(x,y,6,5,4);continue}
+
+        const ld=(rpx*(-0.55)+rpy*(-0.7))/(dist+0.01);
+        let shade=0.28+ld*0.33;
+
+        // Rocky texture (multi-octave)
+        shade+=(fbm(rpx*0.25,rpy*0.25,5,a.seed+10)-0.5)*0.22;
+        shade+=(fbm(rpx*0.6,rpy*0.6,3,a.seed+11)-0.5)*0.1;
+
+        // Cracks
+        const ck=fbm(rpx*0.45,rpy*0.45,4,a.seed+20);
+        if(ck>0.62&&ck<0.66)shade-=0.12;
+
+        // Pits
+        for(let pi=0;pi<3;pi++){
+          const pa=hash(pi,0,a.seed+50)*Math.PI*2,pd=hash(pi,1,a.seed+50)*0.5;
+          const pr=1+hash(pi,2,a.seed+50)*2.5;
+          const pcx=Math.cos(pa)*pd*sz*0.7,pcy=Math.sin(pa)*pd*sz*0.7;
+          const pdist=Math.sqrt((rpx-pcx)**2+(rpy-pcy)**2);
+          if(pdist<pr){shade-=0.12*(1-pdist/pr);shade+=(hash(x,y,a.seed+60+pi)-0.5)*0.05}
         }
-      }
-      // Nebula blobs
-      for (let k = 0; k < 3; k++) {
-        const nx = 50 + hash(k,0,300) * (ART_W-100);
-        const ny = 30 + hash(k,1,300) * (ART_H-60);
-        const nr = 30 + hash(k,2,300) * 50;
-        const nh = [280, 330, 200][k];
-        for (let y = Math.max(0, Math.floor(ny-nr)); y < Math.min(ART_H, Math.ceil(ny+nr)); y++) {
-          for (let x = Math.max(0, Math.floor(nx-nr)); x < Math.min(ART_W, Math.ceil(nx+nr)); x++) {
-            const d = Math.sqrt((x-nx)**2 + (y-ny)**2);
-            if (d > nr) continue;
-            const t = 1 - d/nr;
-            const [cr,cg,cb] = hsl2rgb(nh, 35, 18);
-            const alpha = t * t * 0.12;
-            const i = (y*ART_W+x)*4;
-            starBuf[i]   = Math.min(255, starBuf[i]   + Math.round(cr * alpha));
-            starBuf[i+1] = Math.min(255, starBuf[i+1] + Math.round(cg * alpha));
-            starBuf[i+2] = Math.min(255, starBuf[i+2] + Math.round(cb * alpha));
-          }
-        }
-      }
-      // Stars as individual pixels
-      for (let i = 0; i < 250; i++) {
-        const x = Math.floor(hash(i,0,400) * ART_W);
-        const y = Math.floor(hash(i,1,400) * ART_H);
-        const bright = 100 + Math.floor(hash(i,2,400) * 155);
-        const hue = hash(i,3,400) < 0.3 ? 220 : hash(i,3,400) < 0.5 ? 40 : 0;
-        const sat = Math.floor(hash(i,4,400) * 25);
-        const [sr,sg,sb] = hsl2rgb(hue, sat, 40 + bright/255*55);
-        const idx = (y*ART_W+x)*4;
-        starBuf[idx] = sr; starBuf[idx+1] = sg; starBuf[idx+2] = sb; starBuf[idx+3] = 255;
-        // Bright stars get a 1px cross
-        if (bright > 200) {
-          const dim = Math.round(bright * 0.4);
-          const [dr,dg,db] = hsl2rgb(hue, sat, 30 + dim/255*30);
-          for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-            const nx=x+dx, ny=y+dy;
-            if (nx>=0&&nx<ART_W&&ny>=0&&ny<ART_H) {
-              const ni = (ny*ART_W+nx)*4;
-              starBuf[ni]=Math.min(255,starBuf[ni]+Math.round(dr*0.3));
-              starBuf[ni+1]=Math.min(255,starBuf[ni+1]+Math.round(dg*0.3));
-              starBuf[ni+2]=Math.min(255,starBuf[ni+2]+Math.round(db*0.3));
-            }
-          }
-        }
-      }
-    }
-    renderStars();
 
-    // ══════════════════════════════════════════════════════════════════
-    // PIXEL-LEVEL RENDERING FUNCTIONS
-    // ══════════════════════════════════════════════════════════════════
+        // Scattered bright/dark mineral flecks
+        if(hash(x+a.seed,y,666)>0.9){shade+=(hash(x,y+a.seed,667)-0.5)*0.2}
 
-    function drawPlanetPixels(time) {
-      const lightAngle = -0.8;
-      const lightX = Math.cos(lightAngle), lightY = Math.sin(lightAngle);
+        shade=Math.max(0,Math.min(1,shade));
+        const ri=shade*(pal.length-0.01)|0;
+        const ni=Math.min(ri+1,pal.length-1);
+        let[r,g,b]=dithPick(x,y,shade*(pal.length-1)-ri)?pal[ni]:pal[ri];
 
-      for (let py = -PLANET_R - 3; py <= PLANET_R + 3; py++) {
-        for (let px = -PLANET_R - 3; px <= PLANET_R + 3; px++) {
-          const x = Math.round(CX + px), y = Math.round(CY + py);
-          if (x < 0 || x >= ART_W || y < 0 || y >= ART_H) continue;
-
-          const dist = Math.sqrt(px*px + py*py);
-          const angle = Math.atan2(py, px);
-
-          // Irregular edge using fractal noise
-          const edgeR = irregularRadius(angle, PLANET_R, 0.06, 42);
-
-          if (dist > edgeR + 1.5) {
-            // Atmosphere rim glow (1-2 pixels outside edge)
-            if (dist < edgeR + 3) {
-              const rimT = 1 - (dist - edgeR) / 3;
-              const lightDot = (px * lightX + py * lightY) / dist;
-              if (lightDot > -0.2) {
-                const rimBright = rimT * (0.3 + lightDot * 0.4);
-                const [rr,rg,rb] = planetPal[6];
-                setP(x, y, rr, rg, rb, Math.round(rimBright * 80));
-              }
-            }
-            continue;
-          }
-
-          if (dist > edgeR) {
-            // Edge pixel — dark outline
-            setP(x, y, 12, 6, 8);
-            continue;
-          }
-
-          // Surface shading: light direction + noise texture
-          const normDist = dist / edgeR;
-          const lightDot = (px * lightX + py * lightY) / (dist + 0.01);
-
-          // Base shade from lighting (0 = dark shadow, 1 = bright lit)
-          let shade = 0.25 + lightDot * 0.35 + (1 - normDist) * 0.15;
-
-          // Surface noise (fractal, gives irregular texture at every scale)
-          const surfNoise = fbm(px * 0.12, py * 0.12, 5, 77);
-          shade += (surfNoise - 0.5) * 0.2;
-
-          // Crater check (several craters scattered around)
-          for (let ci = 0; ci < 8; ci++) {
-            const ca = hash(ci, 0, 888) * Math.PI * 2;
-            const cd = hash(ci, 1, 888) * 0.75;
-            const cr = 2 + hash(ci, 2, 888) * 7;
-            const ccx = Math.cos(ca) * cd * PLANET_R;
-            const ccy = Math.sin(ca) * cd * PLANET_R;
-            const cdist = Math.sqrt((px - ccx)**2 + (py - ccy)**2);
-            if (cdist < cr) {
-              const craterEdge = irregularRadius(Math.atan2(py-ccy, px-ccx), cr, 0.15, 888+ci);
-              if (cdist < craterEdge) {
-                const craterT = cdist / craterEdge;
-                // Crater interior is darker, rim is brighter
-                if (craterT > 0.7) {
-                  // Rim — slightly brighter on light side
-                  const rimLight = ((px-ccx)*lightX + (py-ccy)*lightY) / (cdist+0.01);
-                  shade += 0.08 + rimLight * 0.06;
-                } else {
-                  shade -= 0.15 * (1 - craterT / 0.7);
-                }
-                // Inner crack detail
-                if (Math.abs(craterT - 0.5) < 0.08 && hash(x, y, 999) > 0.6) {
-                  shade -= 0.08;
-                }
-              }
-            }
-          }
-
-          // Horizontal bands (atmospheric striations)
-          const bandNoise = fbm(px * 0.05 + py * 0.002, py * 0.15, 3, 123);
-          shade += (bandNoise - 0.5) * 0.08;
-
-          // Terminator darkening (shadow side)
-          const terminator = lightDot;
-          if (terminator < -0.1) {
-            shade *= 0.4 + 0.6 * Math.max(0, (terminator + 0.1) / 0.1 + 0.4);
-          }
-
-          shade = Math.max(0, Math.min(1, shade));
-
-          // Quantize to palette (flat color bands, not smooth gradient)
-          const palIdx = Math.floor(shade * (planetPal.length - 0.01));
-          const nextIdx = Math.min(palIdx + 1, planetPal.length - 1);
-          const bandT = shade * (planetPal.length - 1) - palIdx;
-
-          // Dither between adjacent palette entries
-          let [r, g, b] = ditherPick(x, y, bandT) ? planetPal[nextIdx] : planetPal[palIdx];
-
-          // Micro-texture: occasional pixel-level color jitter
-          if (hash(x, y, 555) > 0.85) {
-            const jitter = hash(x, y, 556) > 0.5 ? 1 : -1;
-            const adjIdx = Math.max(0, Math.min(planetPal.length-1, palIdx + jitter));
-            [r, g, b] = planetPal[adjIdx];
-          }
-
-          setP(x, y, r, g, b);
-        }
+        if(hash(x+a.seed*3,y,700)>0.87){const ai=Math.max(0,Math.min(pal.length-1,ri+(hash(x,y,701)>0.5?1:-1)));[r,g,b]=pal[ai]}
+        setP(x,y,r,g,b);
       }
     }
 
-    function drawAsteroidPixels(ast, time) {
-      const t = time;
-      const ox = CX + Math.cos(ast.phase + t * ast.speed) * ast.orbitR;
-      const oy = CY + Math.sin(ast.phase + t * ast.speed) * ast.orbitR * ast.tilt;
-      const rot = t * ast.rotSpeed;
-      const sz = ast.size;
-      const pal = ast.pal;
+    // Comets
+    const comets=[];
+    const cHues=[185,42,275];
+    for(let i=0;i<3;i++){
+      const h=cHues[i];
+      comets.push({
+        orbitR:85+i*40, speed:0.3+hash(i,0,99)*0.2,
+        phase:hash(i,1,99)*Math.PI*2, tilt:0.55+hash(i,2,99)*0.4,
+        size:2+Math.floor(hash(i,3,99)*2),
+        pal:makePal(h,80,62,7), seed:500+i, trail:[]
+      });
+    }
 
-      for (let py = -sz - 2; py <= sz + 2; py++) {
-        for (let px = -sz - 2; px <= sz + 2; px++) {
-          // Rotate
-          const rpx = px * Math.cos(rot) - py * Math.sin(rot);
-          const rpy = px * Math.sin(rot) + py * Math.cos(rot);
+    function drawComet(c,t){
+      const cx=CX+Math.cos(c.phase+t*c.speed)*c.orbitR;
+      const cy=CY+Math.sin(c.phase+t*c.speed)*c.orbitR*c.tilt;
+      const pal=c.pal;const sz=c.size;
 
-          const x = Math.round(ox + px), y = Math.round(oy + py);
-          if (x < 0 || x >= ART_W || y < 0 || y >= ART_H) continue;
+      c.trail.push({x:cx,y:cy});
+      if(c.trail.length>28)c.trail.shift();
 
-          const dist = Math.sqrt(rpx*rpx + rpy*rpy);
-          const angle = Math.atan2(rpy, rpx);
+      // Trail: scattered pixel particles with color gradient
+      for(let i=0;i<c.trail.length;i++){
+        const tp=c.trail[i];
+        const lifeT=i/c.trail.length;
+        const numP=1+Math.floor(lifeT*4);
+        const spread=(1-lifeT)*4;
 
-          // Highly irregular rocky edge
-          const edgeR = irregularRadius(angle, sz * 0.75, 0.35, ast.seed);
+        for(let p=0;p<numP;p++){
+          const ppx=(tp.x+(hash(i,p,c.seed+100)-0.5)*spread)|0;
+          const ppy=(tp.y+(hash(i,p+50,c.seed+100)-0.5)*spread)|0;
+          if(ppx<0||ppx>=ART_W||ppy<0||ppy>=ART_H)continue;
 
-          if (dist > edgeR + 0.5) continue;
+          // Color: bright near head, dimmer at tail
+          const ci=Math.min(pal.length-1,(lifeT*4)|0);
+          const [r,g,b]=pal[ci];
+          const alpha=(lifeT*220)|0;
+          setP(ppx,ppy,r,g,b,alpha);
 
-          if (dist > edgeR - 0.5) {
-            // Dark outline pixel
-            setP(x, y, 8, 6, 5);
-            continue;
+          // Occasional extra bright pixel
+          if(lifeT>0.6&&hash(i,p+99,c.seed+101)>0.7){
+            setP(ppx,ppy,pal[pal.length-1][0],pal[pal.length-1][1],pal[pal.length-1][2],alpha);
           }
-
-          // Shading: light from top-left
-          const lightDot = (rpx * (-0.6) + rpy * (-0.7)) / (dist + 0.01);
-          let shade = 0.3 + lightDot * 0.35;
-
-          // Rocky surface texture
-          shade += (fbm(rpx * 0.3, rpy * 0.3, 4, ast.seed + 10) - 0.5) * 0.25;
-
-          // Cracks
-          const crackNoise = fbm(rpx * 0.5, rpy * 0.5, 3, ast.seed + 20);
-          if (crackNoise > 0.65 && crackNoise < 0.7) shade -= 0.15;
-
-          shade = Math.max(0, Math.min(1, shade));
-
-          const palIdx = Math.floor(shade * (pal.length - 0.01));
-          const nextIdx = Math.min(palIdx + 1, pal.length - 1);
-          const bandT = shade * (pal.length - 1) - palIdx;
-
-          let [r, g, b] = ditherPick(x, y, bandT) ? pal[nextIdx] : pal[palIdx];
-
-          // Micro texture
-          if (hash(x + ast.seed, y, 666) > 0.88) {
-            const adj = hash(x, y + ast.seed, 667) > 0.5 ? 1 : -1;
-            const ai = Math.max(0, Math.min(pal.length-1, palIdx + adj));
-            [r, g, b] = pal[ai];
-          }
-
-          setP(x, y, r, g, b);
         }
+      }
+
+      // Core: irregular, multi-shade
+      for(let py=-sz-3;py<=sz+3;py++)for(let px=-sz-3;px<=sz+3;px++){
+        const x=(cx+px)|0,y=(cy+py)|0;
+        if(x<0||x>=ART_W||y<0||y>=ART_H)continue;
+        const dist=Math.sqrt(px*px+py*py);
+        const angle=Math.atan2(py,px);
+        const edgeR=irregR(angle,sz,0.35,c.seed);
+
+        if(dist>edgeR+2)continue;
+
+        // Glow halo
+        if(dist>edgeR){
+          const glowT=1-(dist-edgeR)/2;
+          const[r,g,b]=pal[4];
+          setP(x,y,r,g,b,(glowT*55)|0);
+          continue;
+        }
+
+        // Core surface
+        const coreT=1-dist/edgeR;
+        let ci;
+        if(coreT>0.6)ci=pal.length-1;
+        else if(coreT>0.35)ci=pal.length-2;
+        else if(coreT>0.15)ci=pal.length-3;
+        else ci=pal.length-4;
+
+        // Surface texture on core
+        ci=Math.max(0,Math.min(pal.length-1,ci+(hash(x,y,c.seed+200)>0.8?(hash(x,y,c.seed+201)>0.5?1:-1):0)));
+        const[r,g,b]=pal[ci];
+        setP(x,y,r,g,b);
       }
     }
 
-    function drawCometPixels(comet, time) {
-      const t = time;
-      const cx = CX + Math.cos(comet.phase + t * comet.speed) * comet.orbitR;
-      const cy = CY + Math.sin(comet.phase + t * comet.speed) * comet.orbitR * comet.tilt;
-      const pal = comet.pal;
-      const sz = comet.size;
-
-      // Update trail
-      comet.trail.push({x: cx, y: cy});
-      if (comet.trail.length > 20) comet.trail.shift();
-
-      // Draw trail (individual pixel particles, NOT a gradient line)
-      for (let i = 0; i < comet.trail.length - 1; i++) {
-        const tp = comet.trail[i];
-        const lifeT = i / comet.trail.length; // 0=oldest, 1=newest
-        const numParticles = Math.floor(1 + lifeT * 3);
-
-        for (let p = 0; p < numParticles; p++) {
-          const spread = (1 - lifeT) * 3;
-          const ppx = Math.round(tp.x + (hash(i, p, comet.seed + 100) - 0.5) * spread);
-          const ppy = Math.round(tp.y + (hash(i, p + 50, comet.seed + 100) - 0.5) * spread);
-
-          const palIdx = Math.min(pal.length - 1, Math.floor((1 - lifeT) * 3));
-          const [r, g, b] = pal[palIdx];
-          const alpha = Math.round(lifeT * 200);
-          setP(ppx, ppy, r, g, b, alpha);
+    // Orbit dots
+    function drawOrbits(){
+      for(let ai=0;ai<3;ai++){
+        const a=asteroids[ai];
+        for(let i=0;i<80;i++){
+          const ang=(i/80)*Math.PI*2;
+          const x=(CX+Math.cos(ang)*a.orbitR)|0;
+          const y=(CY+Math.sin(ang)*a.orbitR*a.tilt)|0;
+          if(x<0||x>=ART_W||y<0||y>=ART_H)continue;
+          if(i%5===0)setP(x,y,25,20,38,35);
         }
-      }
-
-      // Comet core — irregular bright blob, NOT a circle
-      for (let py = -sz - 2; py <= sz + 2; py++) {
-        for (let px = -sz - 2; px <= sz + 2; px++) {
-          const x = Math.round(cx + px), y = Math.round(cy + py);
-          if (x < 0 || x >= ART_W || y < 0 || y >= ART_H) continue;
-
-          const dist = Math.sqrt(px*px + py*py);
-          const angle = Math.atan2(py, px);
-          const edgeR = irregularRadius(angle, sz, 0.3, comet.seed);
-
-          if (dist > edgeR + 1) continue;
-
-          if (dist > edgeR) {
-            // Glow pixel (bright, semi-transparent for bloom effect)
-            const [r,g,b] = pal[3];
-            setP(x, y, r, g, b, 120);
-            continue;
-          }
-
-          // Core: brightest at center
-          const coreT = 1 - dist / edgeR;
-          let palIdx;
-          if (coreT > 0.6) palIdx = pal.length - 1; // white-hot center
-          else if (coreT > 0.3) palIdx = pal.length - 2;
-          else palIdx = pal.length - 3;
-
-          const [r, g, b] = pal[palIdx];
-          setP(x, y, r, g, b);
-        }
-      }
-
-      // Glow halo (a few semi-transparent bright pixels around core)
-      for (let py = -sz - 4; py <= sz + 4; py++) {
-        for (let px = -sz - 4; px <= sz + 4; px++) {
-          const x = Math.round(cx + px), y = Math.round(cy + py);
-          if (x < 0 || x >= ART_W || y < 0 || y >= ART_H) continue;
-          const dist = Math.sqrt(px*px + py*py);
-          if (dist < sz || dist > sz + 3.5) continue;
-          const glowT = 1 - (dist - sz) / 3.5;
-          const [r,g,b] = pal[3];
-          const alpha = Math.round(glowT * 40);
-          if (alpha > 5) setP(x, y, r, g, b, alpha);
-        }
-      }
-    }
-
-    // ── Orbit path dots (subtle) ──
-    function drawOrbitDots(r, tilt) {
-      for (let i = 0; i < 60; i++) {
-        const a = (i / 60) * Math.PI * 2;
-        const x = Math.round(CX + Math.cos(a) * r);
-        const y = Math.round(CY + Math.sin(a) * r * tilt);
-        if (x < 0 || x >= ART_W || y < 0 || y >= ART_H) continue;
-        if (i % 4 === 0) setP(x, y, 30, 25, 45, 40);
       }
     }
 
@@ -480,46 +392,60 @@
     // MAIN LOOP
     // ══════════════════════════════════════════════════════════════════
 
-    let time = 0;
+    let time=0;
+    function orbY(phase,speed,orbitR,tilt,t){return Math.sin(phase+t*speed)*orbitR*tilt}
 
-    function getOrbY(phase, speed, orbitR, tilt, t) {
-      return Math.sin(phase + t * speed) * orbitR * tilt;
-    }
+    function render(){
+      time+=1/60;
 
-    function render() {
-      time += 1/60;
+      // Blit stars
+      fp.set(starBuf);
 
-      // Copy star background into pixel buffer
-      px.set(starBuf);
-
-      // Orbit hint dots
-      for (const a of asteroids.slice(0, 3)) drawOrbitDots(a.orbitR, a.tilt);
-
-      // Z-sort all orbiting objects
-      const objects = [];
-      for (const a of asteroids) objects.push({ type: 'a', obj: a, y: getOrbY(a.phase, a.speed, a.orbitR, a.tilt, time) });
-      for (const c of comets) objects.push({ type: 'c', obj: c, y: getOrbY(c.phase, c.speed, c.orbitR, c.tilt, time) });
-
-      // Behind planet
-      for (const o of objects.filter(o => o.y < 0).sort((a,b) => a.y - b.y)) {
-        if (o.type === 'a') drawAsteroidPixels(o.obj, time);
-        else drawCometPixels(o.obj, time);
+      // Blit pre-rendered planet
+      for(let i=0;i<planetBuf.length;i++){
+        if(planetBuf[i]<0)continue;
+        const a=planetAlpha[i];
+        const r=(planetBuf[i]>>16)&255, g=(planetBuf[i]>>8)&255, b=planetBuf[i]&255;
+        const x=i%ART_W, y=(i/ART_W)|0;
+        setP(x,y,r,g,b,a);
       }
 
-      // Planet
-      drawPlanetPixels(time);
+      // Orbit hints
+      drawOrbits();
 
-      // In front of planet
-      for (const o of objects.filter(o => o.y >= 0).sort((a,b) => a.y - b.y)) {
-        if (o.type === 'a') drawAsteroidPixels(o.obj, time);
-        else drawCometPixels(o.obj, time);
+      // Z-sort objects
+      const objs=[];
+      for(const a of asteroids)objs.push({t:'a',o:a,y:orbY(a.phase,a.speed,a.orbitR,a.tilt,time)});
+      for(const c of comets)objs.push({t:'c',o:c,y:orbY(c.phase,c.speed,c.orbitR,c.tilt,time)});
+
+      // Behind planet (y < 0)
+      for(const o of objs.filter(o=>o.y<0).sort((a,b)=>a.y-b.y)){
+        if(o.t==='a')drawAsteroid(o.o,time);else drawComet(o.o,time);
       }
 
-      // Write to canvas
-      ctx.putImageData(imgData, 0, 0);
+      // Re-blit planet over behind objects (planet is in front of them)
+      for(let i=0;i<planetBuf.length;i++){
+        if(planetAlpha[i]<200)continue; // only solid planet pixels
+        const r=(planetBuf[i]>>16)&255,g=(planetBuf[i]>>8)&255,b=planetBuf[i]&255;
+        const fi=i<<2;
+        fp[fi]=r;fp[fi+1]=g;fp[fi+2]=b;fp[fi+3]=255;
+      }
 
+      // In front of planet (y >= 0)
+      for(const o of objs.filter(o=>o.y>=0).sort((a,b)=>a.y-b.y)){
+        if(o.t==='a')drawAsteroid(o.o,time);else drawComet(o.o,time);
+      }
+
+      ctx.putImageData(frame,0,0);
       requestAnimationFrame(render);
     }
+
+    document.getElementById('scene').addEventListener('click',()=>{
+      // Toggle 1x/2x scale on click
+      const cur=parseInt(canvas.style.width);
+      if(cur>ART_W*1.5){canvas.style.width=ART_W+'px';canvas.style.height=ART_H+'px'}
+      else{canvas.style.width=(ART_W*SCALE)+'px';canvas.style.height=(ART_H*SCALE)+'px'}
+    });
 
     render();
   </script>
