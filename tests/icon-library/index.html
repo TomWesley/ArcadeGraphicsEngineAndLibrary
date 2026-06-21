@@ -311,40 +311,40 @@
     });
 
     I('trophy',(x,cx,cy)=>{
-      // SOLID trophy with handles and base
-      solid(x,0.65);x.beginPath();x.moveTo(cx-u(14),cy-u(16));x.lineTo(cx+u(14),cy-u(16));
-      x.bezierCurveTo(cx+u(14),cy+u(2),cx+u(8),cy+u(8),cx+u(4),cy+u(10));
-      x.lineTo(cx-u(4),cy+u(10));x.bezierCurveTo(cx-u(8),cy+u(8),cx-u(14),cy+u(2),cx-u(14),cy-u(16));x.closePath();x.fill();
-      G(x,P,4,0.25);x.strokeStyle=pc(0.8);x.lineWidth=u(0.8);x.stroke();N(x);
-      // Solid handles
-      solid(x,0.55);x.beginPath();x.moveTo(cx-u(14),cy-u(12));x.bezierCurveTo(cx-u(20),cy-u(12),cx-u(20),cy-u(1),cx-u(14),cy-u(1));
-      x.lineTo(cx-u(14),cy-u(4));x.bezierCurveTo(cx-u(17),cy-u(4),cx-u(17),cy-u(9),cx-u(14),cy-u(9));x.closePath();x.fill();
-      x.beginPath();x.moveTo(cx+u(14),cy-u(12));x.bezierCurveTo(cx+u(20),cy-u(12),cx+u(20),cy-u(1),cx+u(14),cy-u(1));
-      x.lineTo(cx+u(14),cy-u(4));x.bezierCurveTo(cx+u(17),cy-u(4),cx+u(17),cy-u(9),cx+u(14),cy-u(9));x.closePath();x.fill();
-      // Stem + base (solid)
-      solid(x,0.6);x.fillRect(cx-u(2),cy+u(10),u(4),u(4));x.fillRect(cx-u(8),cy+u(14),u(16),u(4));
-      // Internal detail: rim highlight
-      hi(x,0.9,0.8);x.beginPath();x.moveTo(cx-u(12),cy-u(14.5));x.lineTo(cx+u(12),cy-u(14.5));x.stroke();
-      // Center star emblem
-      det(x,0.3,0.8);const sr=u(4);x.beginPath();for(let i=0;i<10;i++){const a=(i/10)*Math.PI*2-Math.PI/2,r=i%2===0?sr:sr*0.4;
-        i===0?x.moveTo(cx+Math.cos(a)*r,cy-u(4)+Math.sin(a)*r):x.lineTo(cx+Math.cos(a)*r,cy-u(4)+Math.sin(a)*r)}x.closePath();x.stroke();
-      // Base line detail
-      det(x,0.2,0.5);x.beginPath();x.moveTo(cx-u(6),cy+u(16));x.lineTo(cx+u(6),cy+u(16));x.stroke();
+      // RANK ACHIEVEMENT — three ascending bars (military rank display)
+      const bw=u(7),gap=u(3);
+      const bars=[{h:u(14),a:0.4},{h:u(22),a:0.6},{h:u(30),a:0.5}];
+      const base=cy+u(16);
+      bars.forEach((b,i)=>{
+        const bx=cx-u(12)+i*(bw+gap);
+        solid(x,b.a);x.fillRect(bx,base-b.h,bw,b.h);
+        bold(x,b.a+0.25,1.2);x.strokeRect(bx,base-b.h,bw,b.h);N(x);
+        // Segment lines
+        det(x,0.2,0.5);for(let sy=base-b.h+u(4);sy<base;sy+=u(4)){x.beginPath();x.moveTo(bx+u(1),sy);x.lineTo(bx+bw-u(1),sy);x.stroke()}
+        // Top bright edge
+        hi(x,0.9,0.8);x.beginPath();x.moveTo(bx,base-b.h);x.lineTo(bx+bw,base-b.h);x.stroke();
+      });
+      // Base line
+      bold(x,0.4,1.5);x.beginPath();x.moveTo(cx-u(14),base);x.lineTo(cx+u(14),base);x.stroke();N(x);
     });
 
     I('potion',(x,cx,cy)=>{
-      // Flask with bubbling contents
-      fill(x,0.2);x.beginPath();x.moveTo(cx-u(4),cy-u(4));x.bezierCurveTo(cx-u(13),cy+u(2),cx-u(13),cy+u(14),cx-u(10),cy+u(18));
-      x.bezierCurveTo(cx-u(7),cy+u(22),cx+u(7),cy+u(22),cx+u(10),cy+u(18));
-      x.bezierCurveTo(cx+u(13),cy+u(14),cx+u(13),cy+u(2),cx+u(4),cy-u(4));x.closePath();x.fill();
-      bold(x,0.8,2);x.stroke();N(x);
-      // Neck
-      fill(x,0.15);x.fillRect(cx-u(3.5),cy-u(14),u(7),u(11));bold(x,0.5,1.2);x.strokeRect(cx-u(3.5),cy-u(14),u(7),u(11));N(x);
-      // Cork
-      fill(x,0.35);x.fillRect(cx-u(4.5),cy-u(18),u(9),u(5));bold(x,0.45,1);x.strokeRect(cx-u(4.5),cy-u(18),u(9),u(5));N(x);
-      // Bubbles — ascending dots
-      fill(x,0.4);[[-u(3),u(12)],[u(2),u(8)],[-u(1),u(4)],[u(3),u(14)]].forEach(([dx,dy])=>{
-        x.beginPath();x.arc(cx+dx,cy+dy,u(1.5),0,Math.PI*2);x.fill()});
+      // RESOURCE CANISTER — cylindrical container with fill level indicator
+      solid(x,0.2);x.fillRect(cx-u(10),cy-u(18),u(20),u(36));
+      bold(x,0.7,1.8);x.strokeRect(cx-u(10),cy-u(18),u(20),u(36));N(x);
+      // Fill level (65%)
+      solid(x,0.45);x.fillRect(cx-u(9),cy-u(4),u(18),u(21));
+      // Level line (bright)
+      hi(x,0.9,1.2);x.beginPath();x.moveTo(cx-u(10),cy-u(4));x.lineTo(cx+u(10),cy-u(4));x.stroke();
+      // Segment markings on side
+      det(x,0.25,0.6);for(let i=0;i<5;i++){const sy=cy-u(14)+i*u(7);
+        x.beginPath();x.moveTo(cx-u(10),sy);x.lineTo(cx-u(7),sy);x.stroke();
+        x.beginPath();x.moveTo(cx+u(10),sy);x.lineTo(cx+u(7),sy);x.stroke()}
+      // Cap detail
+      solid(x,0.35);x.fillRect(cx-u(12),cy-u(22),u(24),u(5));
+      bold(x,0.5,1);x.strokeRect(cx-u(12),cy-u(22),u(24),u(5));N(x);
+      // Center label line
+      det(x,0.15,0.5);x.beginPath();x.moveTo(cx,cy-u(18));x.lineTo(cx,cy+u(18));x.stroke();
     });
 
     I('lightning',(x,cx,cy)=>{
@@ -567,28 +567,36 @@
 
     // ── GAME SYSTEMS ──
     I('inventory',(x,cx,cy)=>{
-      // Box with compartments — cleaner approach
-      fill(x,0.12);x.fillRect(cx-u(18),cy-u(16),u(36),u(32));bold(x,0.65,2);x.strokeRect(cx-u(18),cy-u(16),u(36),u(32));N(x);
-      // Dividers
-      bold(x,0.35,1.2);x.beginPath();x.moveTo(cx-u(6),cy-u(16));x.lineTo(cx-u(6),cy+u(16));x.stroke();
-      x.beginPath();x.moveTo(cx+u(6),cy-u(16));x.lineTo(cx+u(6),cy+u(16));x.stroke();
-      x.beginPath();x.moveTo(cx-u(18),cy);x.lineTo(cx+u(18),cy);x.stroke();N(x);
-      // One slot highlighted (has item)
-      G(x,P,4,0.3);fill(x,0.25);x.fillRect(cx-u(18)+u(1),cy-u(16)+u(1),u(12)-u(1),u(16)-u(1));N(x);
-      // Small item dot in highlighted slot
-      fill(x,0.5);x.beginPath();x.arc(cx-u(12),cy-u(8),u(3),0,Math.PI*2);x.fill();
+      // CARGO MANIFEST — data grid with status indicators
+      // Outer frame
+      bold(x,0.6,1.8);x.strokeRect(cx-u(18),cy-u(18),u(36),u(36));N(x);
+      // 3x3 grid cells
+      const cs=u(12);for(let r=0;r<3;r++)for(let c=0;c<3;c++){
+        const gx=cx-u(18)+c*cs,gy=cy-u(18)+r*cs;
+        thin(x,0.25,0.8);x.strokeRect(gx,gy,cs,cs);
+        // Status dots in each cell (filled/empty/active)
+        const status=[[0.6,3],[0.3,2],[0.5,2.5],[0.25,2],[0.7,3],[0,0],[0.4,2.5],[0,0],[0.35,2]];
+        const[sa,sr]=status[r*3+c];
+        if(sa>0){fill(x,sa);x.beginPath();x.arc(gx+cs/2,gy+cs/2,u(sr),0,Math.PI*2);x.fill()}
+      }
+      // Active cell highlight
+      G(x,P,4,0.3);x.strokeStyle=pc(0.7);x.lineWidth=u(1.2);x.strokeRect(cx-u(18),cy-u(18),cs,cs);N(x);
     });
 
     I('craft',(x,cx,cy)=>{
-      // Hammer + wrench crossed
-      bold(x,0.8,2.2);x.beginPath();x.moveTo(cx-u(14),cy+u(14));x.lineTo(cx+u(6),cy-u(6));x.stroke();N(x);
-      // Hammer head
-      fill(x,0.4);x.save();x.translate(cx+u(8),cy-u(8));x.rotate(-Math.PI/4);x.fillRect(-u(4),-u(6),u(8),u(12));
-      bold(x,0.55,1);x.strokeRect(-u(4),-u(6),u(8),u(12));x.restore();N(x);
-      // Wrench
-      bold(x,0.6,2);x.beginPath();x.moveTo(cx+u(14),cy+u(14));x.lineTo(cx-u(6),cy-u(6));x.stroke();N(x);
-      // Wrench head
-      bold(x,0.5,1.5);x.beginPath();x.arc(cx-u(8),cy-u(8),u(5),Math.PI*0.6,Math.PI*1.9);x.stroke();N(x);
+      // ENGINEERING — hexagonal schematic with center assembly point
+      thin(x,0.25,0.8);x.beginPath();for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2-Math.PI/2,r=u(20);
+        i===0?x.moveTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r):x.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r)}x.closePath();x.stroke();
+      // Connecting lines from center to vertices
+      for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2-Math.PI/2;
+        thin(x,0.15,0.5);x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(a)*u(18),cy+Math.sin(a)*u(18));x.stroke()}
+      // Center assembly ring
+      bold(x,0.65,1.5);x.beginPath();x.arc(cx,cy,u(8),0,Math.PI*2);x.stroke();N(x);
+      // Center dot (focus point)
+      G(x,P,5,0.4);fill(x,0.7);x.beginPath();x.arc(cx,cy,u(3),0,Math.PI*2);x.fill();N(x);
+      // Component dots at alternating vertices
+      fill(x,0.5);for(let i=0;i<6;i+=2){const a=(i/6)*Math.PI*2-Math.PI/2;
+        x.beginPath();x.arc(cx+Math.cos(a)*u(18),cy+Math.sin(a)*u(18),u(2),0,Math.PI*2);x.fill()}
     });
 
     I('quest',(x,cx,cy)=>{
@@ -598,47 +606,62 @@
     });
 
     I('shop',(x,cx,cy)=>{
-      // Shopping bag with handles
-      fill(x,0.12);x.beginPath();x.moveTo(cx-u(14),cy-u(6));x.lineTo(cx+u(14),cy-u(6));x.lineTo(cx+u(11),cy+u(16));
-      x.lineTo(cx-u(11),cy+u(16));x.closePath();x.fill();bold(x,0.65,1.8);x.stroke();N(x);
-      // Handles
-      bold(x,0.5,1.8);x.beginPath();x.arc(cx-u(5),cy-u(10),u(5),Math.PI,0);x.stroke();
-      x.beginPath();x.arc(cx+u(5),cy-u(10),u(5),Math.PI,0);x.stroke();N(x);
-      // Credit symbol inside
-      fill(x,0.35);x.beginPath();x.arc(cx,cy+u(4),u(5),0.4,-0.4);x.fill();
+      // TRANSACTION TERMINAL — screen/monitor with data
+      solid(x,0.15);x.fillRect(cx-u(16),cy-u(14),u(32),u(24));
+      bold(x,0.65,1.8);x.strokeRect(cx-u(16),cy-u(14),u(32),u(24));N(x);
+      // Screen content lines
+      bold(x,0.45,1.2);x.beginPath();x.moveTo(cx-u(12),cy-u(8));x.lineTo(cx+u(6),cy-u(8));x.stroke();
+      x.beginPath();x.moveTo(cx-u(12),cy-u(3));x.lineTo(cx+u(12),cy-u(3));x.stroke();
+      x.beginPath();x.moveTo(cx-u(12),cy+u(2));x.lineTo(cx+u(8),cy+u(2));x.stroke();N(x);
+      // Transaction indicator dot
+      G(x,P,4,0.4);fill(x,0.7);x.beginPath();x.arc(cx+u(11),cy-u(8),u(2),0,Math.PI*2);x.fill();N(x);
+      // Stand
+      bold(x,0.4,1.5);x.beginPath();x.moveTo(cx,cy+u(10));x.lineTo(cx,cy+u(16));x.stroke();
+      x.beginPath();x.moveTo(cx-u(8),cy+u(16));x.lineTo(cx+u(8),cy+u(16));x.stroke();N(x);
     });
 
     I('gift',(x,cx,cy)=>{
-      fill(x,0.15);x.fillRect(cx-u(14),cy-u(4),u(28),u(20));bold(x,0.6,1.5);x.strokeRect(cx-u(14),cy-u(4),u(28),u(20));N(x);
-      fill(x,0.2);x.fillRect(cx-u(16),cy-u(10),u(32),u(7));bold(x,0.55,1.2);x.strokeRect(cx-u(16),cy-u(10),u(32),u(7));N(x);
-      // Ribbon cross
-      bold(x,0.5,1.5);x.beginPath();x.moveTo(cx,cy-u(10));x.lineTo(cx,cy+u(16));x.stroke();N(x);
-      // Bow
-      bold(x,0.45,1.2);x.beginPath();x.arc(cx-u(5),cy-u(12),u(5),0.5,Math.PI);x.stroke();
-      x.beginPath();x.arc(cx+u(5),cy-u(12),u(5),0,Math.PI-0.5);x.stroke();N(x);
+      // SUPPLY DROP — crate with parachute lines
+      solid(x,0.25);x.fillRect(cx-u(12),cy-u(4),u(24),u(20));
+      bold(x,0.7,1.8);x.strokeRect(cx-u(12),cy-u(4),u(24),u(20));N(x);
+      // Crate cross strapping
+      det(x,0.3,0.8);x.beginPath();x.moveTo(cx,cy-u(4));x.lineTo(cx,cy+u(16));x.stroke();
+      x.beginPath();x.moveTo(cx-u(12),cy+u(6));x.lineTo(cx+u(12),cy+u(6));x.stroke();
+      // Parachute lines
+      bold(x,0.45,1);x.beginPath();x.moveTo(cx-u(12),cy-u(4));x.lineTo(cx,cy-u(18));x.lineTo(cx+u(12),cy-u(4));x.stroke();N(x);
+      // Chute arc
+      bold(x,0.35,1.2);x.beginPath();x.arc(cx,cy-u(20),u(10),Math.PI*0.15,Math.PI*0.85);x.stroke();N(x);
     });
 
     I('flag',(x,cx,cy)=>{
-      bold(x,0.6,2);x.beginPath();x.moveTo(cx-u(10),cy-u(18));x.lineTo(cx-u(10),cy+u(18));x.stroke();N(x);
-      fill(x,0.25);x.beginPath();x.moveTo(cx-u(10),cy-u(18));x.lineTo(cx+u(14),cy-u(10));x.lineTo(cx-u(10),cy-u(2));x.closePath();x.fill();
-      bold(x,0.75,1.8);x.stroke();N(x);
+      // WAYPOINT — vertical marker with beacon pulse
+      bold(x,0.65,2);x.beginPath();x.moveTo(cx,cy-u(6));x.lineTo(cx,cy+u(18));x.stroke();N(x);
+      // Waypoint diamond at top
+      solid(x,0.5);x.beginPath();x.moveTo(cx,cy-u(18));x.lineTo(cx+u(8),cy-u(8));x.lineTo(cx,cy+u(2));x.lineTo(cx-u(8),cy-u(8));x.closePath();x.fill();
+      bold(x,0.8,1.5);x.stroke();N(x);
+      // Center dot
+      G(x,P,4,0.4);fill(x,0.75);x.beginPath();x.arc(cx,cy-u(8),u(2.5),0,Math.PI*2);x.fill();N(x);
+      // Base marker
+      bold(x,0.4,1.5);x.beginPath();x.moveTo(cx-u(6),cy+u(18));x.lineTo(cx+u(6),cy+u(18));x.stroke();N(x);
     });
 
     I('crown',(x,cx,cy)=>{
-      fill(x,0.25);x.beginPath();x.moveTo(cx-u(18),cy+u(8));x.lineTo(cx-u(18),cy-u(4));x.lineTo(cx-u(9),cy+u(4));x.lineTo(cx,cy-u(16));
-      x.lineTo(cx+u(9),cy+u(4));x.lineTo(cx+u(18),cy-u(4));x.lineTo(cx+u(18),cy+u(8));x.closePath();x.fill();
-      bold(x,0.85,2.5);x.stroke();N(x);
-      fill(x,0.3);x.fillRect(cx-u(18),cy+u(8),u(36),u(5));bold(x,0.6,1.2);x.strokeRect(cx-u(18),cy+u(8),u(36),u(5));N(x);
-      // Tip gems
-      G(x,P,4,0.4);fill(x,0.7);[[-u(9),cy+u(3)],[0,cy-u(15)],[u(9),cy+u(3)]].forEach(([dx,dy])=>{
-        x.beginPath();x.arc(cx+dx,dy,u(2.5),0,Math.PI*2);x.fill()});N(x);
+      // COMMAND RANK — stacked chevrons (military insignia)
+      bold(x,0.85,2.5);x.beginPath();x.moveTo(cx-u(16),cy+u(4));x.lineTo(cx,cy-u(8));x.lineTo(cx+u(16),cy+u(4));x.stroke();N(x);
+      bold(x,0.65,2);x.beginPath();x.moveTo(cx-u(14),cy+u(12));x.lineTo(cx,cy);x.lineTo(cx+u(14),cy+u(12));x.stroke();N(x);
+      bold(x,0.45,1.5);x.beginPath();x.moveTo(cx-u(12),cy+u(18));x.lineTo(cx,cy+u(8));x.lineTo(cx+u(12),cy+u(18));x.stroke();N(x);
+      // Accent dot at apex
+      G(x,P,5,0.4);fill(x,0.7);x.beginPath();x.arc(cx,cy-u(8),u(2.5),0,Math.PI*2);x.fill();N(x);
     });
 
     I('diamond',(x,cx,cy)=>{
-      fill(x,0.25);x.beginPath();x.moveTo(cx,cy-u(20));x.lineTo(cx+u(20),cy-u(2));x.lineTo(cx,cy+u(20));x.lineTo(cx-u(20),cy-u(2));x.closePath();x.fill();
-      bold(x,0.85,2.5);x.stroke();N(x);
-      bold(x,0.45,1.2);x.beginPath();x.moveTo(cx-u(20),cy-u(2));x.lineTo(cx+u(20),cy-u(2));x.stroke();
-      x.beginPath();x.moveTo(cx-u(10),cy-u(2));x.lineTo(cx,cy-u(20));x.lineTo(cx+u(10),cy-u(2));x.stroke();N(x);
+      // PRIORITY MARKER — diamond with concentric rings
+      solid(x,0.25);x.beginPath();x.moveTo(cx,cy-u(20));x.lineTo(cx+u(16),cy);x.lineTo(cx,cy+u(20));x.lineTo(cx-u(16),cy);x.closePath();x.fill();
+      bold(x,0.8,2);x.stroke();N(x);
+      // Inner diamond
+      thin(x,0.4,1);x.beginPath();x.moveTo(cx,cy-u(12));x.lineTo(cx+u(10),cy);x.lineTo(cx,cy+u(12));x.lineTo(cx-u(10),cy);x.closePath();x.stroke();
+      // Center dot
+      G(x,P,5,0.4);fill(x,0.7);x.beginPath();x.arc(cx,cy,u(3),0,Math.PI*2);x.fill();N(x);
     });
 
     // ── ARROWS ──
