@@ -113,13 +113,32 @@
     });
 
     I('forward',(x,cx,cy)=>{
-      bold(x,0.85,2.5);x.beginPath();x.moveTo(cx-u(12),cy-u(12));x.lineTo(cx+u(2),cy);x.lineTo(cx-u(12),cy+u(12));x.stroke();
-      x.beginPath();x.moveTo(cx-u(2),cy-u(12));x.lineTo(cx+u(12),cy);x.lineTo(cx-u(2),cy+u(12));x.stroke();N(x);
+      // SOLID thick chevrons — like the reference
+      solid(x,0.75);x.beginPath();
+      x.moveTo(cx-u(16),cy-u(16));x.lineTo(cx-u(2),cy);x.lineTo(cx-u(16),cy+u(16));
+      x.lineTo(cx-u(8),cy+u(16));x.lineTo(cx+u(6),cy);x.lineTo(cx-u(8),cy-u(16));x.closePath();x.fill();
+      x.beginPath();
+      x.moveTo(cx-u(4),cy-u(16));x.lineTo(cx+u(10),cy);x.lineTo(cx-u(4),cy+u(16));
+      x.lineTo(cx+u(4),cy+u(16));x.lineTo(cx+u(18),cy);x.lineTo(cx+u(4),cy-u(16));x.closePath();x.fill();
+      G(x,P,4,0.2);x.strokeStyle=pc(0.85);x.lineWidth=u(0.8);
+      x.beginPath();x.moveTo(cx-u(16),cy-u(16));x.lineTo(cx-u(2),cy);x.lineTo(cx-u(16),cy+u(16));
+      x.lineTo(cx-u(8),cy+u(16));x.lineTo(cx+u(6),cy);x.lineTo(cx-u(8),cy-u(16));x.closePath();x.stroke();
+      x.beginPath();x.moveTo(cx-u(4),cy-u(16));x.lineTo(cx+u(10),cy);x.lineTo(cx-u(4),cy+u(16));
+      x.lineTo(cx+u(4),cy+u(16));x.lineTo(cx+u(18),cy);x.lineTo(cx+u(4),cy-u(16));x.closePath();x.stroke();N(x);
     });
 
     I('back',(x,cx,cy)=>{
-      bold(x,0.85,2.5);x.beginPath();x.moveTo(cx+u(12),cy-u(12));x.lineTo(cx-u(2),cy);x.lineTo(cx+u(12),cy+u(12));x.stroke();
-      x.beginPath();x.moveTo(cx+u(2),cy-u(12));x.lineTo(cx-u(12),cy);x.lineTo(cx+u(2),cy+u(12));x.stroke();N(x);
+      solid(x,0.75);x.beginPath();
+      x.moveTo(cx+u(16),cy-u(16));x.lineTo(cx+u(2),cy);x.lineTo(cx+u(16),cy+u(16));
+      x.lineTo(cx+u(8),cy+u(16));x.lineTo(cx-u(6),cy);x.lineTo(cx+u(8),cy-u(16));x.closePath();x.fill();
+      x.beginPath();
+      x.moveTo(cx+u(4),cy-u(16));x.lineTo(cx-u(10),cy);x.lineTo(cx+u(4),cy+u(16));
+      x.lineTo(cx-u(4),cy+u(16));x.lineTo(cx-u(18),cy);x.lineTo(cx-u(4),cy-u(16));x.closePath();x.fill();
+      G(x,P,4,0.2);x.strokeStyle=pc(0.85);x.lineWidth=u(0.8);
+      x.beginPath();x.moveTo(cx+u(16),cy-u(16));x.lineTo(cx+u(2),cy);x.lineTo(cx+u(16),cy+u(16));
+      x.lineTo(cx+u(8),cy+u(16));x.lineTo(cx-u(6),cy);x.lineTo(cx+u(8),cy-u(16));x.closePath();x.stroke();
+      x.beginPath();x.moveTo(cx+u(4),cy-u(16));x.lineTo(cx-u(10),cy);x.lineTo(cx+u(4),cy+u(16));
+      x.lineTo(cx-u(4),cy+u(16));x.lineTo(cx-u(18),cy);x.lineTo(cx-u(4),cy-u(16));x.closePath();x.stroke();N(x);
     });
 
     I('restart',(x,cx,cy)=>{
@@ -286,8 +305,6 @@
       x.lineTo(cx+u(13),cy+u(2));
       x.lineTo(cx+u(24),cy+u(2));
       x.stroke();N(x);
-      // Pulse dot at peak
-      G(x,P,8,0.6);fill(x,0.9);x.beginPath();x.arc(cx-u(3),cy-u(18),u(2.5),0,Math.PI*2);x.fill();N(x);
       // BPM readout hint
       thin(x,0.35,0.8);x.beginPath();x.moveTo(cx+u(14),cy+u(10));x.lineTo(cx+u(22),cy+u(10));x.stroke();
       x.beginPath();x.moveTo(cx+u(14),cy+u(14));x.lineTo(cx+u(20),cy+u(14));x.stroke();
@@ -321,47 +338,39 @@
     });
 
     I('trophy',(x,cx,cy)=>{
-      // FUTURISTIC TROPHY — angular spire with blade wings on pedestal
-      // Central spire
-      solid(x,0.55);x.beginPath();
-      x.moveTo(cx,cy-u(24));// apex point
-      x.lineTo(cx+u(4),cy-u(10));// right shoulder
-      x.lineTo(cx+u(3),cy+u(4));// right waist
-      x.lineTo(cx+u(5),cy+u(8));// right hip flare
-      x.lineTo(cx+u(2),cy+u(12));// right base
-      x.lineTo(cx-u(2),cy+u(12));// left base
-      x.lineTo(cx-u(5),cy+u(8));// left hip flare
-      x.lineTo(cx-u(3),cy+u(4));// left waist
-      x.lineTo(cx-u(4),cy-u(10));// left shoulder
+      // SLEEK FUTURISTIC TROPHY — tall narrow angular obelisk with swept wings
+      // Central spire — tall, narrow, sharp
+      solid(x,0.6);x.beginPath();
+      x.moveTo(cx,cy-u(26));// sharp apex
+      x.lineTo(cx+u(3),cy-u(14));// narrow right
+      x.lineTo(cx+u(2),cy+u(6));// taper down
+      x.lineTo(cx-u(2),cy+u(6));// left side
+      x.lineTo(cx-u(3),cy-u(14));// narrow left
       x.closePath();x.fill();
-      bold(x,0.85,1.5);x.stroke();N(x);
-      // Left blade wing
-      solid(x,0.35);x.beginPath();
-      x.moveTo(cx-u(4),cy-u(6));// attachment point
-      x.lineTo(cx-u(18),cy+u(2));// tip
-      x.lineTo(cx-u(12),cy+u(6));// inner
-      x.lineTo(cx-u(4),cy+u(2));// return
-      x.closePath();x.fill();
-      bold(x,0.6,1);x.stroke();N(x);
-      // Right blade wing
-      solid(x,0.35);x.beginPath();
-      x.moveTo(cx+u(4),cy-u(6));
-      x.lineTo(cx+u(18),cy+u(2));
-      x.lineTo(cx+u(12),cy+u(6));
-      x.lineTo(cx+u(4),cy+u(2));
-      x.closePath();x.fill();
-      bold(x,0.6,1);x.stroke();N(x);
-      // Inner facet lines on spire
-      det(x,0.3,0.6);x.beginPath();x.moveTo(cx,cy-u(22));x.lineTo(cx,cy+u(10));x.stroke();
-      det(x,0.2,0.5);x.beginPath();x.moveTo(cx-u(2),cy-u(8));x.lineTo(cx-u(2),cy+u(6));x.stroke();
-      x.beginPath();x.moveTo(cx+u(2),cy-u(8));x.lineTo(cx+u(2),cy+u(6));x.stroke();
+      bold(x,0.85,1.2);x.stroke();N(x);
+      // Swept blade wings — thin, angular, aggressive
+      solid(x,0.4);x.beginPath();
+      x.moveTo(cx-u(3),cy-u(8));x.lineTo(cx-u(20),cy+u(6));x.lineTo(cx-u(16),cy+u(2));
+      x.lineTo(cx-u(3),cy-u(2));x.closePath();x.fill();
+      bold(x,0.55,0.8);x.stroke();N(x);
+      solid(x,0.4);x.beginPath();
+      x.moveTo(cx+u(3),cy-u(8));x.lineTo(cx+u(20),cy+u(6));x.lineTo(cx+u(16),cy+u(2));
+      x.lineTo(cx+u(3),cy-u(2));x.closePath();x.fill();
+      bold(x,0.55,0.8);x.stroke();N(x);
+      // Secondary smaller wings below
+      solid(x,0.25);x.beginPath();
+      x.moveTo(cx-u(2),cy+u(2));x.lineTo(cx-u(12),cy+u(10));x.lineTo(cx-u(8),cy+u(8));x.lineTo(cx-u(2),cy+u(5));x.closePath();x.fill();
+      x.beginPath();
+      x.moveTo(cx+u(2),cy+u(2));x.lineTo(cx+u(12),cy+u(10));x.lineTo(cx+u(8),cy+u(8));x.lineTo(cx+u(2),cy+u(5));x.closePath();x.fill();
+      // Spire center line
+      det(x,0.35,0.5);x.beginPath();x.moveTo(cx,cy-u(24));x.lineTo(cx,cy+u(5));x.stroke();
       // Apex glow
-      G(x,P,6,0.5);fill(x,0.85);x.beginPath();x.arc(cx,cy-u(22),u(2),0,Math.PI*2);x.fill();N(x);
-      // Pedestal base
-      solid(x,0.3);x.beginPath();x.ellipse(cx,cy+u(16),u(10),u(4),0,0,Math.PI*2);x.fill();
-      bold(x,0.5,1);x.stroke();N(x);
-      // Stem
-      bold(x,0.4,1.5);x.beginPath();x.moveTo(cx,cy+u(12));x.lineTo(cx,cy+u(14));x.stroke();N(x);
+      G(x,P,8,0.6);fill(x,0.9);x.beginPath();x.arc(cx,cy-u(25),u(1.5),0,Math.PI*2);x.fill();N(x);
+      // Pedestal — slim elegant ellipse
+      solid(x,0.3);x.beginPath();x.ellipse(cx,cy+u(14),u(8),u(3),0,0,Math.PI*2);x.fill();
+      bold(x,0.45,0.8);x.stroke();N(x);
+      // Thin stem
+      bold(x,0.35,1);x.beginPath();x.moveTo(cx,cy+u(6));x.lineTo(cx,cy+u(12));x.stroke();N(x);
     });
 
     I('potion',(x,cx,cy)=>{
@@ -404,21 +413,27 @@
     });
 
     I('skull',(x,cx,cy)=>{
-      // HAZARD — biohazard-inspired threat symbol
-      // Outer warning ring
-      bold(x,0.5,1.5);x.beginPath();x.arc(cx,cy,u(22),0,Math.PI*2);x.stroke();N(x);
-      // Three curved blade sections (biohazard motif)
-      for(let i=0;i<3;i++){const a=(i/3)*Math.PI*2-Math.PI/2;
-        solid(x,0.45);x.beginPath();
-        x.arc(cx,cy,u(18),a-0.35,a+0.35);
-        x.arc(cx+Math.cos(a)*u(9),cy+Math.sin(a)*u(9),u(9),a+Math.PI+0.5,a+Math.PI-0.5,true);
+      // NUCLEAR HAZARD — radiation trefoil, bold and crisp
+      // Outer ring
+      bold(x,0.7,2);x.beginPath();x.arc(cx,cy,u(22),0,Math.PI*2);x.stroke();N(x);
+      // Three solid radiation sectors
+      for(let i=0;i<3;i++){
+        const a=(i/3)*Math.PI*2-Math.PI/2;
+        const a1=a-0.45, a2=a+0.45;
+        solid(x,0.6);x.beginPath();
+        x.moveTo(cx+Math.cos(a1)*u(7),cy+Math.sin(a1)*u(7));
+        x.lineTo(cx+Math.cos(a1)*u(19),cy+Math.sin(a1)*u(19));
+        x.arc(cx,cy,u(19),a1,a2);
+        x.lineTo(cx+Math.cos(a2)*u(7),cy+Math.sin(a2)*u(7));
+        x.arc(cx,cy,u(7),a2,a1,true);
         x.closePath();x.fill();
-        bold(x,0.6,1);x.stroke();N(x);
+        bold(x,0.75,1);x.stroke();N(x);
       }
-      // Center ring
-      bold(x,0.7,1.5);x.beginPath();x.arc(cx,cy,u(5),0,Math.PI*2);x.stroke();N(x);
+      // Center circle (open)
+      x.fillStyle='rgba(12,11,20,0.9)';x.beginPath();x.arc(cx,cy,u(7),0,Math.PI*2);x.fill();
+      bold(x,0.7,1.5);x.beginPath();x.arc(cx,cy,u(7),0,Math.PI*2);x.stroke();N(x);
       // Center dot
-      G(x,P,5,0.5);fill(x,0.8);x.beginPath();x.arc(cx,cy,u(2),0,Math.PI*2);x.fill();N(x);
+      G(x,P,5,0.5);fill(x,0.85);x.beginPath();x.arc(cx,cy,u(2.5),0,Math.PI*2);x.fill();N(x);
     });
 
     // ── DATA / SYSTEM ──
@@ -553,12 +568,28 @@
     });
 
     I('target',(x,cx,cy)=>{
-      bold(x,0.3,1);x.beginPath();x.arc(cx,cy,u(20),0,Math.PI*2);x.stroke();
-      x.beginPath();x.arc(cx,cy,u(12),0,Math.PI*2);x.stroke();N(x);
-      bold(x,0.5,1.5);x.beginPath();x.arc(cx,cy,u(5),0,Math.PI*2);x.stroke();N(x);
-      thin(x,0.4,1);x.beginPath();x.moveTo(cx,cy-u(24));x.lineTo(cx,cy-u(7));x.moveTo(cx,cy+u(7));x.lineTo(cx,cy+u(24));
-      x.moveTo(cx-u(24),cy);x.lineTo(cx-u(7),cy);x.moveTo(cx+u(7),cy);x.lineTo(cx+u(24),cy);x.stroke();
-      G(x,P,5,0.5);fill(x,0.7);x.beginPath();x.arc(cx,cy,u(2.5),0,Math.PI*2);x.fill();N(x);
+      // TIE FIGHTER TARGETING — angular bracket reticle
+      // Outer bracket frame (4 angled brackets around center)
+      bold(x,0.75,2);
+      // Top bracket
+      x.beginPath();x.moveTo(cx-u(10),cy-u(20));x.lineTo(cx,cy-u(14));x.lineTo(cx+u(10),cy-u(20));x.stroke();
+      // Bottom bracket
+      x.beginPath();x.moveTo(cx-u(10),cy+u(20));x.lineTo(cx,cy+u(14));x.lineTo(cx+u(10),cy+u(20));x.stroke();
+      // Left bracket
+      x.beginPath();x.moveTo(cx-u(20),cy-u(10));x.lineTo(cx-u(14),cy);x.lineTo(cx-u(20),cy+u(10));x.stroke();
+      // Right bracket
+      x.beginPath();x.moveTo(cx+u(20),cy-u(10));x.lineTo(cx+u(14),cy);x.lineTo(cx+u(20),cy+u(10));x.stroke();N(x);
+      // Inner diamond reticle
+      bold(x,0.55,1.5);x.beginPath();
+      x.moveTo(cx,cy-u(8));x.lineTo(cx+u(8),cy);x.lineTo(cx,cy+u(8));x.lineTo(cx-u(8),cy);x.closePath();x.stroke();N(x);
+      // Center acquisition dot
+      G(x,P,6,0.6);fill(x,0.85);x.beginPath();x.arc(cx,cy,u(2.5),0,Math.PI*2);x.fill();N(x);
+      // Range tick marks on axes
+      thin(x,0.3,0.8);
+      x.beginPath();x.moveTo(cx-u(3),cy-u(11));x.lineTo(cx+u(3),cy-u(11));x.stroke();
+      x.beginPath();x.moveTo(cx-u(3),cy+u(11));x.lineTo(cx+u(3),cy+u(11));x.stroke();
+      x.beginPath();x.moveTo(cx-u(11),cy-u(3));x.lineTo(cx-u(11),cy+u(3));x.stroke();
+      x.beginPath();x.moveTo(cx+u(11),cy-u(3));x.lineTo(cx+u(11),cy+u(3));x.stroke();
     });
 
     I('radar',(x,cx,cy)=>{
