@@ -206,16 +206,32 @@
     });
 
     I('menu-hamburger',(x,cx,cy)=>{
-      bold(x,0.85,2.5);for(let i=-1;i<=1;i++){x.beginPath();x.moveTo(cx-u(14),cy+i*u(9));x.lineTo(cx+u(14),cy+i*u(9));x.stroke()}N(x);
+      // Three bars with staggered lengths and gradient fills
+      const widths=[u(26),u(20),u(14)];
+      [-u(9),0,u(9)].forEach((yo,i)=>{
+        const w=widths[i],h=u(4);const bx=cx-w/2;
+        const g=x.createLinearGradient(bx,cy+yo,bx+w,cy+yo);
+        g.addColorStop(0,pc(0.55));g.addColorStop(0.5,pc(0.2));g.addColorStop(1,pc(0.45));
+        x.fillStyle=g;x.fillRect(bx,cy+yo-h/2,w,h);
+        bold(x,0.7,1);x.strokeRect(bx,cy+yo-h/2,w,h);N(x);
+      });
     });
 
     I('close',(x,cx,cy)=>{
-      bold(x,0.85,3);x.beginPath();x.moveTo(cx-u(12),cy-u(12));x.lineTo(cx+u(12),cy+u(12));
-      x.moveTo(cx+u(12),cy-u(12));x.lineTo(cx-u(12),cy+u(12));x.stroke();N(x);
+      // X with gradient bars
+      solid(x,0.55);x.save();x.translate(cx,cy);x.rotate(Math.PI/4);
+      x.fillRect(-u(2),-u(15),u(4),u(30));x.fillRect(-u(15),-u(2),u(30),u(4));x.restore();
+      bold(x,0.8,1.2);x.save();x.translate(cx,cy);x.rotate(Math.PI/4);
+      x.strokeRect(-u(2),-u(15),u(4),u(30));x.strokeRect(-u(15),-u(2),u(30),u(4));x.restore();N(x);
     });
 
     I('check',(x,cx,cy)=>{
-      bold(x,0.85,3);x.beginPath();x.moveTo(cx-u(12),cy);x.lineTo(cx-u(3),cy+u(10));x.lineTo(cx+u(14),cy-u(10));x.stroke();N(x);
+      // Bold check with gradient fill
+      solid(x,0.6);x.beginPath();
+      x.moveTo(cx-u(16),cy-u(2));x.lineTo(cx-u(12),cy-u(6));x.lineTo(cx-u(4),cy+u(6));
+      x.lineTo(cx+u(16),cy-u(14));x.lineTo(cx+u(16),cy-u(8));x.lineTo(cx-u(4),cy+u(14));
+      x.lineTo(cx-u(16),cy+u(2));x.closePath();x.fill();
+      bold(x,0.8,1.2);x.stroke();N(x);
     });
 
     I('info',(x,cx,cy)=>{
@@ -247,12 +263,22 @@
     });
 
     I('expand',(x,cx,cy)=>{
-      bold(x,0.8,2.5);const s=u(13),g=u(5);
+      // Filled corner arrows pointing outward
+      const s=u(14),g=u(5);
       [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([dx,dy])=>{
-        x.beginPath();x.moveTo(cx+dx*g,cy+dy*s);x.lineTo(cx+dx*s,cy+dy*s);x.lineTo(cx+dx*s,cy+dy*g);x.stroke()});N(x);
+        solid(x,0.4);x.beginPath();x.moveTo(cx+dx*g,cy+dy*s);x.lineTo(cx+dx*s,cy+dy*s);x.lineTo(cx+dx*s,cy+dy*g);
+        x.lineTo(cx+dx*(s-u(3)),cy+dy*(g+u(2)));x.lineTo(cx+dx*(s-u(3)),cy+dy*(s-u(3)));x.lineTo(cx+dx*(g+u(2)),cy+dy*(s-u(3)));x.closePath();x.fill();
+        bold(x,0.75,1.2);x.stroke();N(x);
+      });
     });
 
-    I('minimize',(x,cx,cy)=>{bold(x,0.85,3);x.beginPath();x.moveTo(cx-u(14),cy);x.lineTo(cx+u(14),cy);x.stroke();N(x)});
+    I('minimize',(x,cx,cy)=>{
+      // Filled bar with beveled ends
+      const mg=x.createLinearGradient(cx-u(16),cy,cx+u(16),cy);
+      mg.addColorStop(0,pc(0.5));mg.addColorStop(0.5,pc(0.2));mg.addColorStop(1,pc(0.45));
+      x.fillStyle=mg;x.fillRect(cx-u(16),cy-u(2.5),u(32),u(5));
+      bold(x,0.8,1.2);x.strokeRect(cx-u(16),cy-u(2.5),u(32),u(5));N(x);
+    });
 
     I('fullscreen',(x,cx,cy)=>{
       // APPROVED
@@ -450,30 +476,37 @@
     });
 
     I('fire',(x,cx,cy)=>{
-      // THERMAL SIGNATURE — heat gradient rising with wave distortion lines
-      // Heat column — gradient from bottom (hot) to top (dissipating)
-      const fg=x.createLinearGradient(cx,cy+u(20),cx,cy-u(22));
-      fg.addColorStop(0,pc(0.65));fg.addColorStop(0.3,pc(0.4));fg.addColorStop(0.6,pc(0.2));fg.addColorStop(1,pc(0.05));
+      // FLAMETHROWER — weapon barrel with flame burst
+      // Barrel body (horizontal, pointing right)
+      const bg=x.createLinearGradient(cx-u(22),cy-u(4),cx-u(4),cy+u(4));
+      bg.addColorStop(0,pc(0.4));bg.addColorStop(0.5,pc(0.15));bg.addColorStop(1,pc(0.35));
+      x.fillStyle=bg;x.beginPath();
+      x.moveTo(cx-u(22),cy-u(5));x.lineTo(cx-u(4),cy-u(5));x.lineTo(cx-u(2),cy-u(3));
+      x.lineTo(cx-u(2),cy+u(3));x.lineTo(cx-u(4),cy+u(5));x.lineTo(cx-u(22),cy+u(5));
+      x.lineTo(cx-u(24),cy+u(3));x.lineTo(cx-u(24),cy-u(3));x.closePath();x.fill();
+      bold(x,0.65,1.2);x.stroke();N(x);
+      // Barrel detail lines
+      det(x,0.25,0.5);x.beginPath();x.moveTo(cx-u(18),cy-u(5));x.lineTo(cx-u(18),cy+u(5));x.stroke();
+      x.beginPath();x.moveTo(cx-u(12),cy-u(5));x.lineTo(cx-u(12),cy+u(5));x.stroke();
+      // Grip
+      solid(x,0.3);x.fillRect(cx-u(18),cy+u(5),u(6),u(10));
+      bold(x,0.4,0.8);x.strokeRect(cx-u(18),cy+u(5),u(6),u(10));N(x);
+      // Flame burst (gradient, expanding outward from nozzle)
+      const fg=x.createLinearGradient(cx-u(2),cy,cx+u(22),cy);
+      fg.addColorStop(0,pc(0.7));fg.addColorStop(0.3,pc(0.45));fg.addColorStop(0.6,pc(0.25));fg.addColorStop(1,pc(0.05));
       x.fillStyle=fg;x.beginPath();
-      x.moveTo(cx-u(12),cy+u(20));
-      x.bezierCurveTo(cx-u(14),cy+u(8),cx-u(10),cy,cx-u(8),cy-u(8));
-      x.bezierCurveTo(cx-u(6),cy-u(14),cx-u(4),cy-u(18),cx,cy-u(22));
-      x.bezierCurveTo(cx+u(4),cy-u(18),cx+u(6),cy-u(14),cx+u(8),cy-u(8));
-      x.bezierCurveTo(cx+u(10),cy,cx+u(14),cy+u(8),cx+u(12),cy+u(20));
-      x.closePath();x.fill();
-      bold(x,0.75,1.5);x.stroke();N(x);
-      // Heat shimmer lines (horizontal waves)
-      bold(x,0.4,1);
-      x.beginPath();x.moveTo(cx-u(10),cy+u(10));x.bezierCurveTo(cx-u(4),cy+u(8),cx+u(4),cy+u(12),cx+u(10),cy+u(10));x.stroke();
-      x.beginPath();x.moveTo(cx-u(8),cy+u(2));x.bezierCurveTo(cx-u(3),cy,cx+u(3),cy+u(4),cx+u(8),cy+u(2));x.stroke();
-      x.beginPath();x.moveTo(cx-u(6),cy-u(6));x.bezierCurveTo(cx-u(2),cy-u(8),cx+u(2),cy-u(4),cx+u(6),cy-u(6));x.stroke();N(x);
+      x.moveTo(cx-u(2),cy-u(3));x.lineTo(cx+u(6),cy-u(8));x.lineTo(cx+u(12),cy-u(12));
+      x.bezierCurveTo(cx+u(18),cy-u(10),cx+u(22),cy-u(4),cx+u(24),cy);
+      x.bezierCurveTo(cx+u(22),cy+u(4),cx+u(18),cy+u(10),cx+u(12),cy+u(12));
+      x.lineTo(cx+u(6),cy+u(8));x.lineTo(cx-u(2),cy+u(3));x.closePath();x.fill();
+      bold(x,0.6,1);x.stroke();N(x);
       // Inner flame core
-      solid(x,0.2);x.beginPath();
-      x.moveTo(cx-u(4),cy+u(16));x.bezierCurveTo(cx-u(5),cy+u(4),cx-u(3),cy-u(6),cx,cy-u(14));
-      x.bezierCurveTo(cx+u(3),cy-u(6),cx+u(5),cy+u(4),cx+u(4),cy+u(16));x.closePath();x.fill();
-      bold(x,0.35,0.8);x.stroke();N(x);
-      // Apex glow
-      G(x,P,6,0.5);fill(x,0.7);x.beginPath();x.arc(cx,cy-u(20),u(2),0,Math.PI*2);x.fill();N(x);
+      solid(x,0.25);x.beginPath();
+      x.moveTo(cx-u(1),cy-u(1));x.lineTo(cx+u(8),cy-u(5));
+      x.bezierCurveTo(cx+u(14),cy-u(3),cx+u(14),cy+u(3),cx+u(8),cy+u(5));
+      x.lineTo(cx-u(1),cy+u(1));x.closePath();x.fill();
+      // Nozzle glow
+      G(x,P,5,0.5);fill(x,0.75);x.beginPath();x.arc(cx-u(1),cy,u(2.5),0,Math.PI*2);x.fill();N(x);
     });
 
     I('skull',(x,cx,cy)=>{
@@ -540,24 +573,60 @@
     });
 
     I('lock',(x,cx,cy)=>{
-      // SECURITY LOCK — gradient body with shackle
-      const lg=x.createLinearGradient(cx-u(12),cy,cx+u(12),cy+u(18));
-      lg.addColorStop(0,pc(0.4));lg.addColorStop(0.4,pc(0.15));lg.addColorStop(1,pc(0.35));
-      x.fillStyle=lg;x.fillRect(cx-u(12),cy,u(24),u(18));
-      bold(x,0.75,1.8);x.strokeRect(cx-u(12),cy,u(24),u(18));N(x);
-      // Shackle with gradient
-      bold(x,0.6,2.5);x.beginPath();x.arc(cx,cy-u(5),u(10),Math.PI,0);x.stroke();N(x);
-      // Keyhole
-      G(x,P,5,0.5);fill(x,0.8);x.beginPath();x.arc(cx,cy+u(6),u(3.5),0,Math.PI*2);x.fill();N(x);
-      solid(x,0.6);x.fillRect(cx-u(1.5),cy+u(9),u(3),u(5));
-      // Plate detail lines
-      det(x,0.15,0.4);x.beginPath();x.moveTo(cx-u(10),cy+u(2));x.lineTo(cx+u(10),cy+u(2));x.stroke();
+      // DIGITAL SAFE — sealed vault door with lock indicator
+      // Safe body
+      const sg=x.createLinearGradient(cx-u(18),cy-u(18),cx+u(14),cy+u(18));
+      sg.addColorStop(0,pc(0.4));sg.addColorStop(0.4,pc(0.12));sg.addColorStop(1,pc(0.35));
+      x.fillStyle=sg;x.beginPath();
+      x.moveTo(cx-u(16),cy-u(18));x.lineTo(cx+u(16),cy-u(18));x.lineTo(cx+u(18),cy-u(16));
+      x.lineTo(cx+u(18),cy+u(16));x.lineTo(cx+u(16),cy+u(18));x.lineTo(cx-u(16),cy+u(18));
+      x.lineTo(cx-u(18),cy+u(16));x.lineTo(cx-u(18),cy-u(16));x.closePath();x.fill();
+      bold(x,0.7,1.8);x.stroke();N(x);
+      // Inner panel frame
+      det(x,0.25,0.8);x.beginPath();
+      x.moveTo(cx-u(13),cy-u(15));x.lineTo(cx+u(13),cy-u(15));x.lineTo(cx+u(15),cy-u(13));
+      x.lineTo(cx+u(15),cy+u(13));x.lineTo(cx+u(13),cy+u(15));x.lineTo(cx-u(13),cy+u(15));
+      x.lineTo(cx-u(15),cy+u(13));x.lineTo(cx-u(15),cy-u(13));x.closePath();x.stroke();
+      // Dial/scanner circle (center)
+      bold(x,0.55,1.5);x.beginPath();x.arc(cx,cy,u(8),0,Math.PI*2);x.stroke();N(x);
+      thin(x,0.35,0.8);x.beginPath();x.arc(cx,cy,u(5),0,Math.PI*2);x.stroke();
+      // Lock status — solid red (locked)
+      G(x,P,6,0.5);fill(x,0.85);x.beginPath();x.arc(cx,cy,u(3),0,Math.PI*2);x.fill();N(x);
+      // Handle bar
+      solid(x,0.45);x.fillRect(cx+u(10),cy-u(4),u(5),u(8));
+      bold(x,0.5,0.8);x.strokeRect(cx+u(10),cy-u(4),u(5),u(8));N(x);
+      // Corner bolts
+      fill(x,0.4);[[-u(14),-u(14)],[u(14),-u(14)],[-u(14),u(14)],[u(14),u(14)]].forEach(([dx,dy])=>{
+        x.beginPath();x.arc(cx+dx,cy+dy,u(1.5),0,Math.PI*2);x.fill()});
     });
 
     I('unlock',(x,cx,cy)=>{
-      fill(x,0.12);x.fillRect(cx-u(12),cy,u(24),u(18));bold(x,0.5,1.5);x.strokeRect(cx-u(12),cy,u(24),u(18));N(x);
-      bold(x,0.4,1.8);x.beginPath();x.arc(cx,cy-u(5),u(10),Math.PI,Math.PI*1.85);x.stroke();N(x);
-      fill(x,0.5);x.beginPath();x.arc(cx,cy+u(7),u(3),0,Math.PI*2);x.fill();
+      // DIGITAL SAFE — open, door ajar
+      // Safe body (same as lock but dimmer = disarmed)
+      const sg=x.createLinearGradient(cx-u(18),cy-u(18),cx+u(14),cy+u(18));
+      sg.addColorStop(0,pc(0.25));sg.addColorStop(0.4,pc(0.08));sg.addColorStop(1,pc(0.2));
+      x.fillStyle=sg;x.beginPath();
+      x.moveTo(cx-u(16),cy-u(18));x.lineTo(cx+u(16),cy-u(18));x.lineTo(cx+u(18),cy-u(16));
+      x.lineTo(cx+u(18),cy+u(16));x.lineTo(cx+u(16),cy+u(18));x.lineTo(cx-u(16),cy+u(18));
+      x.lineTo(cx-u(18),cy+u(16));x.lineTo(cx-u(18),cy-u(16));x.closePath();x.fill();
+      bold(x,0.5,1.5);x.stroke();N(x);
+      // Door edge (open, showing depth — angular line indicating ajar)
+      solid(x,0.3);x.beginPath();
+      x.moveTo(cx+u(18),cy-u(16));x.lineTo(cx+u(24),cy-u(12));
+      x.lineTo(cx+u(24),cy+u(12));x.lineTo(cx+u(18),cy+u(16));x.closePath();x.fill();
+      bold(x,0.4,0.8);x.stroke();N(x);
+      // Inner panel frame
+      det(x,0.2,0.6);x.beginPath();
+      x.moveTo(cx-u(13),cy-u(15));x.lineTo(cx+u(13),cy-u(15));x.lineTo(cx+u(15),cy-u(13));
+      x.lineTo(cx+u(15),cy+u(13));x.lineTo(cx+u(13),cy+u(15));x.lineTo(cx-u(13),cy+u(15));
+      x.lineTo(cx-u(15),cy+u(13));x.lineTo(cx-u(15),cy-u(13));x.closePath();x.stroke();
+      // Dial (dimmer = unlocked)
+      thin(x,0.3,1);x.beginPath();x.arc(cx,cy,u(7),0,Math.PI*2);x.stroke();
+      // Status — open (hollow circle instead of filled)
+      bold(x,0.45,1.2);x.beginPath();x.arc(cx,cy,u(3),0,Math.PI*2);x.stroke();N(x);
+      // Corner bolts
+      fill(x,0.25);[[-u(14),-u(14)],[u(14),-u(14)],[-u(14),u(14)],[u(14),u(14)]].forEach(([dx,dy])=>{
+        x.beginPath();x.arc(cx+dx,cy+dy,u(1.5),0,Math.PI*2);x.fill()});
     });
 
     // ── SOCIAL ──
@@ -699,19 +768,31 @@
     });
 
     I('sound-on',(x,cx,cy)=>{
-      fill(x,0.25);x.beginPath();x.moveTo(cx-u(10),cy-u(7));x.lineTo(cx-u(3),cy-u(7));x.lineTo(cx+u(6),cy-u(16));
-      x.lineTo(cx+u(6),cy+u(16));x.lineTo(cx-u(3),cy+u(7));x.lineTo(cx-u(10),cy+u(7));x.closePath();x.fill();
-      bold(x,0.65,1.5);x.stroke();N(x);
-      bold(x,0.55,1.8);x.beginPath();x.arc(cx+u(10),cy,u(7),-0.7,0.7);x.stroke();
-      x.beginPath();x.arc(cx+u(10),cy,u(12),-0.5,0.5);x.stroke();N(x);
+      // Speaker with gradient + bold sound arcs
+      const sg=x.createLinearGradient(cx-u(12),cy-u(7),cx+u(6),cy+u(7));
+      sg.addColorStop(0,pc(0.45));sg.addColorStop(0.5,pc(0.15));sg.addColorStop(1,pc(0.4));
+      x.fillStyle=sg;x.beginPath();x.moveTo(cx-u(12),cy-u(7));x.lineTo(cx-u(4),cy-u(7));x.lineTo(cx+u(6),cy-u(16));
+      x.lineTo(cx+u(6),cy+u(16));x.lineTo(cx-u(4),cy+u(7));x.lineTo(cx-u(12),cy+u(7));x.closePath();x.fill();
+      bold(x,0.7,1.5);x.stroke();N(x);
+      // Inner speaker cone detail
+      det(x,0.2,0.5);x.beginPath();x.moveTo(cx-u(4),cy-u(4));x.lineTo(cx+u(3),cy-u(10));x.stroke();
+      x.beginPath();x.moveTo(cx-u(4),cy+u(4));x.lineTo(cx+u(3),cy+u(10));x.stroke();
+      // Sound arcs (bold, three tiers)
+      bold(x,0.7,1.8);x.beginPath();x.arc(cx+u(10),cy,u(6),-0.75,0.75);x.stroke();N(x);
+      bold(x,0.5,1.5);x.beginPath();x.arc(cx+u(10),cy,u(11),-0.6,0.6);x.stroke();N(x);
+      bold(x,0.3,1.2);x.beginPath();x.arc(cx+u(10),cy,u(16),-0.45,0.45);x.stroke();N(x);
     });
 
     I('sound-off',(x,cx,cy)=>{
-      fill(x,0.15);x.beginPath();x.moveTo(cx-u(10),cy-u(7));x.lineTo(cx-u(3),cy-u(7));x.lineTo(cx+u(6),cy-u(16));
-      x.lineTo(cx+u(6),cy+u(16));x.lineTo(cx-u(3),cy+u(7));x.lineTo(cx-u(10),cy+u(7));x.closePath();x.fill();
-      bold(x,0.4,1.2);x.stroke();N(x);
-      bold(x,0.85,2.5);x.beginPath();x.moveTo(cx+u(10),cy-u(8));x.lineTo(cx+u(20),cy+u(8));
-      x.moveTo(cx+u(20),cy-u(8));x.lineTo(cx+u(10),cy+u(8));x.stroke();N(x);
+      // Speaker dimmed + bold X
+      solid(x,0.2);x.beginPath();x.moveTo(cx-u(12),cy-u(7));x.lineTo(cx-u(4),cy-u(7));x.lineTo(cx+u(4),cy-u(16));
+      x.lineTo(cx+u(4),cy+u(16));x.lineTo(cx-u(4),cy+u(7));x.lineTo(cx-u(12),cy+u(7));x.closePath();x.fill();
+      bold(x,0.45,1.2);x.stroke();N(x);
+      // Bold X (muted)
+      solid(x,0.5);x.save();x.translate(cx+u(14),cy);x.rotate(Math.PI/4);
+      x.fillRect(-u(1.5),-u(10),u(3),u(20));x.fillRect(-u(10),-u(1.5),u(20),u(3));x.restore();
+      bold(x,0.7,0.8);x.save();x.translate(cx+u(14),cy);x.rotate(Math.PI/4);
+      x.strokeRect(-u(1.5),-u(10),u(3),u(20));x.strokeRect(-u(10),-u(1.5),u(20),u(3));x.restore();N(x);
     });
 
     // ── NAVIGATION ──
