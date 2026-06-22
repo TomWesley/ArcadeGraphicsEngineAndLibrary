@@ -19,7 +19,11 @@
       "Bash(sed -i '' \"s/rgba\\(220,200,80,0\\\\.\\\\\\([0-9]*\\\\\\)\\)/rgba\\(255,230,90,0.\\\\1\\)/g\" /Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/tests/icon-library/index.html)",
       "Bash(sed -i '' \"s/rgba\\(220,190,60,0\\\\.\\\\\\([0-9]*\\\\\\)\\)/rgba\\(255,220,70,0.\\\\1\\)/g\" /Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary/tests/icon-library/index.html)",
       "Bash(node -c /tmp/ic.js)",
-      "Bash(grep -iE '\\\\.\\(png|jpg|jpeg|webp|avif|gif|svg\\)$')"
+      "Bash(grep -iE '\\\\.\\(png|jpg|jpeg|webp|avif|gif|svg\\)$')",
+      "Bash(while read:*)",
+      "Bash(do if:*)",
+      "Bash(grep -qx \"$name\")",
+      "Bash(then echo:*)"
     ]
   }
 }
