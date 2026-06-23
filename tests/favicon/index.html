@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Favicon Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0c0b12;color:#ccc;font-family:'Share Tech Mono',monospace;padding:40px;display:flex;flex-direction:column;align-items:center}
+    h1{font-family:'Orbitron',sans-serif;font-size:14px;color:#cc3030;margin-bottom:6px;letter-spacing:4px}
+    .sub{font-size:10px;color:#555;margin-bottom:30px;letter-spacing:2px}
+    .previews{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;margin-bottom:30px;align-items:end}
+    .preview{display:flex;flex-direction:column;align-items:center;gap:8px}
+    .preview canvas{border:1px solid #222;background:#0c0b12}
+    .preview .label{font-size:9px;color:#555;letter-spacing:1px}
+    .browser-mock{background:#1a1a22;border-radius:8px 8px 0 0;padding:0;width:420px;border:1px solid #2a2a35;overflow:hidden}
+    .browser-tab{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#12121a;border-bottom:1px solid #2a2a35}
+    .browser-tab .dots{display:flex;gap:4px}
+    .browser-tab .dot{width:8px;height:8px;border-radius:50%}
+    .browser-tab .tab-label{display:flex;align-items:center;gap:6px;background:#1e1e28;padding:4px 12px;border-radius:4px 4px 0 0;font-size:9px;color:#888}
+    .browser-tab .tab-label img{width:14px;height:14px;image-rendering:auto}
+    .browser-body{height:60px;display:flex;align-items:center;justify-content:center;color:#333;font-size:10px;letter-spacing:2px}
+    .download-btn{margin-top:20px;background:rgba(200,40,40,0.08);border:1px solid rgba(200,40,40,0.25);color:#aa4444;
+      font-family:'Orbitron',sans-serif;font-size:11px;padding:10px 24px;cursor:pointer;letter-spacing:2px;transition:all 0.2s}
+    .download-btn:hover{border-color:rgba(200,40,40,0.5);color:#dd5555;background:rgba(200,40,40,0.12)}
+  </style>
+</head>
+<body>
+  <h1>FAVICON GENERATOR</h1>
+  <p class="sub">WINGED W — MULTIPLE SIZES — DOWNLOAD AS .ICO</p>
+
+  <div class="previews">
+    <div class="preview">
+      <canvas id="fav256" width="256" height="256" style="width:128px;height:128px"></canvas>
+      <span class="label">256×256</span>
+    </div>
+    <div class="preview">
+      <canvas id="fav64" width="64" height="64" style="width:64px;height:64px"></canvas>
+      <span class="label">64×64</span>
+    </div>
+    <div class="preview">
+      <canvas id="fav32" width="32" height="32" style="width:32px;height:32px"></canvas>
+      <span class="label">32×32</span>
+    </div>
+    <div class="preview">
+      <canvas id="fav16" width="16" height="16" style="width:32px;height:32px"></canvas>
+      <span class="label">16×16 (2x)</span>
+    </div>
+  </div>
+
+  <div class="browser-mock">
+    <div class="browser-tab">
+      <div class="dots">
+        <div class="dot" style="background:#ff5f57"></div>
+        <div class="dot" style="background:#febc2e"></div>
+        <div class="dot" style="background:#28c840"></div>
+      </div>
+      <div class="tab-label">
+        <img id="tabIcon">
+        <span>VOID SECTOR — Play Now</span>
+      </div>
+    </div>
+    <div class="browser-body">GAME CONTENT</div>
+  </div>
+
+  <button class="download-btn" onclick="downloadPNG()">DOWNLOAD 256px PNG</button>
+
+  <script>
+    function drawFavicon(canvas) {
+      const ctx = canvas.getContext('2d');
+      const S = canvas.width;
+      const u = n => n * S / 256;
+
+      // Clear
+      ctx.clearRect(0, 0, S, S);
+
+      // Background — dark with subtle radial depth
+      const bg = ctx.createRadialGradient(S/2, S/2, 0, S/2, S/2, S*0.7);
+      bg.addColorStop(0, '#141220');
+      bg.addColorStop(1, '#0a0910');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, S, S);
+
+      // Outer glow halo (atmospheric)
+      const halo = ctx.createRadialGradient(S/2, S/2, S*0.15, S/2, S/2, S*0.48);
+      halo.addColorStop(0, 'rgba(200,60,60,0.06)');
+      halo.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = halo;
+      ctx.fillRect(0, 0, S, S);
+
+      const cx = S/2, cy = S/2;
+
+      // ── Wings (behind the W) ──
+      // Left wing — sweeping angular blade
+      const lwg = ctx.createLinearGradient(cx-u(120), cy, cx-u(20), cy+u(10));
+      lwg.addColorStop(0, 'rgba(200,50,50,0.02)');
+      lwg.addColorStop(0.5, 'rgba(200,50,50,0.2)');
+      lwg.addColorStop(1, 'rgba(200,50,50,0.35)');
+      ctx.fillStyle = lwg;
+      ctx.beginPath();
+      ctx.moveTo(cx-u(20), cy-u(15));     // attachment to W
+      ctx.lineTo(cx-u(60), cy-u(55));     // upper sweep
+      ctx.lineTo(cx-u(105), cy-u(40));    // wing tip
+      ctx.lineTo(cx-u(115), cy-u(25));    // far tip
+      ctx.lineTo(cx-u(90), cy-u(10));     // lower edge back
+      ctx.lineTo(cx-u(50), cy+u(10));     // lower curve
+      ctx.lineTo(cx-u(20), cy+u(15));     // return to body
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowColor = 'rgba(200,60,60,0.35)';
+      ctx.shadowBlur = u(8);
+      ctx.strokeStyle = 'rgba(200,60,60,0.6)';
+      ctx.lineWidth = u(2);
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Wing detail lines (feather structure)
+      ctx.strokeStyle = 'rgba(200,60,60,0.15)';
+      ctx.lineWidth = u(1);
+      ctx.beginPath(); ctx.moveTo(cx-u(30), cy-u(10)); ctx.lineTo(cx-u(80), cy-u(30)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx-u(28), cy); ctx.lineTo(cx-u(70), cy-u(15)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx-u(25), cy+u(8)); ctx.lineTo(cx-u(60), cy-u(2)); ctx.stroke();
+
+      // Right wing (mirrored)
+      const rwg = ctx.createLinearGradient(cx+u(120), cy, cx+u(20), cy+u(10));
+      rwg.addColorStop(0, 'rgba(200,50,50,0.02)');
+      rwg.addColorStop(0.5, 'rgba(200,50,50,0.2)');
+      rwg.addColorStop(1, 'rgba(200,50,50,0.35)');
+      ctx.fillStyle = rwg;
+      ctx.beginPath();
+      ctx.moveTo(cx+u(20), cy-u(15));
+      ctx.lineTo(cx+u(60), cy-u(55));
+      ctx.lineTo(cx+u(105), cy-u(40));
+      ctx.lineTo(cx+u(115), cy-u(25));
+      ctx.lineTo(cx+u(90), cy-u(10));
+      ctx.lineTo(cx+u(50), cy+u(10));
+      ctx.lineTo(cx+u(20), cy+u(15));
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowColor = 'rgba(200,60,60,0.35)';
+      ctx.shadowBlur = u(8);
+      ctx.strokeStyle = 'rgba(200,60,60,0.6)';
+      ctx.lineWidth = u(2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Right wing detail lines
+      ctx.strokeStyle = 'rgba(200,60,60,0.15)';
+      ctx.lineWidth = u(1);
+      ctx.beginPath(); ctx.moveTo(cx+u(30), cy-u(10)); ctx.lineTo(cx+u(80), cy-u(30)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+u(28), cy); ctx.lineTo(cx+u(70), cy-u(15)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+u(25), cy+u(8)); ctx.lineTo(cx+u(60), cy-u(2)); ctx.stroke();
+
+      // ── The W ──
+      // W shape — angular, geometric, bold
+      const wg = ctx.createLinearGradient(cx-u(65), cy-u(55), cx+u(65), cy+u(60));
+      wg.addColorStop(0, 'rgba(255,100,80,0.85)');
+      wg.addColorStop(0.3, 'rgba(220,55,45,0.7)');
+      wg.addColorStop(0.6, 'rgba(180,40,35,0.55)');
+      wg.addColorStop(1, 'rgba(220,65,55,0.8)');
+      ctx.fillStyle = wg;
+
+      ctx.beginPath();
+      // Outer W shape (thick, with angular serifs)
+      const t = u(12); // stroke thickness
+      // Left leg outer
+      ctx.moveTo(cx-u(60), cy-u(55));
+      ctx.lineTo(cx-u(38), cy+u(55));
+      // Valley 1
+      ctx.lineTo(cx-u(18), cy+u(10));
+      // Center peak
+      ctx.lineTo(cx, cy+u(45));
+      // Valley 2 (mirror)
+      ctx.lineTo(cx+u(18), cy+u(10));
+      // Right leg outer
+      ctx.lineTo(cx+u(38), cy+u(55));
+      ctx.lineTo(cx+u(60), cy-u(55));
+      // Now trace back the inner edge
+      ctx.lineTo(cx+u(48), cy-u(55));
+      ctx.lineTo(cx+u(30), cy+u(40));
+      ctx.lineTo(cx+u(14), cy);
+      ctx.lineTo(cx, cy+u(28));
+      ctx.lineTo(cx-u(14), cy);
+      ctx.lineTo(cx-u(30), cy+u(40));
+      ctx.lineTo(cx-u(48), cy-u(55));
+      ctx.closePath();
+      ctx.fill();
+
+      // W outline with glow
+      ctx.shadowColor = 'rgba(255,80,60,0.5)';
+      ctx.shadowBlur = u(12);
+      ctx.strokeStyle = 'rgba(255,110,80,0.85)';
+      ctx.lineWidth = u(2.5);
+      ctx.lineJoin = 'miter';
+      ctx.stroke();
+
+      // Second glow pass (wider, softer)
+      ctx.shadowColor = 'rgba(255,80,60,0.2)';
+      ctx.shadowBlur = u(25);
+      ctx.strokeStyle = 'rgba(255,100,70,0.3)';
+      ctx.lineWidth = u(1);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Inner highlight lines on the W (showing facets)
+      ctx.strokeStyle = 'rgba(255,180,150,0.15)';
+      ctx.lineWidth = u(1.5);
+      // Left leg highlight
+      ctx.beginPath(); ctx.moveTo(cx-u(54), cy-u(50)); ctx.lineTo(cx-u(35), cy+u(42)); ctx.stroke();
+      // Right leg highlight
+      ctx.beginPath(); ctx.moveTo(cx+u(54), cy-u(50)); ctx.lineTo(cx+u(35), cy+u(42)); ctx.stroke();
+      // Center highlight
+      ctx.beginPath(); ctx.moveTo(cx-u(2), cy+u(35)); ctx.lineTo(cx-u(12), cy+u(5)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+u(2), cy+u(35)); ctx.lineTo(cx+u(12), cy+u(5)); ctx.stroke();
+
+      // Top edge bright accent
+      ctx.strokeStyle = 'rgba(255,160,130,0.3)';
+      ctx.lineWidth = u(1);
+      ctx.beginPath(); ctx.moveTo(cx-u(58), cy-u(55)); ctx.lineTo(cx-u(48), cy-u(55)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+u(48), cy-u(55)); ctx.lineTo(cx+u(58), cy-u(55)); ctx.stroke();
+
+      // ── Subtle bottom reflection ──
+      const ref = ctx.createLinearGradient(cx, cy+u(60), cx, cy+u(110));
+      ref.addColorStop(0, 'rgba(200,60,50,0.06)');
+      ref.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = ref;
+      ctx.fillRect(cx-u(70), cy+u(60), u(140), u(50));
+    }
+
+    // Render all sizes
+    [256, 64, 32, 16].forEach(size => {
+      const id = 'fav' + size;
+      drawFavicon(document.getElementById(id));
+    });
+
+    // Set as page favicon and tab preview
+    const fav32 = document.getElementById('fav32');
+    const dataUrl = fav32.toDataURL('image/png');
+
+    // Set favicon
+    const link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = 'image/png';
+    link.href = dataUrl;
+    document.head.appendChild(link);
+
+    // Tab preview
+    document.getElementById('tabIcon').src = dataUrl;
+
+    // Download
+    function downloadPNG() {
+      const a = document.createElement('a');
+      a.href = document.getElementById('fav256').toDataURL('image/png');
+      a.download = 'favicon-256.png';
+      a.click();
+    }
+  </script>
+</body>
+</html>
