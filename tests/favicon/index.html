@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Favicon Generator</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <title>Favicon Generator — SVG Approach</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{background:#0c0b12;color:#ccc;font-family:'Share Tech Mono',monospace;padding:40px;display:flex;flex-direction:column;align-items:center}
@@ -12,40 +12,47 @@
     .sub{font-size:10px;color:#555;margin-bottom:30px;letter-spacing:2px}
     .previews{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;margin-bottom:30px;align-items:end}
     .preview{display:flex;flex-direction:column;align-items:center;gap:8px}
-    .preview canvas{border:1px solid #222;background:#0c0b12}
     .preview .label{font-size:9px;color:#555;letter-spacing:1px}
-    .browser-mock{background:#1a1a22;border-radius:8px 8px 0 0;padding:0;width:420px;border:1px solid #2a2a35;overflow:hidden}
+    .preview .frame{background:#0c0b12;border:1px solid #222;display:flex;align-items:center;justify-content:center;padding:8px;border-radius:4px}
+    .browser-mock{background:#1a1a22;border-radius:8px 8px 0 0;width:450px;border:1px solid #2a2a35;overflow:hidden;margin-bottom:20px}
     .browser-tab{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#12121a;border-bottom:1px solid #2a2a35}
     .browser-tab .dots{display:flex;gap:4px}
     .browser-tab .dot{width:8px;height:8px;border-radius:50%}
     .browser-tab .tab-label{display:flex;align-items:center;gap:6px;background:#1e1e28;padding:4px 12px;border-radius:4px 4px 0 0;font-size:9px;color:#888}
-    .browser-tab .tab-label img{width:14px;height:14px;image-rendering:auto}
+    .browser-tab .tab-label img{width:14px;height:14px}
     .browser-body{height:60px;display:flex;align-items:center;justify-content:center;color:#333;font-size:10px;letter-spacing:2px}
-    .download-btn{margin-top:20px;background:rgba(200,40,40,0.08);border:1px solid rgba(200,40,40,0.25);color:#aa4444;
+    .download-btn{margin-top:10px;background:rgba(200,40,40,0.08);border:1px solid rgba(200,40,40,0.25);color:#aa4444;
       font-family:'Orbitron',sans-serif;font-size:11px;padding:10px 24px;cursor:pointer;letter-spacing:2px;transition:all 0.2s}
-    .download-btn:hover{border-color:rgba(200,40,40,0.5);color:#dd5555;background:rgba(200,40,40,0.12)}
+    .download-btn:hover{border-color:rgba(200,40,40,0.5);color:#dd5555}
+    .svg-source{margin-top:20px;width:100%;max-width:700px}
+    .svg-source summary{font-size:9px;color:#555;cursor:pointer;letter-spacing:2px;padding:6px 0}
+    .svg-source pre{background:#0a0a12;border:1px solid #1a1a25;padding:12px;font-size:8px;color:#666;overflow-x:auto;max-height:300px;overflow-y:auto;margin-top:6px;border-radius:4px}
   </style>
 </head>
 <body>
-  <h1>FAVICON GENERATOR</h1>
-  <p class="sub">WINGED W — MULTIPLE SIZES — DOWNLOAD AS .ICO</p>
+  <h1>FAVICON — SVG APPROACH</h1>
+  <p class="sub">VECTOR PRECISION // INFINITE SCALABILITY</p>
 
   <div class="previews">
     <div class="preview">
-      <canvas id="fav256" width="256" height="256" style="width:128px;height:128px"></canvas>
-      <span class="label">256×256</span>
+      <div class="frame" style="padding:12px"><div id="svg256" style="width:128px;height:128px"></div></div>
+      <span class="label">256×256 (shown 128)</span>
     </div>
     <div class="preview">
-      <canvas id="fav64" width="64" height="64" style="width:64px;height:64px"></canvas>
+      <div class="frame"><div id="svg64" style="width:64px;height:64px"></div></div>
       <span class="label">64×64</span>
     </div>
     <div class="preview">
-      <canvas id="fav32" width="32" height="32" style="width:32px;height:32px"></canvas>
+      <div class="frame"><div id="svg32" style="width:32px;height:32px"></div></div>
       <span class="label">32×32</span>
     </div>
     <div class="preview">
-      <canvas id="fav16" width="16" height="16" style="width:32px;height:32px"></canvas>
-      <span class="label">16×16 (2x)</span>
+      <div class="frame"><div id="svg16" style="width:16px;height:16px"></div></div>
+      <span class="label">16×16</span>
+    </div>
+    <div class="preview">
+      <div class="frame" style="background:#f0ede8"><div id="svgLight" style="width:64px;height:64px"></div></div>
+      <span class="label">On light bg</span>
     </div>
   </div>
 
@@ -64,197 +71,202 @@
     <div class="browser-body">GAME CONTENT</div>
   </div>
 
-  <button class="download-btn" onclick="downloadPNG()">DOWNLOAD 256px PNG</button>
+  <button class="download-btn" onclick="downloadSVG()">DOWNLOAD SVG</button>
+  <button class="download-btn" onclick="downloadPNG()" style="margin-left:8px">DOWNLOAD 256px PNG</button>
+
+  <details class="svg-source">
+    <summary>VIEW SVG SOURCE</summary>
+    <pre id="svgCode"></pre>
+  </details>
 
   <script>
-    function drawFavicon(canvas) {
-      const ctx = canvas.getContext('2d');
-      const S = canvas.width;
-      const u = n => n * S / 256;
+    const SVG_SOURCE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <!-- Background radial gradient -->
+    <radialGradient id="bg" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#16132a"/>
+      <stop offset="100%" stop-color="#0a0910"/>
+    </radialGradient>
 
-      // Clear
-      ctx.clearRect(0, 0, S, S);
+    <!-- Atmospheric glow behind the W -->
+    <radialGradient id="glow" cx="50%" cy="48%" r="40%">
+      <stop offset="0%" stop-color="#cc3520" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#cc3520" stop-opacity="0"/>
+    </radialGradient>
 
-      // Background — dark with subtle radial depth
-      const bg = ctx.createRadialGradient(S/2, S/2, 0, S/2, S/2, S*0.7);
-      bg.addColorStop(0, '#141220');
-      bg.addColorStop(1, '#0a0910');
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, S, S);
+    <!-- Wing gradient (left) -->
+    <linearGradient id="wingL" x1="0%" y1="50%" x2="80%" y2="50%">
+      <stop offset="0%" stop-color="#cc3520" stop-opacity="0"/>
+      <stop offset="40%" stop-color="#cc3520" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#cc3520" stop-opacity="0.4"/>
+    </linearGradient>
 
-      // Outer glow halo (atmospheric)
-      const halo = ctx.createRadialGradient(S/2, S/2, S*0.15, S/2, S/2, S*0.48);
-      halo.addColorStop(0, 'rgba(200,60,60,0.06)');
-      halo.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = halo;
-      ctx.fillRect(0, 0, S, S);
+    <!-- Wing gradient (right) -->
+    <linearGradient id="wingR" x1="100%" y1="50%" x2="20%" y2="50%">
+      <stop offset="0%" stop-color="#cc3520" stop-opacity="0"/>
+      <stop offset="40%" stop-color="#cc3520" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#cc3520" stop-opacity="0.4"/>
+    </linearGradient>
 
-      const cx = S/2, cy = S/2;
+    <!-- W body gradient -->
+    <linearGradient id="wFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff6850" stop-opacity="0.9"/>
+      <stop offset="30%" stop-color="#dd3828" stop-opacity="0.75"/>
+      <stop offset="60%" stop-color="#aa2518" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#dd4030" stop-opacity="0.85"/>
+    </linearGradient>
 
-      // ── Wings (behind the W) ──
-      // Left wing — sweeping angular blade
-      const lwg = ctx.createLinearGradient(cx-u(120), cy, cx-u(20), cy+u(10));
-      lwg.addColorStop(0, 'rgba(200,50,50,0.02)');
-      lwg.addColorStop(0.5, 'rgba(200,50,50,0.2)');
-      lwg.addColorStop(1, 'rgba(200,50,50,0.35)');
-      ctx.fillStyle = lwg;
-      ctx.beginPath();
-      ctx.moveTo(cx-u(20), cy-u(15));     // attachment to W
-      ctx.lineTo(cx-u(60), cy-u(55));     // upper sweep
-      ctx.lineTo(cx-u(105), cy-u(40));    // wing tip
-      ctx.lineTo(cx-u(115), cy-u(25));    // far tip
-      ctx.lineTo(cx-u(90), cy-u(10));     // lower edge back
-      ctx.lineTo(cx-u(50), cy+u(10));     // lower curve
-      ctx.lineTo(cx-u(20), cy+u(15));     // return to body
-      ctx.closePath();
-      ctx.fill();
-      ctx.shadowColor = 'rgba(200,60,60,0.35)';
-      ctx.shadowBlur = u(8);
-      ctx.strokeStyle = 'rgba(200,60,60,0.6)';
-      ctx.lineWidth = u(2);
-      ctx.lineJoin = 'round';
-      ctx.stroke();
-      ctx.shadowBlur = 0;
+    <!-- W highlight gradient (top edge catch light) -->
+    <linearGradient id="wHi" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff9080" stop-opacity="0.3"/>
+      <stop offset="50%" stop-color="#ff9080" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#ff9080" stop-opacity="0.25"/>
+    </linearGradient>
 
-      // Wing detail lines (feather structure)
-      ctx.strokeStyle = 'rgba(200,60,60,0.15)';
-      ctx.lineWidth = u(1);
-      ctx.beginPath(); ctx.moveTo(cx-u(30), cy-u(10)); ctx.lineTo(cx-u(80), cy-u(30)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx-u(28), cy); ctx.lineTo(cx-u(70), cy-u(15)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx-u(25), cy+u(8)); ctx.lineTo(cx-u(60), cy-u(2)); ctx.stroke();
+    <!-- Glow filter for the W -->
+    <filter id="wGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur2"/>
+      <feMerge>
+        <feMergeNode in="blur2"/>
+        <feMergeNode in="blur1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
 
-      // Right wing (mirrored)
-      const rwg = ctx.createLinearGradient(cx+u(120), cy, cx+u(20), cy+u(10));
-      rwg.addColorStop(0, 'rgba(200,50,50,0.02)');
-      rwg.addColorStop(0.5, 'rgba(200,50,50,0.2)');
-      rwg.addColorStop(1, 'rgba(200,50,50,0.35)');
-      ctx.fillStyle = rwg;
-      ctx.beginPath();
-      ctx.moveTo(cx+u(20), cy-u(15));
-      ctx.lineTo(cx+u(60), cy-u(55));
-      ctx.lineTo(cx+u(105), cy-u(40));
-      ctx.lineTo(cx+u(115), cy-u(25));
-      ctx.lineTo(cx+u(90), cy-u(10));
-      ctx.lineTo(cx+u(50), cy+u(10));
-      ctx.lineTo(cx+u(20), cy+u(15));
-      ctx.closePath();
-      ctx.fill();
-      ctx.shadowColor = 'rgba(200,60,60,0.35)';
-      ctx.shadowBlur = u(8);
-      ctx.strokeStyle = 'rgba(200,60,60,0.6)';
-      ctx.lineWidth = u(2);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
+    <!-- Subtle glow for wings -->
+    <filter id="wingGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
 
-      // Right wing detail lines
-      ctx.strokeStyle = 'rgba(200,60,60,0.15)';
-      ctx.lineWidth = u(1);
-      ctx.beginPath(); ctx.moveTo(cx+u(30), cy-u(10)); ctx.lineTo(cx+u(80), cy-u(30)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx+u(28), cy); ctx.lineTo(cx+u(70), cy-u(15)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx+u(25), cy+u(8)); ctx.lineTo(cx+u(60), cy-u(2)); ctx.stroke();
+    <!-- Reflection gradient -->
+    <linearGradient id="reflect" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#cc3520" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#cc3520" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
 
-      // ── The W ──
-      // W shape — angular, geometric, bold
-      const wg = ctx.createLinearGradient(cx-u(65), cy-u(55), cx+u(65), cy+u(60));
-      wg.addColorStop(0, 'rgba(255,100,80,0.85)');
-      wg.addColorStop(0.3, 'rgba(220,55,45,0.7)');
-      wg.addColorStop(0.6, 'rgba(180,40,35,0.55)');
-      wg.addColorStop(1, 'rgba(220,65,55,0.8)');
-      ctx.fillStyle = wg;
+  <!-- Background -->
+  <rect width="256" height="256" fill="url(#bg)"/>
 
-      ctx.beginPath();
-      // Outer W shape (thick, with angular serifs)
-      const t = u(12); // stroke thickness
-      // Left leg outer
-      ctx.moveTo(cx-u(60), cy-u(55));
-      ctx.lineTo(cx-u(38), cy+u(55));
-      // Valley 1
-      ctx.lineTo(cx-u(18), cy+u(10));
-      // Center peak
-      ctx.lineTo(cx, cy+u(45));
-      // Valley 2 (mirror)
-      ctx.lineTo(cx+u(18), cy+u(10));
-      // Right leg outer
-      ctx.lineTo(cx+u(38), cy+u(55));
-      ctx.lineTo(cx+u(60), cy-u(55));
-      // Now trace back the inner edge
-      ctx.lineTo(cx+u(48), cy-u(55));
-      ctx.lineTo(cx+u(30), cy+u(40));
-      ctx.lineTo(cx+u(14), cy);
-      ctx.lineTo(cx, cy+u(28));
-      ctx.lineTo(cx-u(14), cy);
-      ctx.lineTo(cx-u(30), cy+u(40));
-      ctx.lineTo(cx-u(48), cy-u(55));
-      ctx.closePath();
-      ctx.fill();
+  <!-- Atmospheric glow -->
+  <rect width="256" height="256" fill="url(#glow)"/>
 
-      // W outline with glow
-      ctx.shadowColor = 'rgba(255,80,60,0.5)';
-      ctx.shadowBlur = u(12);
-      ctx.strokeStyle = 'rgba(255,110,80,0.85)';
-      ctx.lineWidth = u(2.5);
-      ctx.lineJoin = 'miter';
-      ctx.stroke();
+  <!-- ═══ LEFT WING ═══ -->
+  <g filter="url(#wingGlow)">
+    <!-- Main wing shape -->
+    <path d="M108,100 L80,62 L42,72 L28,88 L52,102 L82,118 L108,122 Z"
+          fill="url(#wingL)" stroke="#cc3520" stroke-opacity="0.55" stroke-width="1.8"
+          stroke-linejoin="round"/>
+    <!-- Secondary wing blade (thinner, behind) -->
+    <path d="M105,95 L68,52 L38,60 L55,78 L90,100 Z"
+          fill="#cc3520" fill-opacity="0.08" stroke="#cc3520" stroke-opacity="0.25" stroke-width="0.8"/>
+    <!-- Wing vein lines -->
+    <line x1="100" y1="105" x2="50" y2="80" stroke="#cc3520" stroke-opacity="0.18" stroke-width="0.8"/>
+    <line x1="98" y1="112" x2="58" y2="95" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.6"/>
+    <line x1="102" y1="98" x2="62" y2="68" stroke="#cc3520" stroke-opacity="0.15" stroke-width="0.7"/>
+  </g>
 
-      // Second glow pass (wider, softer)
-      ctx.shadowColor = 'rgba(255,80,60,0.2)';
-      ctx.shadowBlur = u(25);
-      ctx.strokeStyle = 'rgba(255,100,70,0.3)';
-      ctx.lineWidth = u(1);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
+  <!-- ═══ RIGHT WING ═══ -->
+  <g filter="url(#wingGlow)">
+    <path d="M148,100 L176,62 L214,72 L228,88 L204,102 L174,118 L148,122 Z"
+          fill="url(#wingR)" stroke="#cc3520" stroke-opacity="0.55" stroke-width="1.8"
+          stroke-linejoin="round"/>
+    <path d="M151,95 L188,52 L218,60 L201,78 L166,100 Z"
+          fill="#cc3520" fill-opacity="0.08" stroke="#cc3520" stroke-opacity="0.25" stroke-width="0.8"/>
+    <line x1="156" y1="105" x2="206" y2="80" stroke="#cc3520" stroke-opacity="0.18" stroke-width="0.8"/>
+    <line x1="158" y1="112" x2="198" y2="95" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.6"/>
+    <line x1="154" y1="98" x2="194" y2="68" stroke="#cc3520" stroke-opacity="0.15" stroke-width="0.7"/>
+  </g>
 
-      // Inner highlight lines on the W (showing facets)
-      ctx.strokeStyle = 'rgba(255,180,150,0.15)';
-      ctx.lineWidth = u(1.5);
-      // Left leg highlight
-      ctx.beginPath(); ctx.moveTo(cx-u(54), cy-u(50)); ctx.lineTo(cx-u(35), cy+u(42)); ctx.stroke();
-      // Right leg highlight
-      ctx.beginPath(); ctx.moveTo(cx+u(54), cy-u(50)); ctx.lineTo(cx+u(35), cy+u(42)); ctx.stroke();
-      // Center highlight
-      ctx.beginPath(); ctx.moveTo(cx-u(2), cy+u(35)); ctx.lineTo(cx-u(12), cy+u(5)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx+u(2), cy+u(35)); ctx.lineTo(cx+u(12), cy+u(5)); ctx.stroke();
+  <!-- ═══ THE W ═══ -->
+  <g filter="url(#wGlow)">
+    <!-- W solid shape -->
+    <path d="M68,68 L92,192 L112,120 L128,175 L144,120 L164,192 L188,68
+             L172,68 L156,172 L140,112 L128,155 L116,112 L100,172 L84,68 Z"
+          fill="url(#wFill)" stroke="#ff6040" stroke-opacity="0.8" stroke-width="2"
+          stroke-linejoin="miter"/>
 
-      // Top edge bright accent
-      ctx.strokeStyle = 'rgba(255,160,130,0.3)';
-      ctx.lineWidth = u(1);
-      ctx.beginPath(); ctx.moveTo(cx-u(58), cy-u(55)); ctx.lineTo(cx-u(48), cy-u(55)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx+u(48), cy-u(55)); ctx.lineTo(cx+u(58), cy-u(55)); ctx.stroke();
+    <!-- W highlight overlay (top portions catch more light) -->
+    <path d="M68,68 L92,192 L112,120 L128,175 L144,120 L164,192 L188,68
+             L172,68 L156,172 L140,112 L128,155 L116,112 L100,172 L84,68 Z"
+          fill="url(#wHi)" stroke="none"/>
 
-      // ── Subtle bottom reflection ──
-      const ref = ctx.createLinearGradient(cx, cy+u(60), cx, cy+u(110));
-      ref.addColorStop(0, 'rgba(200,60,50,0.06)');
-      ref.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = ref;
-      ctx.fillRect(cx-u(70), cy+u(60), u(140), u(50));
-    }
+    <!-- Inner bevel lines (showing 3D facets on each leg) -->
+    <!-- Left outer leg -->
+    <line x1="76" y1="72" x2="96" y2="180" stroke="#ffb0a0" stroke-opacity="0.12" stroke-width="1.2"/>
+    <!-- Left inner leg -->
+    <line x1="96" y1="180" x2="112" y2="124" stroke="#ffb0a0" stroke-opacity="0.08" stroke-width="0.8"/>
+    <!-- Center left -->
+    <line x1="114" y1="124" x2="128" y2="168" stroke="#ffb0a0" stroke-opacity="0.1" stroke-width="0.8"/>
+    <!-- Center right -->
+    <line x1="128" y1="168" x2="142" y2="124" stroke="#ffb0a0" stroke-opacity="0.1" stroke-width="0.8"/>
+    <!-- Right inner leg -->
+    <line x1="144" y1="124" x2="160" y2="180" stroke="#ffb0a0" stroke-opacity="0.08" stroke-width="0.8"/>
+    <!-- Right outer leg -->
+    <line x1="180" y1="72" x2="160" y2="180" stroke="#ffb0a0" stroke-opacity="0.12" stroke-width="1.2"/>
 
-    // Render all sizes
-    [256, 64, 32, 16].forEach(size => {
-      const id = 'fav' + size;
-      drawFavicon(document.getElementById(id));
+    <!-- Top serifs — small horizontal accent bars -->
+    <rect x="66" y="66" width="20" height="2.5" rx="1" fill="#ff8060" fill-opacity="0.3"/>
+    <rect x="170" y="66" width="20" height="2.5" rx="1" fill="#ff8060" fill-opacity="0.3"/>
+  </g>
+
+  <!-- ═══ BOTTOM REFLECTION ═══ -->
+  <rect x="60" y="195" width="136" height="40" fill="url(#reflect)"/>
+
+  <!-- ═══ SUBTLE CORNER MARKS ═══ -->
+  <line x1="12" y1="18" x2="12" y2="30" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
+  <line x1="12" y1="18" x2="24" y2="18" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
+  <line x1="244" y1="18" x2="244" y2="30" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
+  <line x1="232" y1="18" x2="244" y2="18" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
+  <line x1="12" y1="238" x2="12" y2="226" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
+  <line x1="12" y1="238" x2="24" y2="238" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
+  <line x1="244" y1="238" x2="244" y2="226" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
+  <line x1="232" y1="238" x2="244" y2="238" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
+</svg>`;
+
+    // Inject SVG into all preview slots
+    ['svg256','svg64','svg32','svg16','svgLight'].forEach(id => {
+      document.getElementById(id).innerHTML = SVG_SOURCE;
     });
 
-    // Set as page favicon and tab preview
-    const fav32 = document.getElementById('fav32');
-    const dataUrl = fav32.toDataURL('image/png');
+    // Show SVG source
+    document.getElementById('svgCode').textContent = SVG_SOURCE;
 
-    // Set favicon
+    // Set as actual favicon
+    const svgBlob = new Blob([SVG_SOURCE], {type: 'image/svg+xml'});
+    const svgUrl = URL.createObjectURL(svgBlob);
     const link = document.createElement('link');
     link.rel = 'icon';
-    link.type = 'image/png';
-    link.href = dataUrl;
+    link.type = 'image/svg+xml';
+    link.href = svgUrl;
     document.head.appendChild(link);
+    document.getElementById('tabIcon').src = svgUrl;
 
-    // Tab preview
-    document.getElementById('tabIcon').src = dataUrl;
-
-    // Download
-    function downloadPNG() {
+    function downloadSVG() {
       const a = document.createElement('a');
-      a.href = document.getElementById('fav256').toDataURL('image/png');
-      a.download = 'favicon-256.png';
+      a.href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(SVG_SOURCE);
+      a.download = 'favicon.svg';
       a.click();
+    }
+
+    function downloadPNG() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256; canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, 256, 256);
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = 'favicon-256.png';
+        a.click();
+      };
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(SVG_SOURCE);
     }
   </script>
 </body>
