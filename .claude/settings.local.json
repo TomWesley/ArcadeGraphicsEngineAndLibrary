@@ -23,7 +23,9 @@
       "Bash(while read:*)",
       "Bash(do if:*)",
       "Bash(grep -qx \"$name\")",
-      "Bash(then echo:*)"
+      "Bash(then echo:*)",
+      "Bash(npx tsx:*)",
+      "Bash(kill %1)"
     ]
   }
 }
