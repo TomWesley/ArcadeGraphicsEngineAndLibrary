@@ -82,151 +82,228 @@
   <script>
     const SVG_SOURCE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
   <defs>
-    <!-- Background radial gradient -->
-    <radialGradient id="bg" cx="50%" cy="50%" r="70%">
-      <stop offset="0%" stop-color="#16132a"/>
-      <stop offset="100%" stop-color="#0a0910"/>
+    <!-- Deeper background radial with stronger vignette -->
+    <radialGradient id="bg" cx="50%" cy="44%" r="60%">
+      <stop offset="0%" stop-color="#181330"/>
+      <stop offset="40%" stop-color="#0c0a16"/>
+      <stop offset="100%" stop-color="#030305"/>
     </radialGradient>
 
-    <!-- Atmospheric glow behind the W -->
-    <radialGradient id="glow" cx="50%" cy="48%" r="40%">
-      <stop offset="0%" stop-color="#cc3520" stop-opacity="0.12"/>
+    <!-- Stronger atmospheric glow with outer corona -->
+    <radialGradient id="glow" cx="50%" cy="44%" r="38%">
+      <stop offset="0%" stop-color="#ee5040" stop-opacity="0.22"/>
+      <stop offset="50%" stop-color="#dd4030" stop-opacity="0.1"/>
       <stop offset="100%" stop-color="#cc3520" stop-opacity="0"/>
     </radialGradient>
-
-    <!-- Wing gradient (left) -->
-    <linearGradient id="wingL" x1="0%" y1="50%" x2="80%" y2="50%">
+    <!-- Extended outer corona (light emission beyond hex) -->
+    <radialGradient id="corona" cx="50%" cy="44%" r="55%">
       <stop offset="0%" stop-color="#cc3520" stop-opacity="0"/>
-      <stop offset="40%" stop-color="#cc3520" stop-opacity="0.12"/>
-      <stop offset="100%" stop-color="#cc3520" stop-opacity="0.4"/>
+      <stop offset="60%" stop-color="#cc3520" stop-opacity="0.04"/>
+      <stop offset="80%" stop-color="#bb2515" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#aa2010" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Wing gradients with stronger opacity range -->
+    <linearGradient id="wingL" x1="0%" y1="40%" x2="85%" y2="60%">
+      <stop offset="0%" stop-color="#cc3520" stop-opacity="0.02"/>
+      <stop offset="35%" stop-color="#cc3520" stop-opacity="0.15"/>
+      <stop offset="70%" stop-color="#dd4030" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ee5040" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="wingR" x1="100%" y1="40%" x2="15%" y2="60%">
+      <stop offset="0%" stop-color="#cc3520" stop-opacity="0.02"/>
+      <stop offset="35%" stop-color="#cc3520" stop-opacity="0.15"/>
+      <stop offset="70%" stop-color="#dd4030" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ee5040" stop-opacity="0.5"/>
     </linearGradient>
 
-    <!-- Wing gradient (right) -->
-    <linearGradient id="wingR" x1="100%" y1="50%" x2="20%" y2="50%">
-      <stop offset="0%" stop-color="#cc3520" stop-opacity="0"/>
-      <stop offset="40%" stop-color="#cc3520" stop-opacity="0.12"/>
-      <stop offset="100%" stop-color="#cc3520" stop-opacity="0.4"/>
+    <!-- W body gradient: white-hot center → deep amber → warm edges -->
+    <linearGradient id="wFill" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ffe8d0" stop-opacity="0.95"/>
+      <stop offset="12%" stop-color="#ffa870" stop-opacity="0.92"/>
+      <stop offset="30%" stop-color="#ee6535" stop-opacity="0.82"/>
+      <stop offset="50%" stop-color="#cc3818" stop-opacity="0.65"/>
+      <stop offset="70%" stop-color="#dd4525" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#ee6545" stop-opacity="0.88"/>
     </linearGradient>
 
-    <!-- W body gradient -->
-    <linearGradient id="wFill" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ff6850" stop-opacity="0.9"/>
-      <stop offset="30%" stop-color="#dd3828" stop-opacity="0.75"/>
-      <stop offset="60%" stop-color="#aa2518" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#dd4030" stop-opacity="0.85"/>
+    <!-- Sharper top-edge highlight -->
+    <linearGradient id="wHi" x1="0%" y1="0%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#ffc0b0" stop-opacity="0.35"/>
+      <stop offset="30%" stop-color="#ffb0a0" stop-opacity="0.08"/>
+      <stop offset="70%" stop-color="#ffb0a0" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#ffc0b0" stop-opacity="0.3"/>
     </linearGradient>
 
-    <!-- W highlight gradient (top edge catch light) -->
-    <linearGradient id="wHi" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ff9080" stop-opacity="0.3"/>
-      <stop offset="50%" stop-color="#ff9080" stop-opacity="0.05"/>
-      <stop offset="100%" stop-color="#ff9080" stop-opacity="0.25"/>
-    </linearGradient>
-
-    <!-- Glow filter for the W -->
+    <!-- Two-tone W glow: tight hot core + wider atmospheric -->
     <filter id="wGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur1"/>
-      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur2"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="sharp"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="mid"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="wide"/>
+      <feColorMatrix in="sharp" type="matrix" values="1.3 0 0 0 0.1  0 0.8 0 0 0.05  0 0 0.7 0 0.02  0 0 0 1.2 0" result="hotCore"/>
       <feMerge>
-        <feMergeNode in="blur2"/>
-        <feMergeNode in="blur1"/>
+        <feMergeNode in="wide"/>
+        <feMergeNode in="mid"/>
+        <feMergeNode in="hotCore"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
 
-    <!-- Subtle glow for wings -->
-    <filter id="wingGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+    <!-- Wing glow -->
+    <filter id="wingGlow" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
       <feMerge>
         <feMergeNode in="blur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
 
-    <!-- Reflection gradient -->
+    <!-- Sharp edge highlight filter (crisp 1px glow) -->
+    <filter id="edgeGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Reflection -->
     <linearGradient id="reflect" x1="50%" y1="0%" x2="50%" y2="100%">
-      <stop offset="0%" stop-color="#cc3520" stop-opacity="0.06"/>
+      <stop offset="0%" stop-color="#cc3520" stop-opacity="0.08"/>
       <stop offset="100%" stop-color="#cc3520" stop-opacity="0"/>
     </linearGradient>
+
+    <!-- Outer containment ring gradient -->
+    <radialGradient id="ringGrad" cx="50%" cy="46%" r="48%">
+      <stop offset="80%" stop-color="#cc3520" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#cc3520" stop-opacity="0"/>
+    </radialGradient>
   </defs>
 
-  <!-- Background -->
+  <!-- Background with deeper vignette + corona -->
   <rect width="256" height="256" fill="url(#bg)"/>
-
-  <!-- Atmospheric glow -->
+  <rect width="256" height="256" fill="url(#corona)"/>
   <rect width="256" height="256" fill="url(#glow)"/>
 
-  <!-- ═══ LEFT WING ═══ -->
+  <!-- Hexagonal containment frame (crisp, visible) -->
+  <polygon points="128,14 222,60 222,180 128,226 34,180 34,60"
+           fill="none" stroke="#dd4030" stroke-opacity="0.22" stroke-width="1.8" filter="url(#edgeGlow)"/>
+  <polygon points="128,22 216,64 216,176 128,218 40,176 40,64"
+           fill="none" stroke="#cc3520" stroke-opacity="0.08" stroke-width="0.7"/>
+  <!-- Corner vertex dots — COOL CYAN accent for premium material contrast -->
+  <g fill="#60c8d8" fill-opacity="0.4">
+    <circle cx="128" cy="14" r="2.5"/><circle cx="222" cy="60" r="2.5"/>
+    <circle cx="222" cy="180" r="2.5"/><circle cx="128" cy="226" r="2.5"/>
+    <circle cx="34" cy="180" r="2.5"/><circle cx="34" cy="60" r="2.5"/>
+  </g>
+  <!-- Cyan specular shimmer on top hex edges -->
+  <line x1="36" y1="61" x2="80" y2="38" stroke="#80e0f0" stroke-opacity="0.12" stroke-width="0.6"/>
+  <line x1="176" y1="38" x2="220" y2="61" stroke="#80e0f0" stroke-opacity="0.08" stroke-width="0.5"/>
+  <!-- Directional specular edge on hex (upper-left face lit) -->
+  <line x1="34" y1="60" x2="128" y2="14" stroke="#ffd8c8" stroke-opacity="0.35" stroke-width="1.8" filter="url(#edgeGlow)"/>
+  <line x1="128" y1="14" x2="222" y2="60" stroke="#ffc8b8" stroke-opacity="0.18" stroke-width="1.2"/>
+  <!-- Inner hex ring (visible secondary layer) -->
+  <polygon points="128,32 206,68 206,172 128,208 50,172 50,68"
+           fill="none" stroke="#dd5040" stroke-opacity="0.2" stroke-width="1.2" stroke-dasharray="6,5" filter="url(#edgeGlow)"/>
+  <!-- Inner glow ring -->
+  <circle cx="128" cy="120" r="75" fill="none" stroke="#dd5040" stroke-opacity="0.08" stroke-width="0.8"/>
+
+  <!-- ═══ LEFT WING (sharper angles) ═══ -->
   <g filter="url(#wingGlow)">
-    <!-- Main wing shape -->
-    <path d="M108,100 L80,62 L42,72 L28,88 L52,102 L82,118 L108,122 Z"
-          fill="url(#wingL)" stroke="#cc3520" stroke-opacity="0.55" stroke-width="1.8"
-          stroke-linejoin="round"/>
-    <!-- Secondary wing blade (thinner, behind) -->
-    <path d="M105,95 L68,52 L38,60 L55,78 L90,100 Z"
-          fill="#cc3520" fill-opacity="0.08" stroke="#cc3520" stroke-opacity="0.25" stroke-width="0.8"/>
-    <!-- Wing vein lines -->
-    <line x1="100" y1="105" x2="50" y2="80" stroke="#cc3520" stroke-opacity="0.18" stroke-width="0.8"/>
-    <line x1="98" y1="112" x2="58" y2="95" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.6"/>
-    <line x1="102" y1="98" x2="62" y2="68" stroke="#cc3520" stroke-opacity="0.15" stroke-width="0.7"/>
+    <!-- Main blade — sharper tip angle, more angular -->
+    <path d="M110,96 L76,52 L32,65 L20,82 L46,98 L78,116 L110,120 Z"
+          fill="url(#wingL)" stroke="#dd4030" stroke-opacity="0.65" stroke-width="1.5"
+          stroke-linejoin="miter" shape-rendering="crispEdges"/>
+    <!-- Secondary blade (thinner, more angular) -->
+    <path d="M108,88 L68,42 L30,52 L54,74 L90,96 Z"
+          fill="#cc3520" fill-opacity="0.12" stroke="#cc3520" stroke-opacity="0.3" stroke-width="0.7"/>
+    <!-- Wing structure lines -->
+    <line x1="100" y1="102" x2="44" y2="74" stroke="#dd4030" stroke-opacity="0.22" stroke-width="0.7"/>
+    <line x1="98" y1="110" x2="52" y2="88" stroke="#cc3520" stroke-opacity="0.15" stroke-width="0.5"/>
+    <line x1="104" y1="94" x2="56" y2="58" stroke="#dd4030" stroke-opacity="0.18" stroke-width="0.6"/>
+    <!-- SHARP precision edge highlights (hard 1px) -->
+    <line x1="76" y1="52" x2="32" y2="65" stroke="#ffb09a" stroke-opacity="0.5" stroke-width="1.5" filter="url(#edgeGlow)"/>
+    <line x1="76" y1="52" x2="110" y2="96" stroke="#ffa088" stroke-opacity="0.35" stroke-width="1.2" filter="url(#edgeGlow)"/>
+    <!-- White-hot inner edge + specular vertex dot at wing tip -->
+    <line x1="76" y1="53" x2="38" y2="64" stroke="#ffd8c8" stroke-opacity="0.25" stroke-width="0.6"/>
+    <circle cx="20" cy="82" r="2" fill="#80e0f0" fill-opacity="0.25"/>
+    <circle cx="76" cy="52" r="1.5" fill="#ffe8e0" fill-opacity="0.5"/>
   </g>
 
-  <!-- ═══ RIGHT WING ═══ -->
+  <!-- ═══ RIGHT WING (sharper angles) ═══ -->
   <g filter="url(#wingGlow)">
-    <path d="M148,100 L176,62 L214,72 L228,88 L204,102 L174,118 L148,122 Z"
-          fill="url(#wingR)" stroke="#cc3520" stroke-opacity="0.55" stroke-width="1.8"
-          stroke-linejoin="round"/>
-    <path d="M151,95 L188,52 L218,60 L201,78 L166,100 Z"
-          fill="#cc3520" fill-opacity="0.08" stroke="#cc3520" stroke-opacity="0.25" stroke-width="0.8"/>
-    <line x1="156" y1="105" x2="206" y2="80" stroke="#cc3520" stroke-opacity="0.18" stroke-width="0.8"/>
-    <line x1="158" y1="112" x2="198" y2="95" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.6"/>
-    <line x1="154" y1="98" x2="194" y2="68" stroke="#cc3520" stroke-opacity="0.15" stroke-width="0.7"/>
+    <path d="M146,96 L180,52 L224,65 L236,82 L210,98 L178,116 L146,120 Z"
+          fill="url(#wingR)" stroke="#dd4030" stroke-opacity="0.65" stroke-width="1.5"
+          stroke-linejoin="miter"/>
+    <path d="M148,88 L188,42 L226,52 L202,74 L166,96 Z"
+          fill="#cc3520" fill-opacity="0.12" stroke="#cc3520" stroke-opacity="0.3" stroke-width="0.7"/>
+    <line x1="156" y1="102" x2="212" y2="74" stroke="#dd4030" stroke-opacity="0.22" stroke-width="0.7"/>
+    <line x1="158" y1="110" x2="204" y2="88" stroke="#cc3520" stroke-opacity="0.15" stroke-width="0.5"/>
+    <line x1="152" y1="94" x2="200" y2="58" stroke="#dd4030" stroke-opacity="0.18" stroke-width="0.6"/>
+    <line x1="180" y1="52" x2="224" y2="65" stroke="#ffb09a" stroke-opacity="0.5" stroke-width="1.5" filter="url(#edgeGlow)"/>
+    <line x1="180" y1="52" x2="146" y2="96" stroke="#ffa088" stroke-opacity="0.35" stroke-width="1.2" filter="url(#edgeGlow)"/>
+    <line x1="180" y1="53" x2="218" y2="64" stroke="#ffd8c8" stroke-opacity="0.25" stroke-width="0.6"/>
+    <circle cx="236" cy="82" r="2" fill="#80e0f0" fill-opacity="0.25"/>
+    <circle cx="180" cy="52" r="1.5" fill="#ffe8e0" fill-opacity="0.5"/>
   </g>
 
   <!-- ═══ THE W ═══ -->
   <g filter="url(#wGlow)">
     <!-- W solid shape -->
-    <path d="M68,68 L92,192 L112,120 L128,175 L144,120 L164,192 L188,68
-             L172,68 L156,172 L140,112 L128,155 L116,112 L100,172 L84,68 Z"
-          fill="url(#wFill)" stroke="#ff6040" stroke-opacity="0.8" stroke-width="2"
+    <path d="M66,65 L91,195 L112,118 L128,178 L144,118 L165,195 L190,65
+             L174,65 L157,175 L141,110 L128,158 L115,110 L99,175 L82,65 Z"
+          fill="url(#wFill)" stroke="#ff7050" stroke-opacity="0.9" stroke-width="2.5"
           stroke-linejoin="miter"/>
 
-    <!-- W highlight overlay (top portions catch more light) -->
-    <path d="M68,68 L92,192 L112,120 L128,175 L144,120 L164,192 L188,68
-             L172,68 L156,172 L140,112 L128,155 L116,112 L100,172 L84,68 Z"
+    <!-- Highlight overlay -->
+    <path d="M66,65 L91,195 L112,118 L128,178 L144,118 L165,195 L190,65
+             L174,65 L157,175 L141,110 L128,158 L115,110 L99,175 L82,65 Z"
           fill="url(#wHi)" stroke="none"/>
 
-    <!-- Inner bevel lines (showing 3D facets on each leg) -->
-    <!-- Left outer leg -->
-    <line x1="76" y1="72" x2="96" y2="180" stroke="#ffb0a0" stroke-opacity="0.12" stroke-width="1.2"/>
-    <!-- Left inner leg -->
-    <line x1="96" y1="180" x2="112" y2="124" stroke="#ffb0a0" stroke-opacity="0.08" stroke-width="0.8"/>
-    <!-- Center left -->
-    <line x1="114" y1="124" x2="128" y2="168" stroke="#ffb0a0" stroke-opacity="0.1" stroke-width="0.8"/>
-    <!-- Center right -->
-    <line x1="128" y1="168" x2="142" y2="124" stroke="#ffb0a0" stroke-opacity="0.1" stroke-width="0.8"/>
-    <!-- Right inner leg -->
-    <line x1="144" y1="124" x2="160" y2="180" stroke="#ffb0a0" stroke-opacity="0.08" stroke-width="0.8"/>
-    <!-- Right outer leg -->
-    <line x1="180" y1="72" x2="160" y2="180" stroke="#ffb0a0" stroke-opacity="0.12" stroke-width="1.2"/>
+    <!-- Inner bevel lines -->
+    <line x1="74" y1="70" x2="95" y2="183" stroke="#ffb0a0" stroke-opacity="0.14" stroke-width="1.2"/>
+    <line x1="95" y1="183" x2="112" y2="122" stroke="#ffb0a0" stroke-opacity="0.08" stroke-width="0.8"/>
+    <line x1="114" y1="122" x2="128" y2="170" stroke="#ffb0a0" stroke-opacity="0.1" stroke-width="0.8"/>
+    <line x1="128" y1="170" x2="142" y2="122" stroke="#ffb0a0" stroke-opacity="0.1" stroke-width="0.8"/>
+    <line x1="144" y1="122" x2="161" y2="183" stroke="#ffb0a0" stroke-opacity="0.08" stroke-width="0.8"/>
+    <line x1="182" y1="70" x2="161" y2="183" stroke="#ffb0a0" stroke-opacity="0.14" stroke-width="1.2"/>
 
-    <!-- Top serifs — small horizontal accent bars -->
-    <rect x="66" y="66" width="20" height="2.5" rx="1" fill="#ff8060" fill-opacity="0.3"/>
-    <rect x="170" y="66" width="20" height="2.5" rx="1" fill="#ff8060" fill-opacity="0.3"/>
+    <!-- SHARP 1px top edge highlights (machined metal catch) -->
+    <line x1="66" y1="63.5" x2="82" y2="63.5" stroke="#ffe0d0" stroke-opacity="0.6" stroke-width="1.5" filter="url(#edgeGlow)"/>
+    <line x1="174" y1="63.5" x2="190" y2="63.5" stroke="#ffe0d0" stroke-opacity="0.6" stroke-width="1.5" filter="url(#edgeGlow)"/>
+    <!-- Outer leg edge highlights -->
+    <line x1="67" y1="66" x2="76" y2="90" stroke="#ffd0c0" stroke-opacity="0.15" stroke-width="0.8"/>
+    <line x1="189" y1="66" x2="180" y2="90" stroke="#ffd0c0" stroke-opacity="0.15" stroke-width="0.8"/>
+
+    <!-- Bottom point accent dots (brighter) -->
+    <circle cx="91" cy="193" r="2.2" fill="#ff9070" fill-opacity="0.5" filter="url(#edgeGlow)"/>
+    <circle cx="128" cy="176" r="2" fill="#ffa080" fill-opacity="0.45" filter="url(#edgeGlow)"/>
+    <circle cx="165" cy="193" r="2.2" fill="#ff9070" fill-opacity="0.5" filter="url(#edgeGlow)"/>
   </g>
 
-  <!-- ═══ BOTTOM REFLECTION ═══ -->
-  <rect x="60" y="195" width="136" height="40" fill="url(#reflect)"/>
+  <!-- Specular highlight: white-hot apex on the W -->
+  <radialGradient id="specular" cx="50%" cy="20%" r="20%">
+    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
+    <stop offset="40%" stop-color="#ffd0c0" stop-opacity="0.08"/>
+    <stop offset="100%" stop-color="#ffd0c0" stop-opacity="0"/>
+  </radialGradient>
+  <rect x="80" y="55" width="96" height="60" fill="url(#specular)"/>
 
-  <!-- ═══ SUBTLE CORNER MARKS ═══ -->
-  <line x1="12" y1="18" x2="12" y2="30" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
-  <line x1="12" y1="18" x2="24" y2="18" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
-  <line x1="244" y1="18" x2="244" y2="30" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
-  <line x1="232" y1="18" x2="244" y2="18" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
-  <line x1="12" y1="238" x2="12" y2="226" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
-  <line x1="12" y1="238" x2="24" y2="238" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
-  <line x1="244" y1="238" x2="244" y2="226" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
-  <line x1="232" y1="238" x2="244" y2="238" stroke="#cc3520" stroke-opacity="0.12" stroke-width="0.8"/>
+  <!-- Reflection -->
+  <rect x="55" y="198" width="146" height="38" fill="url(#reflect)"/>
+
+  <!-- Corner marks (sharper) -->
+  <g stroke="#cc3520" stroke-opacity="0.15" stroke-width="1">
+    <line x1="12" y1="18" x2="12" y2="32"/><line x1="12" y1="18" x2="26" y2="18"/>
+    <line x1="244" y1="18" x2="244" y2="32"/><line x1="230" y1="18" x2="244" y2="18"/>
+    <line x1="12" y1="238" x2="12" y2="224"/><line x1="12" y1="238" x2="26" y2="238"/>
+    <line x1="244" y1="238" x2="244" y2="224"/><line x1="230" y1="238" x2="244" y2="238"/>
+  </g>
+  <!-- Corner dots -->
+  <g fill="#cc3520" fill-opacity="0.2">
+    <circle cx="12" cy="18" r="1.5"/><circle cx="244" cy="18" r="1.5"/>
+    <circle cx="12" cy="238" r="1.5"/><circle cx="244" cy="238" r="1.5"/>
+  </g>
 </svg>`;
 
     // Inject SVG into all preview slots
