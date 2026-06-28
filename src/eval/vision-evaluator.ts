@@ -95,16 +95,19 @@ export async function evaluateAsset(
 ASSET DESCRIPTION: ${options.description}
 ${options.context ? `ADDITIONAL CONTEXT: ${options.context}` : ''}
 
-Score it 1-10 against the style guide, where:
-1-3: Fails badly, needs complete redo
-4-5: Below standard, significant issues
-6: Acceptable but not impressive
-7-8: Good, meets the quality bar
-9-10: Excellent, would ship proudly
+Score it 0-100 against the style guide, where:
+0-30: Fails badly, needs complete redo
+31-50: Below standard, significant issues
+51-65: Acceptable but not impressive
+66-80: Good, meets the quality bar
+81-90: Very good, minor refinements needed
+91-100: Excellent, would ship proudly as premium
+
+Be precise with scoring. A 75 is meaningfully different from an 80.
 
 Respond in this EXACT JSON format (no markdown, no code fences):
 {
-  "score": <number 1-10>,
+  "score": <number 0-100>,
   "strengths": ["<strength 1>", "<strength 2>"],
   "issues": ["<issue 1>", "<issue 2>"],
   "suggestions": ["<specific actionable fix 1>", "<specific actionable fix 2>"],
