@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fake Game — Using Arcade Graphics Engine</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Rajdhani:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #08070c;
+      color: #ccc;
+      font-family: 'Rajdhani', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      letter-spacing: 6px;
+      margin-bottom: 4px;
+      background: linear-gradient(135deg, #ff8860, #dd3020);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .sub { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #555; margin-bottom: 24px; letter-spacing: 3px; }
+    .test-section { margin-bottom: 24px; width: 100%; max-width: 800px; }
+    .test-section h2 { font-family: 'Orbitron', sans-serif; font-size: 11px; color: #888; letter-spacing: 2px; margin-bottom: 8px; }
+    .test-result { font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 4px 0; }
+    .pass { color: #40cc60; }
+    .fail { color: #cc4040; }
+    canvas { border: 1px solid #1a1a25; margin: 4px; }
+    .canvas-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    #results { background: rgba(255,255,255,0.02); border: 1px solid #1a1a25; padding: 12px; margin-bottom: 20px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>FAKE GAME</h1>
+  <p class="sub">TESTING ARCADE GRAPHICS ENGINE INTEGRATION</p>
+
+  <div id="results"></div>
+
+  <div class="test-section">
+    <h2>ICONS FROM ENGINE</h2>
+    <div class="canvas-row" id="iconRow"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>THEME CSS INJECTION</h2>
+    <div id="cssTest" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <!-- These will be styled by the engine's CSS -->
+      <button class="arcade-btn">ENGINE BUTTON</button>
+      <div class="arcade-panel" style="padding:12px">
+        <div class="arcade-panel-title">ENGINE PANEL</div>
+        <span style="font-size:11px">This panel is styled by the engine's CSS injection</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>CANVAS RENDERING</h2>
+    <div class="canvas-row">
+      <canvas id="spriteTest" width="128" height="128"></canvas>
+      <canvas id="glowTest" width="128" height="128"></canvas>
+    </div>
+  </div>
+
+  <script type="module">
+    // ═══════════════════════════════════════════
+    // Simulate what a game would do after installing the engine.
+    // In a real game, these would be:
+    //   import { ... } from '@tomwesley/arcade-graphics-engine'
+    // Here we import from the built dist/ directly.
+    // ═══════════════════════════════════════════
+
+    const results = document.getElementById('results');
+    let passed = 0, failed = 0;
+
+    function log(msg, ok) {
+      const div = document.createElement('div');
+      div.className = 'test-result ' + (ok ? 'pass' : 'fail');
+      div.textContent = (ok ? '✓' : '✗') + ' ' + msg;
+      results.appendChild(div);
+      if (ok) passed++; else failed++;
+    }
+
+    try {
+      // ── 1. Import the engine ──
+      const engine = await import('../../dist/index.js');
+      log('Engine imported successfully', true);
+
+      // ── 2. Create a custom palette ──
+      const palette = engine.createPalette('FakeGame', 15, 195, 45, 0);
+      log(`Custom palette created: ${palette.name}`, !!palette.primary);
+
+      // ── 3. Create a theme ──
+      const theme = engine.createTheme('FakeGame', palette);
+      log(`Theme created: ${theme.name}`, !!theme.glow);
+
+      // ── 4. Get icon names ──
+      const icons = engine.getIconNames();
+      log(`Icon library loaded: ${icons.length} icons available`, icons.length > 20);
+
+      // ── 5. Render icons ──
+      const iconRow = document.getElementById('iconRow');
+      const iconsToShow = ['play', 'settings', 'search', 'target', 'energy', 'skull', 'diamond', 'heart'];
+      for (const name of iconsToShow) {
+        const cv = document.createElement('canvas');
+        cv.width = 80; cv.height = 80;
+        cv.style.width = '60px'; cv.style.height = '60px';
+        cv.style.background = '#0c0b14';
+        cv.style.borderRadius = '4px';
+        const ctx = cv.getContext('2d');
+        engine.drawIcon(ctx, name, 40, 40, 60, palette.primary.core);
+        iconRow.appendChild(cv);
+      }
+      log(`Rendered ${iconsToShow.length} icons on canvas`, true);
+
+      // ── 6. CSS injection ──
+      const provider = engine.ThemeProvider.create('NEON_INFERNO');
+      provider.injectCSS();
+      document.body.classList.add('arcade-theme');
+      const injected = !!document.getElementById('arcade-engine-theme');
+      log(`CSS injected into document: ${injected}`, injected);
+
+      // Check CSS variables
+      const rootStyle = getComputedStyle(document.documentElement);
+      const primaryVar = rootStyle.getPropertyValue('--arcade-primary').trim();
+      log(`CSS variable --arcade-primary: ${primaryVar || '(not set)'}`, !!primaryVar);
+
+      // ── 7. PixelBuffer operations ──
+      const buf = engine.createPixelBuffer(16, 16);
+      engine.setPixel(buf, 8, 8, [255, 0, 0, 1]);
+      const px = engine.getPixel(buf, 8, 8);
+      log(`PixelBuffer read/write: pixel at (8,8) = [${px.join(',')}]`, px[0] === 255);
+
+      // ── 8. Gaussian blur ──
+      const blurred = engine.gaussianBlur(buf, 2);
+      log(`Gaussian blur: output ${blurred.width}x${blurred.height}`, blurred.width === 16);
+
+      // ── 9. Style validation ──
+      const testImg = engine.createPixelBuffer(32, 32);
+      for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+        engine.setPixel(testImg, x, y, [100 + x * 4, 50 + y * 4, 120, 1]);
+      }
+      const validation = engine.validateStyle(testImg);
+      log(`Style validator: score ${validation.score}, ${validation.checks.length} checks`, typeof validation.score === 'number');
+
+      // ── 10. Sprite processing on canvas ──
+      const spriteCanvas = document.getElementById('spriteTest');
+      const spriteCtx = spriteCanvas.getContext('2d');
+      spriteCtx.fillStyle = '#0c0b14';
+      spriteCtx.fillRect(0, 0, 128, 128);
+
+      // Create a sprite and render it
+      const sprite = engine.createPixelBuffer(32, 32);
+      for (let y = 8; y < 24; y++) for (let x = 8; x < 24; x++) {
+        engine.setPixel(sprite, x, y, [220, 120, 50, 1]);
+      }
+      const neonSprite = engine.createNeonSprite(sprite, theme, 'primary');
+      // Manual render to canvas
+      const imgData = new ImageData(new Uint8ClampedArray(neonSprite.data), 32, 32);
+      const offscreen = new OffscreenCanvas(32, 32);
+      offscreen.getContext('2d').putImageData(imgData, 0, 0);
+      spriteCtx.imageSmoothingEnabled = false;
+      spriteCtx.drawImage(offscreen, 0, 0, 128, 128);
+      log('Sprite processed and rendered to canvas', true);
+
+      // ── 11. Glow effect test ──
+      const glowCanvas = document.getElementById('glowTest');
+      const glowCtx = glowCanvas.getContext('2d');
+      glowCtx.fillStyle = '#0c0b14';
+      glowCtx.fillRect(0, 0, 128, 128);
+
+      // Draw something with glow
+      glowCtx.shadowColor = engine.rgbaToCss(engine.withAlpha(palette.primary.core, 0.6));
+      glowCtx.shadowBlur = 15;
+      glowCtx.fillStyle = engine.rgbaToCss(palette.primary.core);
+      glowCtx.beginPath();
+      glowCtx.arc(64, 64, 20, 0, Math.PI * 2);
+      glowCtx.fill();
+      glowCtx.font = '12px Orbitron';
+      glowCtx.textAlign = 'center';
+      glowCtx.fillText('GLOW', 64, 105);
+      log('Glow rendering with engine color utilities', true);
+
+      // ── Summary ──
+      const summary = document.createElement('div');
+      summary.style.cssText = 'margin-top:12px;padding-top:8px;border-top:1px solid #222;font-family:Orbitron,sans-serif;font-size:12px;letter-spacing:2px';
+      summary.innerHTML = `<span class="${failed === 0 ? 'pass' : 'fail'}">${passed}/${passed + failed} PASSED</span>`;
+      results.appendChild(summary);
+
+    } catch (err) {
+      log(`FATAL: ${err.message}`, false);
+      console.error(err);
+    }
+  </script>
+</body>
+</html>

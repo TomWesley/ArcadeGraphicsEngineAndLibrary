@@ -1,0 +1,11 @@
+{
+  "name": "fake-game-test",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Simulates a game repo installing and using the arcade graphics engine",
+  "scripts": {
+    "test": "node test-integration.mjs",
+    "serve": "npx http-server . -p 9000 -o"
+  }
+}

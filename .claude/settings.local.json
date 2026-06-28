@@ -25,7 +25,8 @@
       "Bash(grep -qx \"$name\")",
       "Bash(then echo:*)",
       "Bash(npx tsx:*)",
-      "Bash(kill %1)"
+      "Bash(kill %1)",
+      "Bash(node:*)"
     ]
   }
 }
