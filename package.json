@@ -48,6 +48,8 @@
     "test:iconlib": "npx http-server tests/icon-library -p 8092 -o",
     "test:favicon": "npx http-server tests/favicon -p 8093 -o",
     "typecheck": "tsc --noEmit",
+    "test:integration": "node tests/integration-test/test-integration.mjs",
+    "test:integration-browser": "npx http-server tests/integration-test -p 9000 -o",
     "eval": "npx tsx src/eval/capture-and-eval.ts",
     "eval:favicon": "npx tsx src/eval/capture-and-eval.ts --url http://localhost:8093 favicon 'Winged W with sleek wings and neon glow on dark background'"
   },
