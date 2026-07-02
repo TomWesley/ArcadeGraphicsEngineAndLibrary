@@ -77,12 +77,31 @@ describe('Style Validator', () => {
 
   describe('suggestAdjustments()', () => {
     it('suggests contrast increase for flat images', () => {
+      // Detail string matches the real validator output format
       const result = {
         passed: false, score: 50, suggestions: [],
-        checks: [{ name: 'Contrast', passed: false, score: 30, detail: 'looks flat' }],
+        checks: [{ name: 'Contrast', passed: false, score: 30, detail: 'Contrast ratio: 0.150 (range: 0.3-0.85)' }],
       };
       const adj = suggestAdjustments(result);
       expect(adj.contrast).toBeGreaterThan(0);
+    });
+
+    it('suggests contrast decrease for harsh images', () => {
+      const result = {
+        passed: false, score: 50, suggestions: [],
+        checks: [{ name: 'Contrast', passed: false, score: 30, detail: 'Contrast ratio: 0.950 (range: 0.3-0.85)' }],
+      };
+      const adj = suggestAdjustments(result);
+      expect(adj.contrast).toBeLessThan(0);
+    });
+
+    it('suggests saturation increase for desaturated images', () => {
+      const result = {
+        passed: false, score: 50, suggestions: [],
+        checks: [{ name: 'Saturation', passed: false, score: 30, detail: 'Avg saturation: 12.0% (range: 30-90%)' }],
+      };
+      const adj = suggestAdjustments(result);
+      expect(adj.saturation).toBeGreaterThan(0);
     });
 
     it('returns empty for passing results', () => {

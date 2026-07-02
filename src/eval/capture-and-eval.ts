@@ -38,7 +38,7 @@ async function renderSvgToPng(svgPath: string, outputPath: string, size: number 
 </style></head>
 <body>${svgContent}</body></html>`;
 
-  await page.setContent(html, { waitUntil: 'networkidle0' });
+  await page.setContent(html, { waitUntil: 'load' });
   await page.screenshot({ path: outputPath, omitBackground: false });
   await browser.close();
 }
@@ -147,7 +147,7 @@ async function main() {
   const options: EvalOptions = {
     assetType: assetType as EvalOptions['assetType'],
     description,
-    threshold: 7,
+    threshold: 75,
   };
 
   try {

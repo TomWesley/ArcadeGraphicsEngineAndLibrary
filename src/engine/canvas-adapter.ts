@@ -13,23 +13,25 @@ import type { PixelBuffer } from './renderer';
 export class CanvasAdapter {
   public ctx: CanvasRenderingContext2D;
   public theme: ArcadeTheme;
-  public width: number;
-  public height: number;
+  private canvas: HTMLCanvasElement;
 
   constructor(
     canvas: HTMLCanvasElement,
     theme: ArcadeTheme = DEFAULT_THEME,
   ) {
+    this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
     this.theme = theme;
-    this.width = canvas.width;
-    this.height = canvas.height;
 
     // Enforce crisp pixel rendering
     if (theme.pixel.crispScaling) {
       this.ctx.imageSmoothingEnabled = false;
     }
   }
+
+  // Read live from the canvas so a resize doesn't leave stale dimensions
+  get width(): number { return this.canvas.width; }
+  get height(): number { return this.canvas.height; }
 
   clear(): void {
     const bg = this.theme.palette.background;
@@ -132,7 +134,7 @@ export class CanvasAdapter {
     const ctx = this.ctx;
     const glow = this.theme.glow;
     const size = options?.fontSize ?? 16;
-    const family = options?.fontFamily ?? '"Press Start 2P", "Courier New", monospace';
+    const family = options?.fontFamily ?? '"Rajdhani", "Segoe UI", sans-serif';
 
     ctx.save();
     ctx.font = `${size}px ${family}`;

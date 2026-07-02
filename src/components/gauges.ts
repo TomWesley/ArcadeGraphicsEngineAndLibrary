@@ -61,12 +61,16 @@ export function drawBarGauge(
     ctx.fillRect(x + fillWidth - 2, y + 1, 2, height - 2);
   }
 
+  // Text renders on top of the colored fill — brighten toward white with a
+  // dark shadow so it stays readable over both the fill and the dark track.
+  const textColor = lerpColor(color, [255, 255, 255, 1], 0.7);
+
   // Label
   if (opts.label) {
-    ctx.shadowColor = rgbaToCss(withAlpha(color, 0.5));
-    ctx.shadowBlur = 4;
-    ctx.fillStyle = rgbaToCss(color);
-    ctx.font = `${Math.max(8, height * 0.5)}px "Press Start 2P", monospace`;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    ctx.shadowBlur = 3;
+    ctx.fillStyle = rgbaToCss(textColor);
+    ctx.font = `${Math.max(8, height * 0.5)}px "Share Tech Mono", "Courier New", monospace`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(opts.label, x + 4, y + height / 2);
@@ -77,7 +81,12 @@ export function drawBarGauge(
     const formatted = opts.valueFormat
       ? opts.valueFormat(value)
       : `${Math.round(value * 100)}%`;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    ctx.shadowBlur = 3;
+    ctx.fillStyle = rgbaToCss(textColor);
+    ctx.font = `${Math.max(8, height * 0.5)}px "Share Tech Mono", "Courier New", monospace`;
     ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
     ctx.fillText(formatted, x + width - 4, y + height / 2);
   }
 
@@ -149,17 +158,23 @@ export function drawRadialGauge(
     ctx.stroke();
   }
 
-  // Needle
+  // Needle — bright tip for a crisp instrument read
   const needleAngle = startAngle + totalAngle * Math.max(0, Math.min(1, value));
   const needleLen = radius * 0.7;
+  const nx = cx + Math.cos(needleAngle) * needleLen;
+  const ny = cy + Math.sin(needleAngle) * needleLen;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
-  ctx.lineTo(cx + Math.cos(needleAngle) * needleLen, cy + Math.sin(needleAngle) * needleLen);
-  ctx.strokeStyle = rgbaToCss(color);
+  ctx.lineTo(nx, ny);
+  ctx.strokeStyle = rgbaToCss(lerpColor(color, [255, 255, 255, 1], 0.35));
   ctx.lineWidth = 2;
   ctx.shadowColor = rgbaToCss(withAlpha(color, glow.intensity));
   ctx.shadowBlur = glow.outerRadius;
   ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(nx, ny, 2, 0, Math.PI * 2);
+  ctx.fillStyle = rgbaToCss(lerpColor(color, [255, 255, 255, 1], 0.6));
+  ctx.fill();
 
   // Center dot
   ctx.beginPath();
@@ -167,14 +182,15 @@ export function drawRadialGauge(
   ctx.fillStyle = rgbaToCss(color);
   ctx.fill();
 
-  // Label
+  // Label — brightened toward white with dark shadow for legibility at small sizes
   if (opts.label) {
-    ctx.shadowBlur = 4;
-    ctx.fillStyle = rgbaToCss(withAlpha(color, 0.8));
-    ctx.font = `${Math.max(8, radius * 0.15)}px "Press Start 2P", monospace`;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+    ctx.shadowBlur = 3;
+    ctx.fillStyle = rgbaToCss(lerpColor(color, [255, 255, 255, 1], 0.55));
+    ctx.font = `${Math.max(10, radius * 0.2)}px "Share Tech Mono", "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(opts.label, cx, cy + radius * 0.3);
+    ctx.fillText(opts.label, cx, cy + radius * 0.34);
   }
 
   // Value
@@ -182,13 +198,13 @@ export function drawRadialGauge(
     const formatted = opts.valueFormat
       ? opts.valueFormat(value)
       : `${Math.round(value * 100)}`;
-    ctx.font = `${Math.max(12, radius * 0.3)}px "Press Start 2P", monospace`;
+    ctx.font = `${Math.max(14, radius * 0.34)}px "Share Tech Mono", "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = rgbaToCss(color);
+    ctx.fillStyle = rgbaToCss(lerpColor(color, [255, 255, 255, 1], 0.7));
     ctx.shadowColor = rgbaToCss(withAlpha(color, glow.intensity));
-    ctx.shadowBlur = glow.outerRadius;
-    ctx.fillText(formatted, cx, cy - radius * 0.1);
+    ctx.shadowBlur = glow.outerRadius * 0.6;
+    ctx.fillText(formatted, cx, cy - radius * 0.12);
   }
 
   ctx.restore();
@@ -296,7 +312,7 @@ export function drawLineChart(
   if (opts.label) {
     ctx.shadowBlur = 4;
     ctx.fillStyle = rgbaToCss(withAlpha(color, 0.8));
-    ctx.font = `${Math.max(8, height * 0.06)}px "Press Start 2P", monospace`;
+    ctx.font = `${Math.max(8, height * 0.06)}px "Share Tech Mono", "Courier New", monospace`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(opts.label, x + 4, y + 4);
@@ -404,7 +420,7 @@ export function drawRadarDisplay(
     ctx.shadowColor = rgbaToCss(withAlpha(color, 0.5));
     ctx.shadowBlur = 4;
     ctx.fillStyle = rgbaToCss(withAlpha(color, 0.8));
-    ctx.font = `${Math.max(8, size * 0.06)}px "Press Start 2P", monospace`;
+    ctx.font = `${Math.max(8, size * 0.06)}px "Share Tech Mono", "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText(opts.label, cx, y - 4);
@@ -444,7 +460,7 @@ export function drawSegmentDisplay(
 
   // Display value
   const fontSize = Math.max(12, height * 0.5);
-  ctx.font = `${fontSize}px "Press Start 2P", monospace`;
+  ctx.font = `${fontSize}px "Share Tech Mono", "Courier New", monospace`;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   ctx.shadowColor = rgbaToCss(withAlpha(color, glow.intensity));
@@ -454,7 +470,7 @@ export function drawSegmentDisplay(
 
   // Label
   if (opts.label) {
-    ctx.font = `${Math.max(6, height * 0.2)}px "Press Start 2P", monospace`;
+    ctx.font = `${Math.max(6, height * 0.2)}px "Share Tech Mono", "Courier New", monospace`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.shadowBlur = 2;

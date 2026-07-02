@@ -1,36 +1,46 @@
 {
   "name": "@tomwesley/arcade-graphics-engine",
-  "version": "0.1.0",
-  "description": "Neon-glow pixel art graphics engine and style library for arcade games",
+  "version": "0.2.0",
+  "description": "Sleek futuristic graphics engine and UI style library for browser arcade games",
   "type": "module",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./style": {
-      "import": "./dist/style/index.mjs",
-      "require": "./dist/style/index.js"
+      "types": "./dist/style/index.d.ts",
+      "import": "./dist/style/index.js",
+      "require": "./dist/style/index.cjs"
     },
     "./engine": {
-      "import": "./dist/engine/index.mjs",
-      "require": "./dist/engine/index.js"
+      "types": "./dist/engine/index.d.ts",
+      "import": "./dist/engine/index.js",
+      "require": "./dist/engine/index.cjs"
     },
     "./components": {
-      "import": "./dist/components/index.mjs",
-      "require": "./dist/components/index.js"
+      "types": "./dist/components/index.d.ts",
+      "import": "./dist/components/index.js",
+      "require": "./dist/components/index.cjs"
     },
     "./pipeline": {
-      "import": "./dist/pipeline/index.mjs",
-      "require": "./dist/pipeline/index.js"
+      "types": "./dist/pipeline/index.d.ts",
+      "import": "./dist/pipeline/index.js",
+      "require": "./dist/pipeline/index.cjs"
+    },
+    "./integration": {
+      "types": "./dist/integration/index.d.ts",
+      "import": "./dist/integration/index.js",
+      "require": "./dist/integration/index.cjs"
     }
   },
   "scripts": {
     "build": "tsup && tsc --emitDeclarationOnly --outDir dist",
+    "prepare": "npm run build",
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -47,35 +57,35 @@
     "test:mainmenu": "npx http-server tests/main-menu -p 8091 -o",
     "test:iconlib": "npx http-server tests/icon-library -p 8092 -o",
     "test:favicon": "npx http-server tests/favicon -p 8093 -o",
+    "test:homepage": "npx http-server . -p 8094 -o /tests/fake-game-home/index.html",
     "typecheck": "tsc --noEmit",
     "test:integration": "node tests/integration-test/test-integration.mjs",
     "test:integration-browser": "npx http-server . -p 9000 -o /tests/integration-test/index.html",
     "eval": "npx tsx src/eval/capture-and-eval.ts",
-    "eval:favicon": "npx tsx src/eval/capture-and-eval.ts --url http://localhost:8093 favicon 'Winged W with sleek wings and neon glow on dark background'"
+    "eval:favicon": "npx tsx src/eval/capture-and-eval.ts tests/favicon/favicon.svg favicon 'Capital W in hexagonal HUD frame with neon glow'"
   },
   "files": [
     "dist",
     "src"
   ],
   "keywords": [
-    "pixel-art",
-    "neon",
-    "arcade",
     "graphics-engine",
     "game-engine",
+    "hud",
+    "sci-fi",
+    "futuristic",
     "canvas",
-    "sprites"
+    "ui",
+    "arcade"
   ],
   "license": "MIT",
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.106.0",
+    "dotenv": "^17.4.2",
+    "puppeteer": "^24.43.1",
     "tsup": "^8.5.1",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.106.0",
-    "dotenv": "^17.4.2",
-    "puppeteer": "^24.43.1"
   }
 }

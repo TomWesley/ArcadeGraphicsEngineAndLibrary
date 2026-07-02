@@ -9,14 +9,48 @@ A sleek futuristic graphics engine for browser-based arcade games. Provides a un
 ```bash
 npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary
 ```
+The package builds itself on install (`prepare` script). Import from
+`@tomwesley/arcade-graphics-engine` (root) or the subpaths `/style`, `/engine`,
+`/components`, `/pipeline`, `/integration`.
+
+## Quickstart — reskinning a game
+```javascript
+import {
+  ThemeProvider,                       // CSS injection + palette
+  drawIcon, drawFramedIcon,            // built-in icon library
+  drawPanel, drawBarGauge, drawRadialGauge, drawRadarDisplay,  // HUD
+  drawAmbientParticles, drawScanLines, // effects
+  renderMenu,                          // full menu renderer
+} from '@tomwesley/arcade-graphics-engine';
+
+// 1. Pick a palette (or ThemeProvider.custom(name, h1, h2, h3, h4) for your own hues)
+const provider = ThemeProvider.create('ELECTRIC_OCEAN');
+
+// 2. Inject CSS — adds CSS custom properties (--arcade-primary, --arcade-font-display, …),
+//    loads the Google Fonts automatically, and defines ready-to-use classes:
+//    .arcade-btn, .arcade-panel, .arcade-panel-title, .arcade-input,
+//    .arcade-glow, .arcade-divider, .arcade-success/warning/error
+provider.injectCSS();
+document.body.classList.add('arcade-theme');  // opt <body> into themed bg/font
+
+// 3. Draw on canvas with the theme
+const theme = provider.theme;
+drawIcon(ctx, 'target', 50, 50, 64, provider.palette.primary.core);
+drawBarGauge(ctx, theme, { x: 10, y: 10, width: 200, height: 24, value: 0.7, label: 'HULL' });
+```
+See `tests/fake-game-home/index.html` for a complete home page built this way.
 
 ## Fonts
+`ThemeProvider.injectCSS()` loads these automatically. For pages not using the
+ThemeProvider, include:
 ```html
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 ```
 - **Orbitron** — titles, headings, emphasis (bold, geometric, futuristic)
 - **Rajdhani** — body text, labels, buttons (clean, readable)
 - **Share Tech Mono** — data readouts, stats, version info (monospace, technical)
+
+Font constants are exported from the engine: `FONT_DISPLAY`, `FONT_BODY`, `FONT_MONO`.
 
 ## Visual Style Rules
 
@@ -48,9 +82,33 @@ Colors are defined as RGB arrays and passed through helper functions. The engine
 
 ---
 
-## Generating Icons
+## Icons
 
-When a game needs a new icon, follow these rules precisely.
+### Built-in icon library (use these first)
+The engine ships the approved icon set — import and draw, no custom code needed:
+```javascript
+import { drawIcon, drawFramedIcon, getIconNames } from '@tomwesley/arcade-graphics-engine';
+drawIcon(ctx, 'target', cx, cy, size, colorRGBA);       // icon only
+drawFramedIcon(ctx, 'energy', x, y, size, colorRGBA);   // icon in dark clipped panel
+```
+Available names: `play, pause, stop, arrow-up, arrow-down, arrow-left, arrow-right,
+forward, back, fullscreen, info, refresh, quest, search, energy, settings, error,
+download, upload, plus, minus, diamond, star, craft, inventory, heart, skull,
+target, warning` plus HUD-styled game icons `leaderboard` (rank bars), `shield`
+(defense matrix), `sword` (attack vector), `home` (base + antenna), `potion`
+(resource canister), `coin` (hex credit token), `crown` (command chevrons), and
+aliases `gear`→settings, `lightning`→energy, `trophy`→leaderboard.
+Unknown names log a console warning. `heart` renders as an EKG vitals line,
+`skull` as a radiation trefoil, `star` as a constellation — spacecraft
+instrument reinterpretations, never literal cute shapes.
+
+## Generating New Icons
+
+When a game needs an icon that is NOT in the built-in library, generate it with
+the recipe below. NOTE: these helpers (`drawFrame`, `bold`, `solid`, `det`, `hi`,
+`thin`, `G`, `N`, `u`, `pc`, `sc`) are **inline recipes to paste into your game's
+icon code** — they are intentionally not exported by the engine. Follow these
+rules precisely.
 
 ### Icon Canvas Setup
 ```javascript
@@ -234,15 +292,20 @@ See `tests/convert/index.html` for the conversion pipeline and `src/style/valida
 ---
 
 ## Architecture
-- `src/style/` — Types, colors, themes, spec, **validator**
-- `src/engine/` — Renderer, analysis, sprites, pixel art pipeline, particles
-- `src/components/` — Icons, menus, panels, gauges, charts, radar, effects
+- `src/style/` — Types, colors, themes, **fonts**, **validator**; `spec.ts` holds the
+  legacy sprite-conversion constants (pixel pipeline only — NOT the UI style contract)
+- `src/engine/` — Renderer, analysis, sprites, particles; `pixelart.ts` is the legacy
+  sprite conversion pipeline (kept for asset conversion, not for UI)
+- `src/components/` — Icons (built-in library), menus, panels, gauges/charts/radar, effects
 - `src/pipeline/` — Image loading, sprite sheets
-- `src/integration/` — ThemeProvider, CSS injection
+- `src/integration/` — ThemeProvider (CSS injection, fonts, palette)
+- `src/eval/` — Vision evaluator (internal dev tooling; needs ANTHROPIC_API_KEY in .env,
+  scores assets 0-100 against the style guide via `npm run eval <file.svg|.png>`)
 
 ## Test Pages
+- `npm run test:homepage` — Fake game home page (HELIOS PROTOCOL) — full integration reference
 - `npm run test:mainmenu` — Full game main menu (VOID SECTOR)
-- `npm run test:iconlib` — 50-icon library with review/approve workflow
+- `npm run test:iconlib` — icon review/approve workflow (design source for the built-in set)
 - `npm run test:convert` — Asset conversion pipeline
 - `npm run test:space` — Animated space scene
 - `npm run test:style-match` — Reference image style comparison

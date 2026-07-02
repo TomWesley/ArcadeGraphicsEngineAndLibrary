@@ -22,6 +22,7 @@ export function createPixelBuffer(width: number, height: number): PixelBuffer {
 }
 
 export function getPixel(buf: PixelBuffer, x: number, y: number): RGBA {
+  if (x < 0 || x >= buf.width || y < 0 || y >= buf.height) return [0, 0, 0, 0];
   const i = (y * buf.width + x) * 4;
   return [buf.data[i], buf.data[i + 1], buf.data[i + 2], buf.data[i + 3] / 255];
 }

@@ -14,7 +14,7 @@ import * as path from 'path';
  */
 
 export interface EvalResult {
-  score: number;           // 1-10
+  score: number;           // 0-100
   passed: boolean;         // score >= threshold
   strengths: string[];     // what's working
   issues: string[];        // what needs fixing
@@ -27,7 +27,7 @@ export interface EvalOptions {
   assetType: 'icon' | 'favicon' | 'menu' | 'hud' | 'sprite' | 'scene' | 'component';
   /** What the asset is supposed to represent */
   description: string;
-  /** Minimum score to pass (default 7) */
+  /** Minimum score to pass, 0-100 scale (default 75) */
   threshold?: number;
   /** Additional context or requirements */
   context?: string;
@@ -88,7 +88,7 @@ export async function evaluateAsset(
                     ext === '.gif' ? 'image/gif' :
                     ext === '.webp' ? 'image/webp' : 'image/png';
 
-  const threshold = options.threshold ?? 7;
+  const threshold = options.threshold ?? 75;
 
   const userPrompt = `Evaluate this ${options.assetType} asset.
 
@@ -115,8 +115,8 @@ Respond in this EXACT JSON format (no markdown, no code fences):
 }`;
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
+    model: 'claude-opus-4-8',
+    max_tokens: 2048,
     messages: [
       {
         role: 'user',
@@ -174,15 +174,15 @@ export async function evaluateAndReport(
 ): Promise<EvalResult> {
   console.log(`\n🔍 Evaluating ${options.assetType}: "${options.description}"`);
   console.log(`   Image: ${imagePath}`);
-  console.log(`   Threshold: ${options.threshold ?? 7}/10\n`);
+  console.log(`   Threshold: ${options.threshold ?? 75}/100\n`);
 
   const result = await evaluateAsset(imagePath, options);
 
-  const scoreColor = result.score >= 8 ? '\x1b[32m' :
-                     result.score >= 6 ? '\x1b[33m' : '\x1b[31m';
+  const scoreColor = result.score >= 80 ? '\x1b[32m' :
+                     result.score >= 60 ? '\x1b[33m' : '\x1b[31m';
   const reset = '\x1b[0m';
 
-  console.log(`   ${scoreColor}SCORE: ${result.score}/10${reset} ${result.passed ? '✓ PASSED' : '✗ FAILED'}\n`);
+  console.log(`   ${scoreColor}SCORE: ${result.score}/100${reset} ${result.passed ? '✓ PASSED' : '✗ FAILED'}\n`);
   console.log(`   ${result.reasoning}\n`);
 
   if (result.strengths.length > 0) {

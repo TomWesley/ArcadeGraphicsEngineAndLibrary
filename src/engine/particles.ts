@@ -85,11 +85,16 @@ export class ParticleSystem {
     const e = this.emitter;
 
     // Spawn new particles
-    this.accumulator += dt;
-    const spawnInterval = 1 / e.rate;
-    while (this.accumulator >= spawnInterval && this.particles.length < e.maxParticles) {
-      this.particles.push(this.spawn());
-      this.accumulator -= spawnInterval;
+    if (e.rate > 0) {
+      this.accumulator += dt;
+      const spawnInterval = 1 / e.rate;
+      while (this.accumulator >= spawnInterval && this.particles.length < e.maxParticles) {
+        this.particles.push(this.spawn());
+        this.accumulator -= spawnInterval;
+      }
+      // Don't bank spawn debt while the pool is saturated — it would
+      // release as a burst the moment particles die off.
+      this.accumulator = Math.min(this.accumulator, spawnInterval);
     }
 
     // Update existing particles

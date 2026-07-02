@@ -11,7 +11,7 @@ import { SPEC } from '../style/spec';
  *     title: 'DRAGON QUEST',
  *     items: ['NEW GAME', 'CONTINUE', 'OPTIONS', 'QUIT'],
  *     selectedIndex: 0,
- *   }, theme);
+ *   }, palette, canvasWidth, canvasHeight);
  *
  * The menu renderer handles all styling decisions:
  * - Layout and spacing
@@ -76,7 +76,7 @@ function neonText(
   options?: { align?: CanvasTextAlign; glow?: number; font?: string },
 ) {
   const glow = options?.glow ?? 0.7;
-  const font = options?.font ?? '"Press Start 2P", monospace';
+  const font = options?.font ?? '"Orbitron", "Rajdhani", sans-serif';
   ctx.save();
   ctx.font = `${fontSize}px ${font}`;
   ctx.textAlign = options?.align ?? 'center';
