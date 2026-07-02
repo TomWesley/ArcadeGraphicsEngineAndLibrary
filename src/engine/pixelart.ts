@@ -37,7 +37,7 @@ import { PixelBuffer, createPixelBuffer, getPixel, setPixel, nearestNeighborScal
 export function generateNeonShades(neon: NeonColor, count: number = 5): RGBA[] {
   const shades: RGBA[] = [];
   for (let i = 0; i < count; i++) {
-    const t = i / (count - 1);
+    const t = count > 1 ? i / (count - 1) : 0.5;
     if (t < 0.1) {
       // Near black
       shades.push([

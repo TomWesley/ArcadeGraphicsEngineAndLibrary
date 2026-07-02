@@ -1,730 +1,758 @@
-import type { RGBA, NeonColor, ColorPalette } from '../style/types';
-import { rgbaToCss, withAlpha, lerpColor, hslToRgba, rgbaToHsl } from '../style/colors';
+import type { RGBA } from '../style/types';
 
 /**
- * Icon system — renders common game/app icons in the neon arcade style.
+ * Icon system — sleek futuristic HUD icons (Halo HUD / Elite Dangerous).
  *
- * DESIGN PRINCIPLE: Icons are NOT wireframe outlines. They are richly filled
- * shapes with:
- * - Dark filled interiors (not empty/transparent)
- * - Multiple shading zones (4-5 brightness levels within each icon)
- * - Bright neon outline edges
- * - Internal detail lines at mid-brightness
- * - Secondary color accents for depth
- * - Highlight hot-spots
+ * DESIGN PRINCIPLES (see CLAUDE.md):
+ * - 2-4 visual elements per icon
+ * - Solid gradient-filled primary shapes, never flat monotone
+ * - Bold outlines (0.7-0.9 opacity) with selective shadowBlur glow
+ * - Dark internal detail lines drawn ON TOP of fills
+ * - One bright highlight accent per icon
+ * - Spacecraft-instrument interpretation: a heart is an EKG waveform,
+ *   a skull is a radiation trefoil, a trophy is rank bars — never
+ *   cute/retro illustration.
  *
- * This matches the reference image where even simple shapes like icicles
- * have 4-5 shades with internal facets and surface detail.
+ * The drawing code is ported from the approved implementations in
+ * tests/icon-library/index.html, parameterized so every icon scales
+ * with `size` and tints with `color` instead of global palette arrays.
  */
 
-export type IconName =
-  | 'play' | 'pause' | 'stop'
-  | 'arrow-right' | 'arrow-left' | 'arrow-up' | 'arrow-down'
-  | 'leaderboard' | 'trophy'
-  | 'star' | 'heart' | 'shield'
-  | 'lightning' | 'gear' | 'home'
-  | 'sword' | 'potion' | 'coin'
-  | 'skull' | 'crown';
+/** Icons with their own drawing implementation. */
+type BaseIconName =
+  // Playback / transport
+  | 'play' | 'pause' | 'stop' | 'forward' | 'back'
+  // Arrows
+  | 'arrow-up' | 'arrow-down' | 'arrow-left' | 'arrow-right'
+  // UI / system
+  | 'fullscreen' | 'info' | 'warning' | 'error' | 'search'
+  | 'settings' | 'refresh' | 'plus' | 'minus'
+  | 'download' | 'upload'
+  // Game systems
+  | 'quest' | 'energy' | 'target' | 'inventory' | 'craft'
+  | 'diamond' | 'star' | 'heart' | 'skull'
+  // Legacy names, redesigned in the approved vocabulary
+  | 'leaderboard' | 'shield' | 'sword' | 'home' | 'potion' | 'coin' | 'crown';
 
-interface IconContext {
-  ctx: CanvasRenderingContext2D;
-  cx: number;
-  cy: number;
-  size: number;
-  color: RGBA;
-  u: number;
-  /** Derived shade palette: [deepest, dark, mid, bright, core, highlight] */
-  shades: RGBA[];
+/** Legacy names kept as aliases to their nearest approved equivalent. */
+type AliasIconName = 'gear' | 'lightning' | 'trophy';
+
+export type IconName = BaseIconName | AliasIconName;
+
+const ALIASES: Record<AliasIconName, BaseIconName> = {
+  gear: 'settings',       // gear → interconnected node network
+  lightning: 'energy',    // lightning → progress arc with bolt
+  trophy: 'leaderboard',  // trophy → rank bars
+};
+
+// ── Pen: parameterized drawing helpers ───────────────────────────────
+//
+// The approved icons were authored on a 100px canvas where content spans
+// roughly ±24 units from center. `u(n)` maps those author-space units onto
+// the requested icon size so that u(24) === size / 2.
+
+interface Pen {
+  /** The 2D context ("x" mirrors the reference implementation). */
+  x: CanvasRenderingContext2D;
+  /** Author-space unit → pixels for the requested size. */
+  u(n: number): number;
+  /** Primary color as a CSS rgba() string at the given opacity. */
+  pc(a: number): string;
+  /** Enable glow (shadow) in the icon color. */
+  G(blur: number, a?: number): void;
+  /** Clear glow. */
+  N(): void;
+  /** Bold glowing stroke for primary shape outlines. */
+  bold(a?: number, w?: number): void;
+  /** Solid fill for silhouette shapes. */
+  solid(a?: number): void;
+  /** Lower-opacity fill. */
+  fill(a?: number): void;
+  /** Thin accent line. */
+  thin(a?: number, w?: number): void;
+  /** Dark detail lines drawn ON TOP of solid fills. */
+  det(a?: number, w?: number): void;
+  /** Bright highlight lines. */
+  hi(a?: number, w?: number): void;
 }
 
-type IconDrawFn = (ic: IconContext) => void;
-
-// ── Shade generation (every icon gets 6 shades from its color) ───────
-
-function generateIconShades(color: RGBA): RGBA[] {
-  const [h, s, l] = rgbaToHsl(color);
-  return [
-    hslToRgba(h, Math.max(0, s - 20), Math.max(0, l - 45)),  // [0] deepest shadow
-    hslToRgba(h, Math.max(0, s - 10), Math.max(0, l - 30)),  // [1] dark fill
-    hslToRgba(h, s, Math.max(0, l - 18)),                      // [2] mid tone
-    hslToRgba(h, s, Math.max(0, l - 5)),                       // [3] bright
-    color,                                                       // [4] core (outline)
-    hslToRgba(h, Math.max(0, s - 30), Math.min(100, l + 20)), // [5] highlight/hot
-  ];
+function makePen(x: CanvasRenderingContext2D, size: number, color: RGBA): Pen {
+  const k = size / 48;
+  const r = Math.round(color[0]), g = Math.round(color[1]), b = Math.round(color[2]);
+  const u = (n: number): number => n * k;
+  const pc = (a: number): string => `rgba(${r},${g},${b},${a})`;
+  const G = (blur: number, a = 0.5): void => {
+    x.shadowColor = pc(a);
+    x.shadowBlur = blur * k;
+  };
+  const N = (): void => {
+    x.shadowColor = 'transparent';
+    x.shadowBlur = 0;
+  };
+  const bold = (a = 0.85, w = 2): void => {
+    G(6, 0.35);
+    x.strokeStyle = pc(a);
+    x.lineWidth = u(w);
+    x.lineCap = 'round';
+    x.lineJoin = 'round';
+  };
+  const solid = (a = 0.7): void => { x.fillStyle = pc(a); };
+  const fill = (a = 0.5): void => { x.fillStyle = pc(a); };
+  const thin = (a = 0.3, w = 0.8): void => {
+    N();
+    x.strokeStyle = pc(a);
+    x.lineWidth = u(w);
+    x.lineCap = 'round';
+  };
+  const det = (a = 0.35, w = 1): void => {
+    N();
+    x.strokeStyle = `rgba(15,12,22,${a})`;
+    x.lineWidth = u(w);
+    x.lineCap = 'round';
+    x.lineJoin = 'round';
+  };
+  const hi = (a = 0.95, w = 0.7): void => {
+    N();
+    x.strokeStyle = pc(a);
+    x.lineWidth = u(w);
+    x.lineCap = 'round';
+  };
+  return { x, u, pc, G, N, bold, solid, fill, thin, det, hi };
 }
 
-// ── Shared drawing helpers ───────────────────────────────────────────
+type IconDrawFn = (d: Pen, cx: number, cy: number) => void;
 
-/** Set up context for the bright neon outline */
-function outline(ctx: CanvasRenderingContext2D, color: RGBA, lw: number): void {
-  ctx.shadowColor = rgbaToCss(withAlpha(color, 0.7));
-  ctx.shadowBlur = 8;
-  ctx.strokeStyle = rgbaToCss(color);
-  ctx.lineWidth = lw;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-}
+// ── Icon definitions (ported from tests/icon-library/index.html) ─────
 
-/** Set up for internal detail lines (dimmer) */
-function detailLine(ctx: CanvasRenderingContext2D, color: RGBA, lw: number): void {
-  ctx.shadowColor = rgbaToCss(withAlpha(color, 0.25));
-  ctx.shadowBlur = 3;
-  ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.5));
-  ctx.lineWidth = lw;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-}
+const ICONS: Record<BaseIconName, IconDrawFn> = {
 
-/** Create a radial fill gradient from dark center to brighter edges */
-function radialFill(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, shades: RGBA[]): CanvasGradient {
-  const g = ctx.createRadialGradient(cx, cy, r * 0.1, cx, cy, r);
-  g.addColorStop(0, rgbaToCss(shades[1]));
-  g.addColorStop(0.5, rgbaToCss(shades[0]));
-  g.addColorStop(0.85, rgbaToCss(shades[1]));
-  g.addColorStop(1, rgbaToCss(shades[2]));
-  return g;
-}
+  // ── PLAYBACK ──
 
-/** Create a linear gradient fill */
-function linearFill(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, shades: RGBA[]): CanvasGradient {
-  const g = ctx.createLinearGradient(x0, y0, x1, y1);
-  g.addColorStop(0, rgbaToCss(shades[2]));
-  g.addColorStop(0.3, rgbaToCss(shades[1]));
-  g.addColorStop(0.7, rgbaToCss(shades[0]));
-  g.addColorStop(1, rgbaToCss(shades[1]));
-  return g;
-}
-
-/** Draw a small highlight dot */
-function hotspot(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: RGBA): void {
-  ctx.save();
-  ctx.shadowColor = rgbaToCss(withAlpha(color, 0.6));
-  ctx.shadowBlur = r * 3;
-  ctx.fillStyle = rgbaToCss(withAlpha(color, 0.7));
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-}
-
-// ── Icon definitions ─────────────────────────────────────────────────
-
-const ICONS: Record<IconName, IconDrawFn> = {
-
-  play: ({ ctx, cx, cy, u, shades, color }) => {
-    // Filled triangle with depth
-    ctx.beginPath();
-    ctx.moveTo(cx - u * 5, cy - u * 7);
-    ctx.lineTo(cx + u * 8, cy);
-    ctx.lineTo(cx - u * 5, cy + u * 7);
-    ctx.closePath();
-    ctx.fillStyle = rgbaToCss(shades[0]);
-    ctx.fill();
-    // Interior gradient overlay
-    const pg = ctx.createLinearGradient(cx - u * 5, cy - u * 7, cx + u * 6, cy + u * 3);
-    pg.addColorStop(0, rgbaToCss(shades[2]));
-    pg.addColorStop(0.4, rgbaToCss(shades[1]));
-    pg.addColorStop(0.8, rgbaToCss(shades[0]));
-    ctx.fillStyle = pg; ctx.fill();
-    // Internal facet line
-    detailLine(ctx, color, u * 0.7);
-    ctx.beginPath(); ctx.moveTo(cx - u * 4, cy - u * 5); ctx.lineTo(cx + u * 3, cy); ctx.lineTo(cx - u * 4, cy + u * 5); ctx.stroke();
-    // Bright outline
-    outline(ctx, color, u * 1.5);
-    ctx.beginPath();
-    ctx.moveTo(cx - u * 5, cy - u * 7); ctx.lineTo(cx + u * 8, cy); ctx.lineTo(cx - u * 5, cy + u * 7); ctx.closePath();
-    ctx.stroke();
-    // Highlight
-    hotspot(ctx, cx - u * 2, cy - u * 3, u * 0.8, shades[5]);
+  play: (d, cx, cy) => {
+    const { x, u, pc, bold, hi, N } = d;
+    const g = x.createLinearGradient(cx - u(10), cy - u(14), cx + u(14), cy + u(10));
+    g.addColorStop(0, pc(0.55)); g.addColorStop(0.5, pc(0.2)); g.addColorStop(1, pc(0.45));
+    x.fillStyle = g;
+    x.beginPath();
+    x.moveTo(cx - u(10), cy - u(14)); x.lineTo(cx + u(14), cy); x.lineTo(cx - u(10), cy + u(14));
+    x.closePath(); x.fill();
+    bold(0.9, 2); x.stroke(); N();
+    hi(0.65, 0.6);
+    x.beginPath(); x.moveTo(cx - u(8), cy - u(11)); x.lineTo(cx + u(9), cy); x.stroke();
   },
 
-  pause: ({ ctx, cx, cy, u, shades, color }) => {
-    const bw = u * 3.5, bh = u * 12, gap = u * 2.5;
-    for (const xOff of [-gap - bw, gap]) {
-      const bx = cx + xOff;
-      // Fill
-      const g = ctx.createLinearGradient(bx, cy - bh/2, bx + bw, cy + bh/2);
-      g.addColorStop(0, rgbaToCss(shades[2]));
-      g.addColorStop(0.3, rgbaToCss(shades[1]));
-      g.addColorStop(0.7, rgbaToCss(shades[0]));
-      g.addColorStop(1, rgbaToCss(shades[1]));
-      ctx.fillStyle = g;
-      ctx.fillRect(bx, cy - bh/2, bw, bh);
-      // Detail line down center
-      detailLine(ctx, color, u * 0.5);
-      ctx.beginPath(); ctx.moveTo(bx + bw * 0.35, cy - bh/2 + u); ctx.lineTo(bx + bw * 0.35, cy + bh/2 - u); ctx.stroke();
-      // Outline
-      outline(ctx, color, u * 1.3);
-      ctx.strokeRect(bx, cy - bh/2, bw, bh);
+  pause: (d, cx, cy) => {
+    const { x, u, pc, bold, hi, N } = d;
+    for (const xo of [-u(7), u(3)]) {
+      const g = x.createLinearGradient(cx + xo, cy - u(14), cx + xo + u(6), cy + u(14));
+      g.addColorStop(0, pc(0.5)); g.addColorStop(0.4, pc(0.18)); g.addColorStop(1, pc(0.42));
+      x.fillStyle = g;
+      x.fillRect(cx + xo, cy - u(14), u(6), u(28));
+      bold(0.85, 1.8); x.strokeRect(cx + xo, cy - u(14), u(6), u(28)); N();
+      hi(0.55, 0.5);
+      x.beginPath(); x.moveTo(cx + xo + u(1.5), cy - u(12)); x.lineTo(cx + xo + u(1.5), cy + u(12)); x.stroke();
     }
-    hotspot(ctx, cx - gap - bw + u, cy - bh/2 + u * 2, u * 0.6, shades[5]);
   },
 
-  stop: ({ ctx, cx, cy, u, shades, color }) => {
-    const s = u * 11;
-    const g = radialFill(ctx, cx, cy, s * 0.7, shades);
-    ctx.fillStyle = g; ctx.fillRect(cx - s/2, cy - s/2, s, s);
-    // Cross detail
-    detailLine(ctx, color, u * 0.5);
-    ctx.beginPath(); ctx.moveTo(cx - s/2 + u, cy); ctx.lineTo(cx + s/2 - u, cy); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx, cy - s/2 + u); ctx.lineTo(cx, cy + s/2 - u); ctx.stroke();
-    outline(ctx, color, u * 1.3);
-    ctx.strokeRect(cx - s/2, cy - s/2, s, s);
-    hotspot(ctx, cx - s/2 + u * 2, cy - s/2 + u * 2, u * 0.7, shades[5]);
+  stop: (d, cx, cy) => {
+    const { x, u, pc, bold, hi, N } = d;
+    const g = x.createLinearGradient(cx - u(13), cy - u(13), cx + u(13), cy + u(13));
+    g.addColorStop(0, pc(0.5)); g.addColorStop(0.4, pc(0.18)); g.addColorStop(1, pc(0.42));
+    x.fillStyle = g;
+    x.fillRect(cx - u(13), cy - u(13), u(26), u(26));
+    bold(0.85, 1.8); x.strokeRect(cx - u(13), cy - u(13), u(26), u(26)); N();
+    hi(0.45, 0.5);
+    x.beginPath(); x.moveTo(cx - u(11), cy - u(13)); x.lineTo(cx - u(13), cy - u(11)); x.stroke();
   },
 
-  'arrow-right': ({ ctx, cx, cy, u, shades, color }) => {
-    // Shaft with fill
-    ctx.fillStyle = rgbaToCss(shades[1]);
-    ctx.fillRect(cx - u * 8, cy - u * 1.5, u * 12, u * 3);
-    // Gradient on shaft
-    const sg = ctx.createLinearGradient(cx - u * 8, cy, cx + u * 4, cy);
-    sg.addColorStop(0, rgbaToCss(shades[0]));
-    sg.addColorStop(1, rgbaToCss(shades[2]));
-    ctx.fillStyle = sg; ctx.fillRect(cx - u * 8, cy - u * 1.5, u * 12, u * 3);
-    // Arrowhead with fill
-    ctx.beginPath();
-    ctx.moveTo(cx + u * 1, cy - u * 5.5); ctx.lineTo(cx + u * 9, cy); ctx.lineTo(cx + u * 1, cy + u * 5.5); ctx.closePath();
-    const ag = ctx.createLinearGradient(cx + u * 1, cy - u * 5, cx + u * 9, cy);
-    ag.addColorStop(0, rgbaToCss(shades[1])); ag.addColorStop(1, rgbaToCss(shades[2]));
-    ctx.fillStyle = ag; ctx.fill();
-    // Inner facet
-    detailLine(ctx, color, u * 0.6);
-    ctx.beginPath(); ctx.moveTo(cx + u * 2.5, cy - u * 3); ctx.lineTo(cx + u * 6, cy); ctx.lineTo(cx + u * 2.5, cy + u * 3); ctx.stroke();
-    // Outlines
-    outline(ctx, color, u * 1.3);
-    ctx.beginPath(); ctx.moveTo(cx - u * 8, cy - u * 1.5); ctx.lineTo(cx + u * 1, cy - u * 1.5); ctx.lineTo(cx + u * 1, cy - u * 5.5);
-    ctx.lineTo(cx + u * 9, cy); ctx.lineTo(cx + u * 1, cy + u * 5.5); ctx.lineTo(cx + u * 1, cy + u * 1.5);
-    ctx.lineTo(cx - u * 8, cy + u * 1.5); ctx.closePath(); ctx.stroke();
-    hotspot(ctx, cx + u * 7, cy, u * 0.8, shades[5]);
+  forward: (d, cx, cy) => {
+    const { x, u, pc, solid, G, N } = d;
+    // Double solid thick chevrons
+    solid(0.75);
+    x.beginPath();
+    x.moveTo(cx - u(16), cy - u(16)); x.lineTo(cx - u(2), cy); x.lineTo(cx - u(16), cy + u(16));
+    x.lineTo(cx - u(8), cy + u(16)); x.lineTo(cx + u(6), cy); x.lineTo(cx - u(8), cy - u(16));
+    x.closePath(); x.fill();
+    x.beginPath();
+    x.moveTo(cx - u(4), cy - u(16)); x.lineTo(cx + u(10), cy); x.lineTo(cx - u(4), cy + u(16));
+    x.lineTo(cx + u(4), cy + u(16)); x.lineTo(cx + u(18), cy); x.lineTo(cx + u(4), cy - u(16));
+    x.closePath(); x.fill();
+    G(4, 0.2); x.strokeStyle = pc(0.85); x.lineWidth = u(0.8);
+    x.beginPath();
+    x.moveTo(cx - u(16), cy - u(16)); x.lineTo(cx - u(2), cy); x.lineTo(cx - u(16), cy + u(16));
+    x.lineTo(cx - u(8), cy + u(16)); x.lineTo(cx + u(6), cy); x.lineTo(cx - u(8), cy - u(16));
+    x.closePath(); x.stroke();
+    x.beginPath();
+    x.moveTo(cx - u(4), cy - u(16)); x.lineTo(cx + u(10), cy); x.lineTo(cx - u(4), cy + u(16));
+    x.lineTo(cx + u(4), cy + u(16)); x.lineTo(cx + u(18), cy); x.lineTo(cx + u(4), cy - u(16));
+    x.closePath(); x.stroke(); N();
   },
 
-  'arrow-left': ({ ctx, cx, cy, u, shades, color }) => {
-    ctx.save(); ctx.translate(cx, cy); ctx.scale(-1, 1); ctx.translate(-cx, -cy);
-    ICONS['arrow-right']({ ctx, cx, cy, size: u * 32, u, color, shades });
-    ctx.restore();
+  back: (d, cx, cy) => {
+    const { x, u, pc, solid, G, N } = d;
+    solid(0.75);
+    x.beginPath();
+    x.moveTo(cx + u(16), cy - u(16)); x.lineTo(cx + u(2), cy); x.lineTo(cx + u(16), cy + u(16));
+    x.lineTo(cx + u(8), cy + u(16)); x.lineTo(cx - u(6), cy); x.lineTo(cx + u(8), cy - u(16));
+    x.closePath(); x.fill();
+    x.beginPath();
+    x.moveTo(cx + u(4), cy - u(16)); x.lineTo(cx - u(10), cy); x.lineTo(cx + u(4), cy + u(16));
+    x.lineTo(cx - u(4), cy + u(16)); x.lineTo(cx - u(18), cy); x.lineTo(cx - u(4), cy - u(16));
+    x.closePath(); x.fill();
+    G(4, 0.2); x.strokeStyle = pc(0.85); x.lineWidth = u(0.8);
+    x.beginPath();
+    x.moveTo(cx + u(16), cy - u(16)); x.lineTo(cx + u(2), cy); x.lineTo(cx + u(16), cy + u(16));
+    x.lineTo(cx + u(8), cy + u(16)); x.lineTo(cx - u(6), cy); x.lineTo(cx + u(8), cy - u(16));
+    x.closePath(); x.stroke();
+    x.beginPath();
+    x.moveTo(cx + u(4), cy - u(16)); x.lineTo(cx - u(10), cy); x.lineTo(cx + u(4), cy + u(16));
+    x.lineTo(cx - u(4), cy + u(16)); x.lineTo(cx - u(18), cy); x.lineTo(cx - u(4), cy - u(16));
+    x.closePath(); x.stroke(); N();
   },
 
-  'arrow-up': ({ ctx, cx, cy, u, shades, color }) => {
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(-Math.PI/2); ctx.translate(-cx, -cy);
-    ICONS['arrow-right']({ ctx, cx, cy, size: u * 32, u, color, shades });
-    ctx.restore();
+  // ── ARROWS — single solid filled chevrons ──
+
+  'arrow-up': (d, cx, cy) => {
+    const { x, u, solid, bold, N } = d;
+    solid(0.65);
+    x.beginPath();
+    x.moveTo(cx - u(16), cy + u(8)); x.lineTo(cx, cy - u(8)); x.lineTo(cx + u(16), cy + u(8));
+    x.lineTo(cx + u(8), cy + u(8)); x.lineTo(cx, cy - u(1)); x.lineTo(cx - u(8), cy + u(8));
+    x.closePath(); x.fill();
+    bold(0.8, 1.5); x.stroke(); N();
   },
 
-  'arrow-down': ({ ctx, cx, cy, u, shades, color }) => {
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI/2); ctx.translate(-cx, -cy);
-    ICONS['arrow-right']({ ctx, cx, cy, size: u * 32, u, color, shades });
-    ctx.restore();
+  'arrow-down': (d, cx, cy) => {
+    const { x, u, solid, bold, N } = d;
+    solid(0.65);
+    x.beginPath();
+    x.moveTo(cx - u(16), cy - u(8)); x.lineTo(cx, cy + u(8)); x.lineTo(cx + u(16), cy - u(8));
+    x.lineTo(cx + u(8), cy - u(8)); x.lineTo(cx, cy + u(1)); x.lineTo(cx - u(8), cy - u(8));
+    x.closePath(); x.fill();
+    bold(0.8, 1.5); x.stroke(); N();
   },
 
-  leaderboard: ({ ctx, cx, cy, u, shades, color }) => {
-    const bars = [
-      { x: cx - u * 7.5, h: u * 9, rank: '3', bright: 0.5 },
-      { x: cx - u * 2.5, h: u * 15, rank: '1', bright: 1 },
-      { x: cx + u * 2.5, h: u * 12, rank: '2', bright: 0.7 },
+  'arrow-left': (d, cx, cy) => {
+    const { x, u, solid, bold, N } = d;
+    solid(0.65);
+    x.beginPath();
+    x.moveTo(cx + u(8), cy - u(16)); x.lineTo(cx - u(8), cy); x.lineTo(cx + u(8), cy + u(16));
+    x.lineTo(cx + u(8), cy + u(8)); x.lineTo(cx - u(1), cy); x.lineTo(cx + u(8), cy - u(8));
+    x.closePath(); x.fill();
+    bold(0.8, 1.5); x.stroke(); N();
+  },
+
+  'arrow-right': (d, cx, cy) => {
+    const { x, u, solid, bold, N } = d;
+    solid(0.65);
+    x.beginPath();
+    x.moveTo(cx - u(8), cy - u(16)); x.lineTo(cx + u(8), cy); x.lineTo(cx - u(8), cy + u(16));
+    x.lineTo(cx - u(8), cy + u(8)); x.lineTo(cx + u(1), cy); x.lineTo(cx - u(8), cy - u(8));
+    x.closePath(); x.fill();
+    bold(0.8, 1.5); x.stroke(); N();
+  },
+
+  // ── UI / SYSTEM ──
+
+  fullscreen: (d, cx, cy) => {
+    const { x, u, bold, N } = d;
+    bold(0.8, 2.5);
+    const s = u(14), g = u(5);
+    for (const [dx, dy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      x.beginPath();
+      x.moveTo(cx + dx * g, cy + dy * s); x.lineTo(cx + dx * s, cy + dy * s); x.lineTo(cx + dx * s, cy + dy * g);
+      x.stroke();
+    }
+    N();
+  },
+
+  info: (d, cx, cy) => {
+    const { x, u, bold, fill, N } = d;
+    bold(0.45, 1.5); x.beginPath(); x.arc(cx, cy, u(18), 0, Math.PI * 2); x.stroke(); N();
+    fill(0.7); x.beginPath(); x.arc(cx, cy - u(7), u(2.5), 0, Math.PI * 2); x.fill();
+    bold(0.7, 2.5);
+    x.beginPath(); x.moveTo(cx, cy - u(1)); x.lineTo(cx, cy + u(10)); x.stroke();
+    x.beginPath(); x.moveTo(cx - u(4), cy + u(10)); x.lineTo(cx + u(4), cy + u(10)); x.stroke();
+    N();
+  },
+
+  warning: (d, cx, cy) => {
+    const { x, u, bold, fill, N } = d;
+    fill(0.15);
+    x.beginPath();
+    x.moveTo(cx, cy - u(18)); x.lineTo(cx + u(18), cy + u(14)); x.lineTo(cx - u(18), cy + u(14));
+    x.closePath(); x.fill();
+    bold(0.85, 2.2); x.stroke(); N();
+    fill(0.8); x.beginPath(); x.arc(cx, cy + u(7), u(2.5), 0, Math.PI * 2); x.fill();
+    bold(0.8, 2.5); x.beginPath(); x.moveTo(cx, cy - u(6)); x.lineTo(cx, cy + u(2)); x.stroke(); N();
+  },
+
+  error: (d, cx, cy) => {
+    const { x, u, bold, fill, N } = d;
+    fill(0.12); x.beginPath(); x.arc(cx, cy, u(18), 0, Math.PI * 2); x.fill();
+    bold(0.55, 1.5); x.stroke();
+    bold(0.85, 2.5);
+    x.beginPath();
+    x.moveTo(cx - u(9), cy - u(9)); x.lineTo(cx + u(9), cy + u(9));
+    x.moveTo(cx + u(9), cy - u(9)); x.lineTo(cx - u(9), cy + u(9));
+    x.stroke(); N();
+  },
+
+  search: (d, cx, cy) => {
+    const { x, u, bold, N } = d;
+    bold(0.7, 2); x.beginPath(); x.arc(cx - u(3), cy - u(3), u(12), 0, Math.PI * 2); x.stroke(); N();
+    bold(0.85, 3); x.beginPath(); x.moveTo(cx + u(6), cy + u(6)); x.lineTo(cx + u(16), cy + u(16)); x.stroke(); N();
+  },
+
+  settings: (d, cx, cy) => {
+    const { x, u, bold, fill, thin, G, N } = d;
+    // Interconnected node network (atomic style)
+    G(5, 0.4); fill(0.7); x.beginPath(); x.arc(cx, cy, u(4), 0, Math.PI * 2); x.fill(); N();
+    const nodes: [number, number][] = [
+      [u(14), -Math.PI * 0.3], [u(14), Math.PI * 0.5], [u(14), Math.PI * 1.2],
     ];
-    const bw = u * 5, bot = cy + u * 8;
-    for (const bar of bars) {
-      const top = bot - bar.h;
-      // Fill gradient (bright at top, dark at bottom)
-      const bg = ctx.createLinearGradient(bar.x, top, bar.x, bot);
-      bg.addColorStop(0, rgbaToCss(bar.bright > 0.8 ? shades[2] : shades[1]));
-      bg.addColorStop(0.3, rgbaToCss(shades[1]));
-      bg.addColorStop(1, rgbaToCss(shades[0]));
-      ctx.fillStyle = bg;
-      ctx.fillRect(bar.x, top, bw, bar.h);
-      // Vertical detail lines (segments)
-      detailLine(ctx, color, u * 0.4);
-      for (let y = top + u * 3; y < bot; y += u * 3) {
-        ctx.beginPath(); ctx.moveTo(bar.x + u * 0.5, y); ctx.lineTo(bar.x + bw - u * 0.5, y); ctx.stroke();
+    for (const [r, a] of nodes) {
+      const nx = cx + Math.cos(a) * r, ny = cy + Math.sin(a) * r;
+      bold(0.5, 1.5); x.beginPath(); x.moveTo(cx, cy); x.lineTo(nx, ny); x.stroke(); N();
+      fill(0.55); x.beginPath(); x.arc(nx, ny, u(3), 0, Math.PI * 2); x.fill();
+    }
+    thin(0.2, 0.8); x.beginPath(); x.arc(cx, cy, u(14), 0, Math.PI * 2); x.stroke();
+  },
+
+  refresh: (d, cx, cy) => {
+    const { x, u, bold, fill, N } = d;
+    bold(0.75, 2.5);
+    x.beginPath(); x.arc(cx, cy, u(14), 0.4, Math.PI * 1.7); x.stroke();
+    x.beginPath(); x.arc(cx, cy, u(14), Math.PI + 0.4, Math.PI * 2.7); x.stroke();
+    N();
+    fill(0.65);
+    const a1 = 0.4;
+    x.beginPath();
+    x.moveTo(cx + Math.cos(a1) * u(9), cy + Math.sin(a1) * u(9));
+    x.lineTo(cx + Math.cos(a1) * u(19), cy + Math.sin(a1) * u(19));
+    x.lineTo(cx + Math.cos(a1 + 0.5) * u(14), cy + Math.sin(a1 + 0.5) * u(14));
+    x.closePath(); x.fill();
+    const a2 = Math.PI + 0.4;
+    x.beginPath();
+    x.moveTo(cx + Math.cos(a2) * u(9), cy + Math.sin(a2) * u(9));
+    x.lineTo(cx + Math.cos(a2) * u(19), cy + Math.sin(a2) * u(19));
+    x.lineTo(cx + Math.cos(a2 + 0.5) * u(14), cy + Math.sin(a2 + 0.5) * u(14));
+    x.closePath(); x.fill();
+  },
+
+  plus: (d, cx, cy) => {
+    const { x, u, bold, thin, N } = d;
+    bold(0.85, 3);
+    x.beginPath();
+    x.moveTo(cx, cy - u(14)); x.lineTo(cx, cy + u(14));
+    x.moveTo(cx - u(14), cy); x.lineTo(cx + u(14), cy);
+    x.stroke(); N();
+    thin(0.25, 1); x.beginPath(); x.arc(cx, cy, u(20), 0, Math.PI * 2); x.stroke();
+  },
+
+  minus: (d, cx, cy) => {
+    const { x, u, bold, thin, N } = d;
+    bold(0.85, 3);
+    x.beginPath(); x.moveTo(cx - u(14), cy); x.lineTo(cx + u(14), cy); x.stroke(); N();
+    thin(0.25, 1); x.beginPath(); x.arc(cx, cy, u(20), 0, Math.PI * 2); x.stroke();
+  },
+
+  download: (d, cx, cy) => {
+    const { x, u, bold, N } = d;
+    bold(0.45, 1.5);
+    x.beginPath();
+    x.moveTo(cx - u(16), cy + u(8)); x.lineTo(cx - u(16), cy + u(16));
+    x.lineTo(cx + u(16), cy + u(16)); x.lineTo(cx + u(16), cy + u(8));
+    x.stroke(); N();
+    bold(0.85, 2.5);
+    x.beginPath(); x.moveTo(cx, cy - u(14)); x.lineTo(cx, cy + u(6)); x.stroke();
+    x.beginPath(); x.moveTo(cx - u(7), cy + u(1)); x.lineTo(cx, cy + u(8)); x.lineTo(cx + u(7), cy + u(1)); x.stroke();
+    N();
+  },
+
+  upload: (d, cx, cy) => {
+    const { x, u, bold, N } = d;
+    bold(0.45, 1.5);
+    x.beginPath();
+    x.moveTo(cx - u(16), cy + u(8)); x.lineTo(cx - u(16), cy + u(16));
+    x.lineTo(cx + u(16), cy + u(16)); x.lineTo(cx + u(16), cy + u(8));
+    x.stroke(); N();
+    bold(0.85, 2.5);
+    x.beginPath(); x.moveTo(cx, cy + u(8)); x.lineTo(cx, cy - u(10)); x.stroke();
+    x.beginPath(); x.moveTo(cx - u(7), cy - u(4)); x.lineTo(cx, cy - u(12)); x.lineTo(cx + u(7), cy - u(4)); x.stroke();
+    N();
+  },
+
+  // ── GAME SYSTEMS ──
+
+  quest: (d, cx, cy) => {
+    const { x, u, bold, fill, N } = d;
+    bold(0.45, 1.5); x.beginPath(); x.arc(cx, cy, u(18), 0, Math.PI * 2); x.stroke(); N();
+    fill(0.75);
+    x.font = `bold ${u(26)}px 'Orbitron', sans-serif`;
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText('!', cx, cy + u(1));
+  },
+
+  energy: (d, cx, cy) => {
+    const { x, u, bold, fill, thin, G, N } = d;
+    // Progress arc with lightning bolt
+    thin(0.2, 1.5); x.beginPath(); x.arc(cx, cy, u(18), 0, Math.PI * 2); x.stroke();
+    bold(0.85, 3); x.beginPath(); x.arc(cx, cy, u(18), -Math.PI / 2, -Math.PI / 2 + Math.PI * 1.4); x.stroke(); N();
+    const ea = -Math.PI / 2 + Math.PI * 1.4;
+    G(6, 0.6); fill(0.8);
+    x.beginPath(); x.arc(cx + Math.cos(ea) * u(18), cy + Math.sin(ea) * u(18), u(3), 0, Math.PI * 2); x.fill(); N();
+    fill(0.3);
+    x.beginPath();
+    x.moveTo(cx + u(2), cy - u(6)); x.lineTo(cx - u(2), cy + u(1)); x.lineTo(cx + u(1), cy + u(1));
+    x.lineTo(cx - u(2), cy + u(6)); x.lineTo(cx + u(2), cy - u(1)); x.lineTo(cx - u(1), cy - u(1));
+    x.closePath(); x.fill();
+    bold(0.5, 0.8); x.stroke(); N();
+  },
+
+  target: (d, cx, cy) => {
+    const { x, u, bold, fill, thin, G, N } = d;
+    // TIE fighter targeting — angular bracket reticle
+    bold(0.75, 2);
+    x.beginPath(); x.moveTo(cx - u(10), cy - u(20)); x.lineTo(cx, cy - u(14)); x.lineTo(cx + u(10), cy - u(20)); x.stroke();
+    x.beginPath(); x.moveTo(cx - u(10), cy + u(20)); x.lineTo(cx, cy + u(14)); x.lineTo(cx + u(10), cy + u(20)); x.stroke();
+    x.beginPath(); x.moveTo(cx - u(20), cy - u(10)); x.lineTo(cx - u(14), cy); x.lineTo(cx - u(20), cy + u(10)); x.stroke();
+    x.beginPath(); x.moveTo(cx + u(20), cy - u(10)); x.lineTo(cx + u(14), cy); x.lineTo(cx + u(20), cy + u(10)); x.stroke();
+    N();
+    // Inner diamond reticle
+    bold(0.55, 1.5);
+    x.beginPath();
+    x.moveTo(cx, cy - u(8)); x.lineTo(cx + u(8), cy); x.lineTo(cx, cy + u(8)); x.lineTo(cx - u(8), cy);
+    x.closePath(); x.stroke(); N();
+    // Center acquisition dot
+    G(6, 0.6); fill(0.85); x.beginPath(); x.arc(cx, cy, u(2.5), 0, Math.PI * 2); x.fill(); N();
+    // Range ticks
+    thin(0.3, 0.8);
+    x.beginPath(); x.moveTo(cx - u(3), cy - u(11)); x.lineTo(cx + u(3), cy - u(11)); x.stroke();
+    x.beginPath(); x.moveTo(cx - u(3), cy + u(11)); x.lineTo(cx + u(3), cy + u(11)); x.stroke();
+    x.beginPath(); x.moveTo(cx - u(11), cy - u(3)); x.lineTo(cx - u(11), cy + u(3)); x.stroke();
+    x.beginPath(); x.moveTo(cx + u(11), cy - u(3)); x.lineTo(cx + u(11), cy + u(3)); x.stroke();
+  },
+
+  inventory: (d, cx, cy) => {
+    const { x, u, pc, bold, fill, thin, G, N } = d;
+    // Cargo manifest — data grid with status indicators
+    bold(0.6, 1.8); x.strokeRect(cx - u(18), cy - u(18), u(36), u(36)); N();
+    const cs = u(12);
+    const status: [number, number][] = [
+      [0.6, 3], [0.3, 2], [0.5, 2.5], [0.25, 2], [0.7, 3], [0, 0], [0.4, 2.5], [0, 0], [0.35, 2],
+    ];
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        const gx = cx - u(18) + col * cs, gy = cy - u(18) + row * cs;
+        thin(0.25, 0.8); x.strokeRect(gx, gy, cs, cs);
+        const [sa, sr] = status[row * 3 + col];
+        if (sa > 0) {
+          fill(sa);
+          x.beginPath(); x.arc(gx + cs / 2, gy + cs / 2, u(sr), 0, Math.PI * 2); x.fill();
+        }
       }
-      // Bright top edge
-      ctx.fillStyle = rgbaToCss(shades[bar.bright > 0.8 ? 3 : 2]);
-      ctx.fillRect(bar.x, top, bw, u * 1);
-      // Outline
-      outline(ctx, color, u * 1.1);
-      ctx.strokeRect(bar.x, top, bw, bar.h);
-      // Rank
-      ctx.fillStyle = rgbaToCss(withAlpha(shades[4], bar.bright > 0.8 ? 0.9 : 0.5));
-      ctx.shadowColor = rgbaToCss(withAlpha(color, 0.4));
-      ctx.shadowBlur = 4;
-      ctx.font = `${u * 3.5}px "Press Start 2P", monospace`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(bar.rank, bar.x + bw/2, top + u * 3.5);
     }
-    // Base line
-    outline(ctx, color, u * 1.2);
-    ctx.beginPath(); ctx.moveTo(cx - u * 10, bot); ctx.lineTo(cx + u * 10, bot); ctx.stroke();
-    // Crown on #1
-    hotspot(ctx, cx, cy + u * 8 - u * 16, u * 1, shades[5]);
+    // Active cell highlight
+    G(4, 0.3); x.strokeStyle = pc(0.7); x.lineWidth = u(1.2);
+    x.strokeRect(cx - u(18), cy - u(18), cs, cs); N();
   },
 
-  trophy: ({ ctx, cx, cy, u, shades, color }) => {
-    // Cup body with rich fill
-    ctx.beginPath();
-    ctx.moveTo(cx - u * 6, cy - u * 7);
-    ctx.lineTo(cx + u * 6, cy - u * 7);
-    ctx.bezierCurveTo(cx + u * 6, cy, cx + u * 4, cy + u * 3, cx + u * 2, cy + u * 4);
-    ctx.lineTo(cx - u * 2, cy + u * 4);
-    ctx.bezierCurveTo(cx - u * 4, cy + u * 3, cx - u * 6, cy, cx - u * 6, cy - u * 7);
-    ctx.closePath();
-    const tg = ctx.createLinearGradient(cx - u * 6, cy - u * 7, cx + u * 2, cy + u * 4);
-    tg.addColorStop(0, rgbaToCss(shades[2]));
-    tg.addColorStop(0.3, rgbaToCss(shades[1]));
-    tg.addColorStop(0.6, rgbaToCss(shades[0]));
-    tg.addColorStop(1, rgbaToCss(shades[1]));
-    ctx.fillStyle = tg; ctx.fill();
-    // Inner facet line
-    detailLine(ctx, color, u * 0.6);
-    ctx.beginPath(); ctx.moveTo(cx, cy - u * 6); ctx.lineTo(cx, cy + u * 3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx - u * 4, cy - u * 3); ctx.lineTo(cx + u * 4, cy - u * 3); ctx.stroke();
-    // Outline
-    outline(ctx, color, u * 1.3);
-    ctx.beginPath();
-    ctx.moveTo(cx - u * 6, cy - u * 7); ctx.lineTo(cx + u * 6, cy - u * 7);
-    ctx.bezierCurveTo(cx + u * 6, cy, cx + u * 4, cy + u * 3, cx + u * 2, cy + u * 4);
-    ctx.lineTo(cx - u * 2, cy + u * 4);
-    ctx.bezierCurveTo(cx - u * 4, cy + u * 3, cx - u * 6, cy, cx - u * 6, cy - u * 7);
-    ctx.closePath(); ctx.stroke();
-    // Handles
-    ctx.beginPath(); ctx.moveTo(cx - u * 6, cy - u * 5);
-    ctx.bezierCurveTo(cx - u * 10, cy - u * 5, cx - u * 10, cy + u * 1, cx - u * 6, cy + u * 1); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx + u * 6, cy - u * 5);
-    ctx.bezierCurveTo(cx + u * 10, cy - u * 5, cx + u * 10, cy + u * 1, cx + u * 6, cy + u * 1); ctx.stroke();
-    // Stem + base (filled)
-    ctx.fillStyle = rgbaToCss(shades[1]);
-    ctx.fillRect(cx - u * 1, cy + u * 4, u * 2, u * 3);
-    ctx.fillRect(cx - u * 5, cy + u * 7, u * 10, u * 1.5);
-    outline(ctx, color, u * 1);
-    ctx.beginPath(); ctx.moveTo(cx, cy + u * 4); ctx.lineTo(cx, cy + u * 7); ctx.stroke();
-    ctx.strokeRect(cx - u * 5, cy + u * 7, u * 10, u * 1.5);
-    // Star highlight
-    hotspot(ctx, cx, cy - u * 4, u * 1.2, shades[5]);
-    hotspot(ctx, cx - u * 3, cy - u * 5.5, u * 0.5, shades[5]);
-  },
-
-  star: ({ ctx, cx, cy, u, shades, color }) => {
-    starPath(ctx, cx, cy, u * 9, u * 4, 5);
-    const sg = radialFill(ctx, cx, cy, u * 7, shades);
-    ctx.fillStyle = sg; ctx.fill();
-    // Inner star facets
-    detailLine(ctx, color, u * 0.6);
-    starPath(ctx, cx, cy, u * 5, u * 3, 5);
-    ctx.stroke();
-    outline(ctx, color, u * 1.3);
-    starPath(ctx, cx, cy, u * 9, u * 4, 5);
-    ctx.stroke();
-    hotspot(ctx, cx, cy, u * 1.5, shades[5]);
-  },
-
-  heart: ({ ctx, cx, cy, u, shades, color }) => {
-    const heartPath = () => {
-      ctx.beginPath();
-      ctx.moveTo(cx, cy + u * 7);
-      ctx.bezierCurveTo(cx - u * 14, cy - u * 2, cx - u * 5, cy - u * 10, cx, cy - u * 4);
-      ctx.bezierCurveTo(cx + u * 5, cy - u * 10, cx + u * 14, cy - u * 2, cx, cy + u * 7);
-      ctx.closePath();
-    };
-    // Rich fill
-    heartPath();
-    const hg = ctx.createRadialGradient(cx - u * 2, cy - u * 3, u * 2, cx, cy, u * 10);
-    hg.addColorStop(0, rgbaToCss(shades[2]));
-    hg.addColorStop(0.4, rgbaToCss(shades[1]));
-    hg.addColorStop(1, rgbaToCss(shades[0]));
-    ctx.fillStyle = hg; ctx.fill();
-    // Internal shading line
-    detailLine(ctx, color, u * 0.6);
-    ctx.beginPath();
-    ctx.moveTo(cx, cy + u * 4);
-    ctx.bezierCurveTo(cx - u * 8, cy - u * 1, cx - u * 3, cy - u * 7, cx, cy - u * 3);
-    ctx.stroke();
-    // Bright outline
-    outline(ctx, color, u * 1.3);
-    heartPath(); ctx.stroke();
-    // Highlight spots
-    hotspot(ctx, cx - u * 3.5, cy - u * 4, u * 1.2, shades[5]);
-    hotspot(ctx, cx - u * 1.5, cy - u * 6, u * 0.6, shades[5]);
-  },
-
-  shield: ({ ctx, cx, cy, u, shades, color }) => {
-    const shieldPath = () => {
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - u * 9);
-      ctx.lineTo(cx + u * 8, cy - u * 5);
-      ctx.lineTo(cx + u * 8, cy + u * 1);
-      ctx.bezierCurveTo(cx + u * 7, cy + u * 6, cx + u * 3, cy + u * 9, cx, cy + u * 10);
-      ctx.bezierCurveTo(cx - u * 3, cy + u * 9, cx - u * 7, cy + u * 6, cx - u * 8, cy + u * 1);
-      ctx.lineTo(cx - u * 8, cy - u * 5);
-      ctx.closePath();
-    };
-    // Rich fill
-    shieldPath();
-    const sg = ctx.createLinearGradient(cx - u * 8, cy - u * 9, cx + u * 4, cy + u * 10);
-    sg.addColorStop(0, rgbaToCss(shades[2]));
-    sg.addColorStop(0.25, rgbaToCss(shades[1]));
-    sg.addColorStop(0.6, rgbaToCss(shades[0]));
-    sg.addColorStop(1, rgbaToCss(shades[1]));
-    ctx.fillStyle = sg; ctx.fill();
-    // Emblem cross (filled)
-    ctx.fillStyle = rgbaToCss(shades[2]);
-    ctx.fillRect(cx - u * 0.8, cy - u * 5, u * 1.6, u * 8);
-    ctx.fillRect(cx - u * 3.5, cy - u * 2, u * 7, u * 1.6);
-    // Inner border line
-    detailLine(ctx, color, u * 0.6);
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - u * 7);
-    ctx.lineTo(cx + u * 6, cy - u * 3.5);
-    ctx.lineTo(cx + u * 6, cy + u * 0.5);
-    ctx.bezierCurveTo(cx + u * 5, cy + u * 4.5, cx + u * 2, cy + u * 7, cx, cy + u * 8);
-    ctx.bezierCurveTo(cx - u * 2, cy + u * 7, cx - u * 5, cy + u * 4.5, cx - u * 6, cy + u * 0.5);
-    ctx.lineTo(cx - u * 6, cy - u * 3.5);
-    ctx.closePath(); ctx.stroke();
-    // Outline
-    outline(ctx, color, u * 1.3);
-    shieldPath(); ctx.stroke();
-    hotspot(ctx, cx - u * 3, cy - u * 5, u * 0.8, shades[5]);
-  },
-
-  lightning: ({ ctx, cx, cy, u, shades, color }) => {
-    const boltPath = () => {
-      ctx.beginPath();
-      ctx.moveTo(cx + u * 2, cy - u * 10);
-      ctx.lineTo(cx - u * 3, cy - u * 1);
-      ctx.lineTo(cx + u * 1, cy - u * 1);
-      ctx.lineTo(cx - u * 2, cy + u * 10);
-      ctx.lineTo(cx + u * 3, cy + u * 1);
-      ctx.lineTo(cx - u * 1, cy + u * 1);
-      ctx.closePath();
-    };
-    boltPath();
-    const lg = ctx.createLinearGradient(cx, cy - u * 10, cx, cy + u * 10);
-    lg.addColorStop(0, rgbaToCss(shades[3]));
-    lg.addColorStop(0.3, rgbaToCss(shades[2]));
-    lg.addColorStop(0.5, rgbaToCss(shades[1]));
-    lg.addColorStop(0.7, rgbaToCss(shades[2]));
-    lg.addColorStop(1, rgbaToCss(shades[3]));
-    ctx.fillStyle = lg; ctx.fill();
-    // Inner edge line
-    detailLine(ctx, color, u * 0.6);
-    ctx.beginPath(); ctx.moveTo(cx + u * 0.5, cy - u * 7); ctx.lineTo(cx - u * 1.5, cy); ctx.lineTo(cx + u * 1, cy + u * 7); ctx.stroke();
-    outline(ctx, color, u * 1.3);
-    boltPath(); ctx.stroke();
-    hotspot(ctx, cx + u * 1, cy - u * 7, u * 1, shades[5]);
-    hotspot(ctx, cx - u * 1, cy + u * 7, u * 0.7, shades[5]);
-  },
-
-  gear: ({ ctx, cx, cy, u, shades, color }) => {
-    const teeth = 8, outerR = u * 9, innerR = u * 6.5, tw = Math.PI / teeth * 0.6;
-    const gearPath = () => {
-      ctx.beginPath();
-      for (let i = 0; i < teeth; i++) {
-        const a = (i / teeth) * Math.PI * 2, a1 = a - tw, a2 = a + tw;
-        ctx.lineTo(cx + Math.cos(a1) * innerR, cy + Math.sin(a1) * innerR);
-        ctx.lineTo(cx + Math.cos(a1) * outerR, cy + Math.sin(a1) * outerR);
-        ctx.lineTo(cx + Math.cos(a2) * outerR, cy + Math.sin(a2) * outerR);
-        ctx.lineTo(cx + Math.cos(a2) * innerR, cy + Math.sin(a2) * innerR);
-      }
-      ctx.closePath();
-    };
-    gearPath();
-    ctx.fillStyle = rgbaToCss(shades[0]); ctx.fill();
-    // Radial shading
-    const gg = ctx.createRadialGradient(cx - u * 2, cy - u * 2, u * 1, cx, cy, outerR);
-    gg.addColorStop(0, rgbaToCss(shades[2]));
-    gg.addColorStop(0.4, rgbaToCss(shades[1]));
-    gg.addColorStop(1, rgbaToCss(shades[0]));
-    gearPath(); ctx.fillStyle = gg; ctx.fill();
-    // Spokes
-    detailLine(ctx, color, u * 0.5);
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * Math.PI * 2;
-      ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(a) * u * 3.5, cy + Math.sin(a) * u * 3.5);
-      ctx.lineTo(cx + Math.cos(a) * innerR * 0.9, cy + Math.sin(a) * innerR * 0.9);
-      ctx.stroke();
+  craft: (d, cx, cy) => {
+    const { x, u, bold, fill, thin, G, N } = d;
+    // Hexagonal schematic with center assembly point
+    thin(0.25, 0.8);
+    x.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 2, r = u(20);
+      if (i === 0) x.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      else x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
     }
-    // Center hole
-    ctx.beginPath(); ctx.arc(cx, cy, u * 3, 0, Math.PI * 2);
-    ctx.fillStyle = rgbaToCss(shades[0]); ctx.fill();
-    outline(ctx, color, u * 0.8);
-    ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx, cy, u * 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = rgbaToCss(shades[1]); ctx.fill();
-    ctx.stroke();
-    // Outer outline
-    outline(ctx, color, u * 1.2);
-    gearPath(); ctx.stroke();
-    hotspot(ctx, cx - u * 2, cy - u * 2, u * 0.6, shades[5]);
-  },
-
-  home: ({ ctx, cx, cy, u, shades, color }) => {
-    // Roof
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - u * 9); ctx.lineTo(cx + u * 10, cy - u * 1); ctx.lineTo(cx - u * 10, cy - u * 1); ctx.closePath();
-    const rg = ctx.createLinearGradient(cx, cy - u * 9, cx, cy - u * 1);
-    rg.addColorStop(0, rgbaToCss(shades[2])); rg.addColorStop(1, rgbaToCss(shades[0]));
-    ctx.fillStyle = rg; ctx.fill();
-    outline(ctx, color, u * 1.3); ctx.stroke();
-    // House body
-    ctx.fillStyle = rgbaToCss(shades[0]);
-    ctx.fillRect(cx - u * 7, cy - u * 1, u * 14, u * 9);
-    const bg = ctx.createLinearGradient(cx - u * 7, cy - u * 1, cx + u * 7, cy + u * 8);
-    bg.addColorStop(0, rgbaToCss(shades[1])); bg.addColorStop(1, rgbaToCss(shades[0]));
-    ctx.fillStyle = bg; ctx.fillRect(cx - u * 7, cy - u * 1, u * 14, u * 9);
-    outline(ctx, color, u * 1.1);
-    ctx.strokeRect(cx - u * 7, cy - u * 1, u * 14, u * 9);
-    // Door (filled)
-    ctx.fillStyle = rgbaToCss(shades[1]);
-    ctx.fillRect(cx - u * 2, cy + u * 1.5, u * 4, u * 6.5);
-    detailLine(ctx, color, u * 0.6);
-    ctx.strokeRect(cx - u * 2, cy + u * 1.5, u * 4, u * 6.5);
-    // Doorknob
-    hotspot(ctx, cx + u * 1, cy + u * 5, u * 0.5, shades[4]);
-    // Window (with glow)
-    ctx.fillStyle = rgbaToCss(shades[2]);
-    ctx.fillRect(cx + u * 3, cy + u * 0.5, u * 3, u * 3);
-    outline(ctx, color, u * 0.8);
-    ctx.strokeRect(cx + u * 3, cy + u * 0.5, u * 3, u * 3);
-    detailLine(ctx, color, u * 0.4);
-    ctx.beginPath(); ctx.moveTo(cx + u * 4.5, cy + u * 0.5); ctx.lineTo(cx + u * 4.5, cy + u * 3.5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx + u * 3, cy + u * 2); ctx.lineTo(cx + u * 6, cy + u * 2); ctx.stroke();
-    // Chimney
-    ctx.fillStyle = rgbaToCss(shades[1]);
-    ctx.fillRect(cx + u * 4, cy - u * 7, u * 2.5, u * 4);
-    outline(ctx, color, u * 0.8);
-    ctx.strokeRect(cx + u * 4, cy - u * 7, u * 2.5, u * 4);
-    hotspot(ctx, cx - u * 3, cy - u * 5, u * 0.6, shades[5]);
-  },
-
-  sword: ({ ctx, cx, cy, u, shades, color }) => {
-    // Blade with metallic fill
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - u * 10); ctx.lineTo(cx + u * 2.5, cy + u * 1.5);
-    ctx.lineTo(cx, cy + u * 3); ctx.lineTo(cx - u * 2.5, cy + u * 1.5); ctx.closePath();
-    const bg = ctx.createLinearGradient(cx - u * 2.5, cy - u * 10, cx + u * 2.5, cy + u * 3);
-    bg.addColorStop(0, rgbaToCss(shades[3])); bg.addColorStop(0.2, rgbaToCss(shades[2]));
-    bg.addColorStop(0.5, rgbaToCss(shades[1])); bg.addColorStop(0.8, rgbaToCss(shades[2]));
-    bg.addColorStop(1, rgbaToCss(shades[1]));
-    ctx.fillStyle = bg; ctx.fill();
-    // Blade center line
-    detailLine(ctx, color, u * 0.5);
-    ctx.beginPath(); ctx.moveTo(cx, cy - u * 9); ctx.lineTo(cx, cy + u * 2); ctx.stroke();
-    // Edge highlight
-    detailLine(ctx, shades[5], u * 0.4);
-    ctx.beginPath(); ctx.moveTo(cx - u * 1, cy - u * 8); ctx.lineTo(cx - u * 2, cy + u * 1); ctx.stroke();
-    outline(ctx, color, u * 1.2);
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - u * 10); ctx.lineTo(cx + u * 2.5, cy + u * 1.5);
-    ctx.lineTo(cx, cy + u * 3); ctx.lineTo(cx - u * 2.5, cy + u * 1.5); ctx.closePath(); ctx.stroke();
-    // Guard (cross)
-    ctx.fillStyle = rgbaToCss(shades[2]);
-    ctx.fillRect(cx - u * 5, cy + u * 2.5, u * 10, u * 2);
-    outline(ctx, color, u * 1);
-    ctx.strokeRect(cx - u * 5, cy + u * 2.5, u * 10, u * 2);
-    // Handle
-    ctx.fillStyle = rgbaToCss(shades[1]);
-    ctx.fillRect(cx - u * 1, cy + u * 4.5, u * 2, u * 4);
-    // Wrap detail
-    detailLine(ctx, color, u * 0.4);
-    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(cx - u, cy + u * (5 + i * 1.3)); ctx.lineTo(cx + u, cy + u * (5.5 + i * 1.3)); ctx.stroke(); }
-    outline(ctx, color, u * 0.8);
-    ctx.strokeRect(cx - u * 1, cy + u * 4.5, u * 2, u * 4);
-    // Pommel
-    ctx.beginPath(); ctx.arc(cx, cy + u * 9.5, u * 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = rgbaToCss(shades[2]); ctx.fill();
-    outline(ctx, color, u * 0.8); ctx.stroke();
-    hotspot(ctx, cx, cy - u * 9, u * 0.7, shades[5]);
-  },
-
-  potion: ({ ctx, cx, cy, u, shades, color }) => {
-    // Bottle body
-    const bottlePath = () => {
-      ctx.beginPath();
-      ctx.moveTo(cx - u * 2.5, cy - u * 3);
-      ctx.bezierCurveTo(cx - u * 6, cy, cx - u * 6, cy + u * 5, cx - u * 5, cy + u * 8);
-      ctx.bezierCurveTo(cx - u * 4, cy + u * 10, cx + u * 4, cy + u * 10, cx + u * 5, cy + u * 8);
-      ctx.bezierCurveTo(cx + u * 6, cy + u * 5, cx + u * 6, cy, cx + u * 2.5, cy - u * 3);
-      ctx.closePath();
-    };
-    bottlePath();
-    const pg = ctx.createRadialGradient(cx - u * 1, cy + u * 3, u * 1, cx, cy + u * 4, u * 8);
-    pg.addColorStop(0, rgbaToCss(shades[2]));
-    pg.addColorStop(0.4, rgbaToCss(shades[1]));
-    pg.addColorStop(1, rgbaToCss(shades[0]));
-    ctx.fillStyle = pg; ctx.fill();
-    // Liquid level shimmer
-    detailLine(ctx, color, u * 0.6);
-    ctx.beginPath();
-    ctx.moveTo(cx - u * 4.5, cy + u * 1.5);
-    ctx.bezierCurveTo(cx - u * 2, cy + u * 0.5, cx + u * 2, cy + u * 2.5, cx + u * 4.5, cy + u * 1.5);
-    ctx.stroke();
-    // Bubbles
-    ctx.beginPath(); ctx.arc(cx - u * 1.5, cy + u * 5, u * 0.8, 0, Math.PI * 2);
-    ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.35)); ctx.lineWidth = u * 0.4; ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx + u * 1, cy + u * 6.5, u * 0.5, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx - u * 0.5, cy + u * 3, u * 0.4, 0, Math.PI * 2); ctx.stroke();
-    outline(ctx, color, u * 1.2);
-    bottlePath(); ctx.stroke();
-    // Neck
-    ctx.fillStyle = rgbaToCss(shades[1]);
-    ctx.fillRect(cx - u * 2, cy - u * 7, u * 4, u * 4.5);
-    outline(ctx, color, u * 1);
-    ctx.strokeRect(cx - u * 2, cy - u * 7, u * 4, u * 4.5);
-    // Cork with wood grain
-    ctx.fillStyle = rgbaToCss(shades[1]);
-    ctx.fillRect(cx - u * 2.5, cy - u * 9, u * 5, u * 2.5);
-    detailLine(ctx, color, u * 0.3);
-    ctx.beginPath(); ctx.moveTo(cx - u * 2, cy - u * 8); ctx.lineTo(cx + u * 2, cy - u * 8); ctx.stroke();
-    outline(ctx, color, u * 0.8);
-    ctx.strokeRect(cx - u * 2.5, cy - u * 9, u * 5, u * 2.5);
-    hotspot(ctx, cx - u * 2, cy + u * 2, u * 0.8, shades[5]);
-  },
-
-  coin: ({ ctx, cx, cy, u, shades, color }) => {
-    // Outer ring fill
-    ctx.beginPath(); ctx.arc(cx, cy, u * 8, 0, Math.PI * 2);
-    const cg = ctx.createRadialGradient(cx - u * 2, cy - u * 2, u * 1, cx, cy, u * 8);
-    cg.addColorStop(0, rgbaToCss(shades[2]));
-    cg.addColorStop(0.5, rgbaToCss(shades[1]));
-    cg.addColorStop(1, rgbaToCss(shades[0]));
-    ctx.fillStyle = cg; ctx.fill();
-    // Inner ring
-    ctx.beginPath(); ctx.arc(cx, cy, u * 5.5, 0, Math.PI * 2);
-    ctx.fillStyle = rgbaToCss(shades[0]); ctx.fill();
-    detailLine(ctx, color, u * 0.7); ctx.stroke();
-    // Rim detail dots
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2;
-      const rx = cx + Math.cos(a) * u * 7, ry = cy + Math.sin(a) * u * 7;
-      ctx.fillStyle = rgbaToCss(withAlpha(color, 0.2));
-      ctx.beginPath(); ctx.arc(rx, ry, u * 0.4, 0, Math.PI * 2); ctx.fill();
+    x.closePath(); x.stroke();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+      thin(0.15, 0.5);
+      x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + Math.cos(a) * u(18), cy + Math.sin(a) * u(18)); x.stroke();
     }
-    // Symbol
-    ctx.fillStyle = rgbaToCss(shades[3]);
-    ctx.shadowColor = rgbaToCss(withAlpha(color, 0.4)); ctx.shadowBlur = 4;
-    ctx.font = `bold ${u * 7}px "Press Start 2P", monospace`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('$', cx, cy + u * 0.5);
-    // Outlines
-    outline(ctx, color, u * 1.2);
-    ctx.beginPath(); ctx.arc(cx, cy, u * 8, 0, Math.PI * 2); ctx.stroke();
-    hotspot(ctx, cx - u * 3, cy - u * 3, u * 0.8, shades[5]);
+    bold(0.65, 1.5); x.beginPath(); x.arc(cx, cy, u(8), 0, Math.PI * 2); x.stroke(); N();
+    G(5, 0.4); fill(0.7); x.beginPath(); x.arc(cx, cy, u(3), 0, Math.PI * 2); x.fill(); N();
+    fill(0.5);
+    for (let i = 0; i < 6; i += 2) {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+      x.beginPath(); x.arc(cx + Math.cos(a) * u(18), cy + Math.sin(a) * u(18), u(2), 0, Math.PI * 2); x.fill();
+    }
   },
 
-  skull: ({ ctx, cx, cy, u, shades, color }) => {
-    // Cranium filled
-    ctx.beginPath();
-    ctx.arc(cx, cy - u * 2, u * 7, Math.PI, 0);
-    ctx.lineTo(cx + u * 7, cy + u * 2);
-    ctx.bezierCurveTo(cx + u * 7, cy + u * 5, cx + u * 4, cy + u * 6, cx + u * 3, cy + u * 6);
-    ctx.lineTo(cx - u * 3, cy + u * 6);
-    ctx.bezierCurveTo(cx - u * 4, cy + u * 6, cx - u * 7, cy + u * 5, cx - u * 7, cy + u * 2);
-    ctx.closePath();
-    const sg = ctx.createRadialGradient(cx, cy - u * 3, u * 2, cx, cy, u * 8);
-    sg.addColorStop(0, rgbaToCss(shades[2]));
-    sg.addColorStop(0.5, rgbaToCss(shades[1]));
-    sg.addColorStop(1, rgbaToCss(shades[0]));
-    ctx.fillStyle = sg; ctx.fill();
-    // Brow ridge detail
-    detailLine(ctx, color, u * 0.5);
-    ctx.beginPath(); ctx.moveTo(cx - u * 5, cy - u * 1.5); ctx.bezierCurveTo(cx - u * 2, cy - u * 3, cx + u * 2, cy - u * 3, cx + u * 5, cy - u * 1.5); ctx.stroke();
-    // Cranium outline
-    outline(ctx, color, u * 1.2);
-    ctx.beginPath(); ctx.arc(cx, cy - u * 2, u * 7, Math.PI, 0);
-    ctx.lineTo(cx + u * 7, cy + u * 2);
-    ctx.bezierCurveTo(cx + u * 7, cy + u * 5, cx + u * 4, cy + u * 6, cx + u * 3, cy + u * 6);
-    ctx.lineTo(cx - u * 3, cy + u * 6);
-    ctx.bezierCurveTo(cx - u * 4, cy + u * 6, cx - u * 7, cy + u * 5, cx - u * 7, cy + u * 2);
-    ctx.closePath(); ctx.stroke();
-    // Eye sockets (dark with glow inside)
-    ctx.beginPath(); ctx.arc(cx - u * 3, cy - u * 0.5, u * 2.2, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fill();
-    outline(ctx, color, u * 0.8); ctx.stroke();
-    hotspot(ctx, cx - u * 3, cy - u * 0.5, u * 0.8, shades[4]); // eye glow
-    ctx.beginPath(); ctx.arc(cx + u * 3, cy - u * 0.5, u * 2.2, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fill();
-    outline(ctx, color, u * 0.8); ctx.stroke();
-    hotspot(ctx, cx + u * 3, cy - u * 0.5, u * 0.8, shades[4]);
-    // Nose
-    ctx.beginPath(); ctx.moveTo(cx, cy + u * 1.5); ctx.lineTo(cx - u * 1, cy + u * 3.5); ctx.lineTo(cx + u * 1, cy + u * 3.5); ctx.closePath();
-    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fill();
-    // Jaw with teeth
-    ctx.fillStyle = rgbaToCss(shades[0]);
-    ctx.fillRect(cx - u * 4.5, cy + u * 6, u * 9, u * 3.5);
-    outline(ctx, color, u * 1);
-    ctx.strokeRect(cx - u * 4.5, cy + u * 6, u * 9, u * 3.5);
-    // Individual teeth
-    detailLine(ctx, color, u * 0.5);
-    for (let i = -3; i <= 3; i += 1.5) {
-      ctx.beginPath(); ctx.moveTo(cx + u * i, cy + u * 6); ctx.lineTo(cx + u * i, cy + u * 9.5); ctx.stroke();
-    }
-    // Tooth fills
+  diamond: (d, cx, cy) => {
+    const { x, u, bold, fill, solid, thin, G, N } = d;
+    // Priority marker — concentric diamonds with center dot
+    solid(0.25);
+    x.beginPath();
+    x.moveTo(cx, cy - u(20)); x.lineTo(cx + u(16), cy); x.lineTo(cx, cy + u(20)); x.lineTo(cx - u(16), cy);
+    x.closePath(); x.fill();
+    bold(0.8, 2); x.stroke(); N();
+    thin(0.4, 1);
+    x.beginPath();
+    x.moveTo(cx, cy - u(12)); x.lineTo(cx + u(10), cy); x.lineTo(cx, cy + u(12)); x.lineTo(cx - u(10), cy);
+    x.closePath(); x.stroke();
+    G(5, 0.4); fill(0.7); x.beginPath(); x.arc(cx, cy, u(3), 0, Math.PI * 2); x.fill(); N();
+  },
+
+  star: (d, cx, cy) => {
+    const { x, u, bold, fill, G, N } = d;
+    // Constellation: 5 connected dots forming a pentagram
+    const pts: [number, number][] = [];
     for (let i = 0; i < 5; i++) {
-      ctx.fillStyle = rgbaToCss(shades[i % 2 ? 1 : 2]);
-      ctx.fillRect(cx - u * 4.5 + i * u * 1.8, cy + u * 6.2, u * 1.6, u * 3);
+      const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+      pts.push([cx + Math.cos(a) * u(16), cy + Math.sin(a) * u(16)]);
     }
+    bold(0.6, 1.5);
+    x.beginPath();
+    x.moveTo(pts[0][0], pts[0][1]); x.lineTo(pts[2][0], pts[2][1]); x.lineTo(pts[4][0], pts[4][1]);
+    x.lineTo(pts[1][0], pts[1][1]); x.lineTo(pts[3][0], pts[3][1]);
+    x.closePath(); x.stroke(); N();
+    G(5, 0.4); fill(0.75);
+    for (const [px, py] of pts) {
+      x.beginPath(); x.arc(px, py, u(2.5), 0, Math.PI * 2); x.fill();
+    }
+    N();
+    fill(0.4); x.beginPath(); x.arc(cx, cy, u(2), 0, Math.PI * 2); x.fill();
   },
 
-  crown: ({ ctx, cx, cy, u, shades, color }) => {
-    const crownPath = () => {
-      ctx.beginPath();
-      ctx.moveTo(cx - u * 8, cy + u * 5);
-      ctx.lineTo(cx - u * 8, cy - u * 3);
-      ctx.lineTo(cx - u * 4, cy + u * 1);
-      ctx.lineTo(cx, cy - u * 7);
-      ctx.lineTo(cx + u * 4, cy + u * 1);
-      ctx.lineTo(cx + u * 8, cy - u * 3);
-      ctx.lineTo(cx + u * 8, cy + u * 5);
-      ctx.closePath();
-    };
-    crownPath();
-    const cg = ctx.createLinearGradient(cx - u * 8, cy - u * 7, cx + u * 4, cy + u * 5);
-    cg.addColorStop(0, rgbaToCss(shades[2]));
-    cg.addColorStop(0.3, rgbaToCss(shades[1]));
-    cg.addColorStop(0.7, rgbaToCss(shades[0]));
-    cg.addColorStop(1, rgbaToCss(shades[1]));
-    ctx.fillStyle = cg; ctx.fill();
-    // Inner facet lines
-    detailLine(ctx, color, u * 0.5);
-    ctx.beginPath(); ctx.moveTo(cx - u * 6, cy + u * 3); ctx.lineTo(cx - u * 4, cy + u * 1); ctx.lineTo(cx - u * 2, cy + u * 3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx - u * 2, cy + u * 3); ctx.lineTo(cx, cy - u * 5); ctx.lineTo(cx + u * 2, cy + u * 3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx + u * 2, cy + u * 3); ctx.lineTo(cx + u * 4, cy + u * 1); ctx.lineTo(cx + u * 6, cy + u * 3); ctx.stroke();
-    outline(ctx, color, u * 1.3);
-    crownPath(); ctx.stroke();
-    // Base band
-    ctx.fillStyle = rgbaToCss(shades[1]);
-    ctx.fillRect(cx - u * 8, cy + u * 5, u * 16, u * 3);
-    // Band detail
-    detailLine(ctx, color, u * 0.4);
-    ctx.beginPath(); ctx.moveTo(cx - u * 7.5, cy + u * 6.5); ctx.lineTo(cx + u * 7.5, cy + u * 6.5); ctx.stroke();
-    outline(ctx, color, u * 1.1);
-    ctx.strokeRect(cx - u * 8, cy + u * 5, u * 16, u * 3);
-    // Gems
-    for (const [gx, gy, gs] of [[cx, cy - u * 6, u * 1.3], [cx - u * 7.5, cy - u * 2.5, u * 0.9], [cx + u * 7.5, cy - u * 2.5, u * 0.9]] as [number, number, number][]) {
-      ctx.beginPath(); ctx.arc(gx, gy, gs, 0, Math.PI * 2);
-      ctx.fillStyle = rgbaToCss(shades[2]); ctx.fill();
-      outline(ctx, color, u * 0.6); ctx.stroke();
-      hotspot(ctx, gx, gy, gs * 0.4, shades[5]);
+  heart: (d, cx, cy) => {
+    const { x, u, pc, thin, G, N } = d;
+    // Vitals monitor — clinical EKG waveform, no valentine shape
+    thin(0.25, 1);
+    x.beginPath(); x.moveTo(cx - u(24), cy + u(2)); x.lineTo(cx + u(24), cy + u(2)); x.stroke();
+    G(6, 0.35);
+    x.strokeStyle = pc(0.9); x.lineWidth = u(2.5); x.lineJoin = 'miter'; x.lineCap = 'square';
+    x.beginPath();
+    x.moveTo(cx - u(24), cy + u(2));
+    x.lineTo(cx - u(16), cy + u(2));
+    x.lineTo(cx - u(13), cy - u(4));
+    x.lineTo(cx - u(10), cy + u(6));
+    x.lineTo(cx - u(6), cy - u(6));
+    x.lineTo(cx - u(3), cy - u(18)); // big spike up
+    x.lineTo(cx + u(1), cy + u(12)); // big dip down
+    x.lineTo(cx + u(4), cy - u(10)); // recovery spike
+    x.lineTo(cx + u(7), cy + u(2));
+    x.lineTo(cx + u(10), cy - u(3));
+    x.lineTo(cx + u(13), cy + u(2));
+    x.lineTo(cx + u(24), cy + u(2));
+    x.stroke(); N();
+    // BPM readout hint
+    thin(0.35, 0.8);
+    x.beginPath(); x.moveTo(cx + u(14), cy + u(10)); x.lineTo(cx + u(22), cy + u(10)); x.stroke();
+    x.beginPath(); x.moveTo(cx + u(14), cy + u(14)); x.lineTo(cx + u(20), cy + u(14)); x.stroke();
+  },
+
+  skull: (d, cx, cy) => {
+    const { x, u, bold, fill, solid, G, N } = d;
+    // Nuclear hazard — radiation trefoil, not a cartoon skull
+    bold(0.7, 2); x.beginPath(); x.arc(cx, cy, u(22), 0, Math.PI * 2); x.stroke(); N();
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 - Math.PI / 2;
+      const a1 = a - 0.45, a2 = a + 0.45;
+      solid(0.6);
+      x.beginPath();
+      x.moveTo(cx + Math.cos(a1) * u(7), cy + Math.sin(a1) * u(7));
+      x.lineTo(cx + Math.cos(a1) * u(19), cy + Math.sin(a1) * u(19));
+      x.arc(cx, cy, u(19), a1, a2);
+      x.lineTo(cx + Math.cos(a2) * u(7), cy + Math.sin(a2) * u(7));
+      x.arc(cx, cy, u(7), a2, a1, true);
+      x.closePath(); x.fill();
+      bold(0.75, 1); x.stroke(); N();
     }
-    // Band gem
-    hotspot(ctx, cx, cy + u * 6.5, u * 0.8, shades[5]);
+    x.fillStyle = 'rgba(12,11,20,0.9)';
+    x.beginPath(); x.arc(cx, cy, u(7), 0, Math.PI * 2); x.fill();
+    bold(0.7, 1.5); x.beginPath(); x.arc(cx, cy, u(7), 0, Math.PI * 2); x.stroke(); N();
+    G(5, 0.5); fill(0.85); x.beginPath(); x.arc(cx, cy, u(2.5), 0, Math.PI * 2); x.fill(); N();
+  },
+
+  // ── LEGACY NAMES, REDESIGNED IN THE APPROVED VOCABULARY ──
+
+  leaderboard: (d, cx, cy) => {
+    const { x, u, pc, bold, fill, thin, hi, G, N } = d;
+    // Rank bars — three data columns, tallest glowing
+    const bot = cy + u(16), bw = u(9);
+    const bars: [number, number, number][] = [
+      [-u(15), u(14), 0.5],
+      [-u(4.5), u(26), 0.85],
+      [u(6), u(20), 0.65],
+    ];
+    for (const [xo, h, a] of bars) {
+      const bx = cx + xo, top = bot - h;
+      const g = x.createLinearGradient(bx, top, bx, bot);
+      g.addColorStop(0, pc(a * 0.6)); g.addColorStop(0.4, pc(0.15)); g.addColorStop(1, pc(0.3));
+      x.fillStyle = g;
+      x.fillRect(bx, top, bw, h);
+      bold(a, 1.5); x.strokeRect(bx, top, bw, h); N();
+      hi(a, 1); x.beginPath(); x.moveTo(bx, top); x.lineTo(bx + bw, top); x.stroke();
+    }
+    thin(0.35, 1); x.beginPath(); x.moveTo(cx - u(19), bot); x.lineTo(cx + u(19), bot); x.stroke();
+    // Apex status dot above the leading bar
+    G(5, 0.5); fill(0.8);
+    x.beginPath(); x.arc(cx, bot - u(26) - u(4), u(2), 0, Math.PI * 2); x.fill(); N();
+  },
+
+  shield: (d, cx, cy) => {
+    const { x, u, bold, fill, solid, thin, G, N } = d;
+    // Defense matrix — angular shield with sector grid
+    solid(0.2);
+    x.beginPath();
+    x.moveTo(cx, cy - u(22)); x.lineTo(cx + u(18), cy - u(10)); x.lineTo(cx + u(16), cy + u(6));
+    x.lineTo(cx, cy + u(22)); x.lineTo(cx - u(16), cy + u(6)); x.lineTo(cx - u(18), cy - u(10));
+    x.closePath(); x.fill();
+    bold(0.8, 2); x.stroke(); N();
+    // Inner shield layer
+    thin(0.35, 1);
+    x.beginPath();
+    x.moveTo(cx, cy - u(16)); x.lineTo(cx + u(13), cy - u(7)); x.lineTo(cx + u(11), cy + u(4));
+    x.lineTo(cx, cy + u(16)); x.lineTo(cx - u(11), cy + u(4)); x.lineTo(cx - u(13), cy - u(7));
+    x.closePath(); x.stroke();
+    // Sector dividers
+    thin(0.2, 0.6);
+    x.beginPath(); x.moveTo(cx, cy - u(22)); x.lineTo(cx, cy + u(22)); x.stroke();
+    x.beginPath(); x.moveTo(cx - u(18), cy - u(2)); x.lineTo(cx + u(18), cy - u(2)); x.stroke();
+    // Active sector highlight
+    G(4, 0.3); solid(0.15);
+    x.beginPath();
+    x.moveTo(cx, cy - u(16)); x.lineTo(cx + u(13), cy - u(7)); x.lineTo(cx + u(7), cy - u(2)); x.lineTo(cx, cy - u(2));
+    x.closePath(); x.fill(); N();
+    // Center status dot
+    G(5, 0.5); fill(0.75); x.beginPath(); x.arc(cx, cy - u(2), u(3), 0, Math.PI * 2); x.fill(); N();
+  },
+
+  sword: (d, cx, cy) => {
+    const { x, u, bold, fill, solid, det, G, N } = d;
+    // Attack vector — angular blade, geometric and sharp
+    solid(0.5);
+    x.beginPath();
+    x.moveTo(cx, cy - u(24)); x.lineTo(cx + u(6), cy - u(4)); x.lineTo(cx + u(3), cy + u(2));
+    x.lineTo(cx - u(3), cy + u(2)); x.lineTo(cx - u(6), cy - u(4));
+    x.closePath(); x.fill();
+    bold(0.85, 1.5); x.stroke(); N();
+    det(0.35, 0.8); x.beginPath(); x.moveTo(cx, cy - u(22)); x.lineTo(cx, cy + u(1)); x.stroke();
+    // Guard — angular horizontal bar
+    solid(0.4);
+    x.beginPath();
+    x.moveTo(cx - u(14), cy + u(1)); x.lineTo(cx - u(10), cy - u(2)); x.lineTo(cx + u(10), cy - u(2));
+    x.lineTo(cx + u(14), cy + u(1)); x.lineTo(cx + u(10), cy + u(4)); x.lineTo(cx - u(10), cy + u(4));
+    x.closePath(); x.fill();
+    bold(0.65, 1); x.stroke(); N();
+    // Grip
+    solid(0.35); x.fillRect(cx - u(2.5), cy + u(4), u(5), u(12));
+    bold(0.45, 0.8); x.strokeRect(cx - u(2.5), cy + u(4), u(5), u(12)); N();
+    det(0.2, 0.5);
+    for (let i = 0; i < 3; i++) {
+      x.beginPath(); x.moveTo(cx - u(2), cy + u(6) + i * u(3.5)); x.lineTo(cx + u(2), cy + u(6) + i * u(3.5)); x.stroke();
+    }
+    // Pommel — angular cap
+    solid(0.5);
+    x.beginPath(); x.moveTo(cx - u(4), cy + u(16)); x.lineTo(cx, cy + u(20)); x.lineTo(cx + u(4), cy + u(16));
+    x.closePath(); x.fill();
+    bold(0.55, 0.8); x.stroke(); N();
+    // Blade tip glow
+    G(6, 0.5); fill(0.85); x.beginPath(); x.arc(cx, cy - u(23), u(1.5), 0, Math.PI * 2); x.fill(); N();
+  },
+
+  home: (d, cx, cy) => {
+    const { x, u, pc, bold, fill, solid, det, N } = d;
+    // Home base — angular structure with broadcast antenna
+    const hg = x.createLinearGradient(cx - u(14), cy - u(8), cx + u(10), cy + u(16));
+    hg.addColorStop(0, pc(0.45)); hg.addColorStop(0.5, pc(0.15)); hg.addColorStop(1, pc(0.35));
+    x.fillStyle = hg;
+    x.beginPath();
+    x.moveTo(cx, cy - u(12)); x.lineTo(cx + u(16), cy + u(4)); x.lineTo(cx + u(12), cy + u(4));
+    x.lineTo(cx + u(12), cy + u(16)); x.lineTo(cx - u(12), cy + u(16)); x.lineTo(cx - u(12), cy + u(4));
+    x.lineTo(cx - u(16), cy + u(4));
+    x.closePath(); x.fill();
+    bold(0.75, 1.5); x.stroke(); N();
+    // Door
+    solid(0.25); x.fillRect(cx - u(4), cy + u(4), u(8), u(12));
+    det(0.3, 0.6); x.strokeRect(cx - u(4), cy + u(4), u(8), u(12));
+    // Antenna
+    bold(0.6, 1.5); x.beginPath(); x.moveTo(cx + u(6), cy - u(6)); x.lineTo(cx + u(6), cy - u(20)); x.stroke(); N();
+    // Signal arcs
+    bold(0.4, 1);
+    x.beginPath(); x.arc(cx + u(6), cy - u(20), u(4), -Math.PI * 0.8, -Math.PI * 0.2); x.stroke();
+    x.beginPath(); x.arc(cx + u(6), cy - u(20), u(7), -Math.PI * 0.75, -Math.PI * 0.25); x.stroke();
+    x.beginPath(); x.arc(cx + u(6), cy - u(20), u(10), -Math.PI * 0.7, -Math.PI * 0.3); x.stroke();
+    N();
+    // Window
+    fill(0.35); x.fillRect(cx + u(4), cy + u(5), u(5), u(4));
+    bold(0.35, 0.6); x.strokeRect(cx + u(4), cy + u(5), u(5), u(4)); N();
+  },
+
+  potion: (d, cx, cy) => {
+    const { x, u, bold, solid, det, hi, N } = d;
+    // Resource canister — container with fill-level indicator
+    solid(0.2); x.fillRect(cx - u(10), cy - u(18), u(20), u(36));
+    bold(0.7, 1.8); x.strokeRect(cx - u(10), cy - u(18), u(20), u(36)); N();
+    // Fill level (65%)
+    solid(0.45); x.fillRect(cx - u(9), cy - u(4), u(18), u(21));
+    hi(0.9, 1.2); x.beginPath(); x.moveTo(cx - u(10), cy - u(4)); x.lineTo(cx + u(10), cy - u(4)); x.stroke();
+    // Segment markings
+    det(0.25, 0.6);
+    for (let i = 0; i < 5; i++) {
+      const sy = cy - u(14) + i * u(7);
+      x.beginPath(); x.moveTo(cx - u(10), sy); x.lineTo(cx - u(7), sy); x.stroke();
+      x.beginPath(); x.moveTo(cx + u(10), sy); x.lineTo(cx + u(7), sy); x.stroke();
+    }
+    // Cap
+    solid(0.35); x.fillRect(cx - u(12), cy - u(22), u(24), u(5));
+    bold(0.5, 1); x.strokeRect(cx - u(12), cy - u(22), u(24), u(5)); N();
+    det(0.15, 0.5); x.beginPath(); x.moveTo(cx, cy - u(18)); x.lineTo(cx, cy + u(18)); x.stroke();
+  },
+
+  coin: (d, cx, cy) => {
+    const { x, u, bold, fill, solid, thin, det, G, N } = d;
+    // Credit token — hexagonal currency with circuit pattern
+    solid(0.2);
+    x.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 2, r = u(20);
+      if (i === 0) x.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      else x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    }
+    x.closePath(); x.fill();
+    bold(0.75, 1.8); x.stroke(); N();
+    thin(0.35, 1);
+    x.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 2, r = u(12);
+      if (i === 0) x.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      else x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    }
+    x.closePath(); x.stroke();
+    thin(0.2, 0.5);
+    for (let i = 0; i < 6; i += 2) {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+      x.beginPath();
+      x.moveTo(cx + Math.cos(a) * u(6), cy + Math.sin(a) * u(6));
+      x.lineTo(cx + Math.cos(a) * u(18), cy + Math.sin(a) * u(18));
+      x.stroke();
+    }
+    G(5, 0.4); fill(0.7); x.beginPath(); x.arc(cx, cy, u(4), 0, Math.PI * 2); x.fill(); N();
+    det(0.3, 0.5); x.beginPath(); x.arc(cx, cy, u(4), 0, Math.PI * 2); x.stroke();
+  },
+
+  crown: (d, cx, cy) => {
+    const { x, u, bold, fill, G, N } = d;
+    // Command rank — stacked chevrons (military insignia)
+    bold(0.85, 2.5);
+    x.beginPath(); x.moveTo(cx - u(16), cy + u(4)); x.lineTo(cx, cy - u(8)); x.lineTo(cx + u(16), cy + u(4)); x.stroke(); N();
+    bold(0.65, 2);
+    x.beginPath(); x.moveTo(cx - u(14), cy + u(12)); x.lineTo(cx, cy); x.lineTo(cx + u(14), cy + u(12)); x.stroke(); N();
+    bold(0.45, 1.5);
+    x.beginPath(); x.moveTo(cx - u(12), cy + u(18)); x.lineTo(cx, cy + u(8)); x.lineTo(cx + u(12), cy + u(18)); x.stroke(); N();
+    G(5, 0.4); fill(0.7); x.beginPath(); x.arc(cx, cy - u(8), u(2.5), 0, Math.PI * 2); x.fill(); N();
   },
 };
 
-// ── Helper shapes ────────────────────────────────────────────────────
-
-function starPath(ctx: CanvasRenderingContext2D, cx: number, cy: number, outerR: number, innerR: number, points: number): void {
-  ctx.beginPath();
-  for (let i = 0; i < points * 2; i++) {
-    const angle = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
-    const r = i % 2 === 0 ? outerR : innerR;
-    const x = cx + Math.cos(angle) * r;
-    const y = cy + Math.sin(angle) * r;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-}
-
 // ── Public API ───────────────────────────────────────────────────────
+
+const warnedUnknown = new Set<string>();
 
 export function drawIcon(
   ctx: CanvasRenderingContext2D,
@@ -733,17 +761,31 @@ export function drawIcon(
   size: number,
   color: RGBA,
 ): void {
-  const fn = ICONS[name];
-  if (!fn) return;
+  const resolved = (ALIASES as Record<string, BaseIconName | undefined>)[name] ?? name;
+  const fn = ICONS[resolved as BaseIconName];
+  if (!fn) {
+    if (!warnedUnknown.has(name)) {
+      warnedUnknown.add(name);
+      // eslint-disable-next-line no-console
+      console.warn(`[arcade-graphics-engine] drawIcon: unknown icon name "${name}"`);
+    }
+    return;
+  }
   ctx.save();
-  fn({ ctx, cx, cy, size, color, u: size / 32, shades: generateIconShades(color) });
+  fn(makePen(ctx, size, color), cx, cy);
   ctx.restore();
 }
 
 export function getIconNames(): IconName[] {
-  return Object.keys(ICONS) as IconName[];
+  return [...(Object.keys(ICONS) as BaseIconName[]), ...(Object.keys(ALIASES) as AliasIconName[])];
 }
 
+/**
+ * Draws an icon inside a dark instrument panel frame.
+ *
+ * The default 'square' style is the canonical clipped-corner HUD panel
+ * with border and corner accent dots (see CLAUDE.md drawFrame).
+ */
 export function drawFramedIcon(
   ctx: CanvasRenderingContext2D,
   name: IconName,
@@ -752,31 +794,43 @@ export function drawFramedIcon(
   color: RGBA,
   options?: { frameStyle?: 'circle' | 'square' | 'diamond'; frameOpacity?: number },
 ): void {
-  const style = options?.frameStyle ?? 'circle';
-  const shades = generateIconShades(color);
+  const style = options?.frameStyle ?? 'square';
+  const opacity = options?.frameOpacity ?? 0.95;
+  const p = makePen(ctx, size, color);
   const r = size * 0.6;
 
   ctx.save();
-  ctx.shadowColor = rgbaToCss(withAlpha(color, 0.3));
-  ctx.shadowBlur = 10;
-  ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.25));
-  ctx.lineWidth = 1;
+  ctx.fillStyle = `rgba(12,11,20,${opacity})`;
+  ctx.strokeStyle = p.pc(0.25);
+  ctx.lineWidth = Math.max(1, size / 60);
 
-  if (style === 'circle') {
+  if (style === 'square') {
+    // Clipped-corner panel
+    const cs = size * 0.12;
+    ctx.beginPath();
+    ctx.moveTo(cx - r + cs, cy - r); ctx.lineTo(cx + r - cs, cy - r);
+    ctx.lineTo(cx + r, cy - r + cs); ctx.lineTo(cx + r, cy + r - cs);
+    ctx.lineTo(cx + r - cs, cy + r); ctx.lineTo(cx - r + cs, cy + r);
+    ctx.lineTo(cx - r, cy + r - cs); ctx.lineTo(cx - r, cy - r + cs);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // Corner accent dots
+    ctx.fillStyle = p.pc(0.5);
+    const dotR = Math.max(1, size * 0.022);
+    const inset = r - dotR;
+    for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      ctx.beginPath();
+      ctx.arc(cx + dx * inset, cy + dy * inset, dotR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (style === 'circle') {
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fillStyle = rgbaToCss(shades[0]); ctx.fill(); ctx.stroke();
-  } else if (style === 'square') {
-    const cl = size * 0.1;
+    ctx.fill(); ctx.stroke();
+  } else {
     ctx.beginPath();
-    ctx.moveTo(cx - r + cl, cy - r); ctx.lineTo(cx + r - cl, cy - r);
-    ctx.lineTo(cx + r, cy - r + cl); ctx.lineTo(cx + r, cy + r - cl);
-    ctx.lineTo(cx + r - cl, cy + r); ctx.lineTo(cx - r + cl, cy + r);
-    ctx.lineTo(cx - r, cy + r - cl); ctx.lineTo(cx - r, cy - r + cl); ctx.closePath();
-    ctx.fillStyle = rgbaToCss(shades[0]); ctx.fill(); ctx.stroke();
-  } else if (style === 'diamond') {
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy); ctx.closePath();
-    ctx.fillStyle = rgbaToCss(shades[0]); ctx.fill(); ctx.stroke();
+    ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
   }
   ctx.restore();
 

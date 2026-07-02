@@ -7,6 +7,10 @@ export function rgba(r: number, g: number, b: number, a: number = 1): RGBA {
 }
 
 export function hslToRgba(h: number, s: number, l: number, a: number = 1): RGBA {
+  // Normalize: wrap hue into [0, 360), clamp saturation/lightness into [0, 100]
+  h = ((h % 360) + 360) % 360;
+  s = Math.max(0, Math.min(100, s));
+  l = Math.max(0, Math.min(100, l));
   const sNorm = s / 100;
   const lNorm = l / 100;
   const c = (1 - Math.abs(2 * lNorm - 1)) * sNorm;

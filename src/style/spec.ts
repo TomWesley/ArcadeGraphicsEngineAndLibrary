@@ -1,10 +1,16 @@
 /**
- * CANONICAL STYLE SPECIFICATION v2
+ * SPRITE / ASSET-CONVERSION SPEC (legacy v2 — pixel-art subsystem)
  *
- * This is the single source of truth for the Arcade Graphics Engine style.
- * Every rendering decision flows from these constants.
+ * ⚠️ SCOPE: These constants drive the SPRITE CONVERSION PIPELINE only
+ * (engine/pixelart.ts, engine/renderer bloom, asset conversion). They are
+ * NOT the engine's current UI style contract.
  *
- * STYLE PILLARS (derived from both reference images):
+ * The canonical style guide for icons, menus, HUD, and all UI is CLAUDE.md
+ * at the repo root: sleek, futuristic, near-photorealistic — Halo HUD /
+ * Elite Dangerous. Thin-line UI with selective glow, gradient fills,
+ * Orbitron/Rajdhani/Share Tech Mono typography (see style/fonts.ts).
+ *
+ * ORIGINAL v2 PILLARS (retained for the sprite pipeline):
  *
  * 1. DENSE PIXEL ART — tiny visible pixels, 20-30+ colors per element,
  *    incredible detail at small scale. Every pixel is intentional.
@@ -169,7 +175,7 @@ export function generateMaterialShading(
   const shades: { h: number; s: number; l: number }[] = [];
 
   for (let i = 0; i < levels; i++) {
-    const t = i / (levels - 1); // 0 = darkest, 1 = brightest
+    const t = levels > 1 ? i / (levels - 1) : 0.5; // 0 = darkest, 1 = brightest
 
     // Hue shifts: warm highlights, cool shadows
     const hueShift = t < 0.5
@@ -196,6 +202,9 @@ export function generateMaterialShading(
 
 /**
  * Validate style compliance for v2 (rich pixel art, not neon).
+ * @deprecated Use validateStyle from style/validator.ts — it is the single
+ * maintained validator with configurable style-guide thresholds. This
+ * duplicate uses different, unmaintained thresholds.
  */
 export function validateStyleCompliance(
   rendered: { width: number; height: number; data: Uint8ClampedArray },

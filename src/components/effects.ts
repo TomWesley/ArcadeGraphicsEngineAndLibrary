@@ -29,8 +29,9 @@ export function drawAmbientParticles(
     const size = 0.5 + (hash % 50) / 30;
     const phase = (hash % 628) / 100;
 
-    const x = (baseX * w + Math.sin(time * speed + phase) * 20 + time * 3) % w;
-    const y = (baseY * h + Math.cos(time * speed * 0.7 + phase) * 15 - time * 2 + h * 2) % h;
+    // Positive modulo so particles wrap instead of drifting off-screen
+    const x = ((baseX * w + Math.sin(time * speed + phase) * 20 + time * 3) % w + w) % w;
+    const y = ((baseY * h + Math.cos(time * speed * 0.7 + phase) * 15 - time * 2) % h + h) % h;
     const alpha = 0.15 + Math.sin(time * 1.5 + phase) * 0.1;
 
     ctx.shadowColor = rgbaToCss(withAlpha(color, alpha * 0.8));

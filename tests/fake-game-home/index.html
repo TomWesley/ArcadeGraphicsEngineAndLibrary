@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HELIOS PROTOCOL</title>
+  <!--
+    FAKE GAME HOME PAGE — built entirely with the arcade graphics engine.
+    In a real game this would be:  import { ... } from '@tomwesley/arcade-graphics-engine'
+    Here we import from /dist/ (serve from repo root: npm run test:homepage).
+    Fonts are injected automatically by ThemeProvider.injectCSS().
+  -->
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body { position: relative; }
+
+    #bgCanvas {
+      position: fixed; inset: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0;
+    }
+
+    #ui {
+      position: relative; z-index: 1;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr 280px;
+      grid-template-rows: 1fr auto;
+      gap: 24px;
+      padding: 32px 40px 20px;
+    }
+
+    /* ── Hero (center column) ── */
+    .hero {
+      grid-column: 2; grid-row: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 6px;
+    }
+    .game-title {
+      font-family: var(--arcade-font-display);
+      font-size: clamp(40px, 6vw, 72px);
+      font-weight: 900;
+      letter-spacing: 14px;
+      text-align: center;
+      background: linear-gradient(135deg, var(--arcade-primary) 20%, var(--arcade-secondary) 80%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 18px var(--arcade-primary-glow));
+    }
+    .game-subtitle {
+      font-family: var(--arcade-font-body);
+      font-weight: 500;
+      font-size: 15px;
+      letter-spacing: 8px;
+      color: var(--arcade-secondary);
+      text-shadow: 0 0 10px var(--arcade-secondary-glow);
+      margin-bottom: 8px;
+    }
+    .title-rule {
+      width: min(520px, 60%);
+      margin: 10px 0 4px;
+    }
+
+    .telemetry {
+      font-family: var(--arcade-font-mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--arcade-primary-dim);
+      display: flex; gap: 10px;
+      margin-bottom: 24px;
+      padding: 6px 18px;
+      border: 1px solid transparent;
+      border-image: linear-gradient(90deg, transparent, var(--arcade-primary-dim), transparent) 1;
+    }
+    .telemetry b { color: var(--arcade-primary); font-weight: 400; text-shadow: 0 0 6px var(--arcade-primary-glow); }
+    .telemetry b.ok { color: var(--arcade-secondary); text-shadow: 0 0 6px var(--arcade-secondary-glow); }
+    .telemetry .sep { opacity: 0.3; }
+
+    .menu {
+      display: flex; flex-direction: column; gap: 14px;
+      width: min(340px, 80%);
+    }
+    .menu .arcade-btn {
+      font-size: 15px;
+      padding: 13px 20px;
+      width: 100%;
+    }
+    .menu .arcade-btn .hint {
+      float: right;
+      font-family: var(--arcade-font-mono);
+      font-size: 10px;
+      opacity: 0.45;
+      letter-spacing: 1px;
+      line-height: 20px;
+    }
+    .menu .arcade-btn.primary-action {
+      border-color: var(--arcade-primary);
+      box-shadow: 0 0 12px var(--arcade-primary-glow), inset 0 0 14px var(--arcade-primary-glow);
+      text-shadow: 0 0 8px currentColor;
+      background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 45%, rgba(0,0,0,0.1) 100%);
+    }
+    /* Right-edge corner tick on each menu button */
+    .menu .arcade-btn .tick {
+      position: absolute;
+      right: 6px; top: 50%;
+      width: 6px; height: 6px;
+      transform: translateY(-50%) rotate(45deg);
+      border: 1px solid var(--arcade-primary-dim);
+      transition: all 0.2s;
+    }
+    .menu .arcade-btn:hover .tick,
+    .menu .arcade-btn.primary-action .tick {
+      border-color: var(--arcade-secondary);
+      box-shadow: 0 0 6px var(--arcade-secondary-glow);
+    }
+
+    /* ── Side panels ── */
+    .side {
+      grid-row: 1;
+      display: flex; flex-direction: column; gap: 18px;
+      justify-content: center;
+    }
+    .side.left  { grid-column: 1; }
+    .side.right { grid-column: 3; }
+    .hud-block canvas { display: block; width: 100%; }
+
+    /* ── Icon dock ── */
+    .dock {
+      grid-column: 2; grid-row: 2;
+      display: flex; justify-content: center; gap: 14px;
+      padding-bottom: 4px;
+    }
+    .dock canvas {
+      width: 64px; height: 64px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .dock canvas:hover {
+      transform: translateY(-4px);
+      filter: drop-shadow(0 0 10px var(--arcade-primary-glow)) brightness(1.25);
+    }
+
+    /* ── Footer readout ── */
+    .readout {
+      position: fixed; z-index: 1;
+      font-family: var(--arcade-font-mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--arcade-primary-dim);
+      opacity: 0.9;
+    }
+    .readout.bl { left: 16px; bottom: 12px; }
+    .readout.br { right: 16px; bottom: 12px; text-align: right; }
+    .readout .live { color: var(--arcade-secondary); text-shadow: 0 0 6px var(--arcade-secondary-glow); }
+
+    /* Corner brackets */
+    .corner {
+      position: fixed; z-index: 1;
+      width: 26px; height: 26px;
+      border: 1px solid var(--arcade-primary-dim);
+      opacity: 0.7;
+    }
+    .corner.tl { top: 12px; left: 12px; border-right: none; border-bottom: none; }
+    .corner.tr { top: 12px; right: 12px; border-left: none; border-bottom: none; }
+    .corner.bl2 { bottom: 12px; left: 12px; border-right: none; border-top: none; display: none; }
+    .corner.br2 { bottom: 12px; right: 12px; border-left: none; border-top: none; display: none; }
+
+    /* Scan-line overlay */
+    .scanlines {
+      position: fixed; inset: 0; z-index: 2;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg, transparent 0 2px, rgba(0, 0, 0, 0.055) 2px 4px
+      );
+    }
+  </style>
+</head>
+<body class="arcade-theme">
+  <canvas id="bgCanvas"></canvas>
+
+  <div id="ui">
+    <!-- LEFT: pilot status -->
+    <aside class="side left">
+      <div class="arcade-panel hud-block">
+        <div class="arcade-panel-title">Pilot Status</div>
+        <canvas id="statusCanvas" width="492" height="336"></canvas>
+      </div>
+    </aside>
+
+    <!-- CENTER: hero + menu -->
+    <main class="hero">
+      <h1 class="game-title">HELIOS<br>PROTOCOL</h1>
+      <div class="game-subtitle">DEEP RANGE INTERDICTION</div>
+      <div class="arcade-divider title-rule"></div>
+      <div class="telemetry">
+        <span>SYS <b class="ok">NOMINAL</b></span>
+        <span class="sep">|</span>
+        <span>FUEL <b>87%</b></span>
+        <span class="sep">|</span>
+        <span>JUMP RANGE <b>14.2 LY</b></span>
+        <span class="sep">|</span>
+        <span>CR <b>48,220</b></span>
+      </div>
+      <nav class="menu">
+        <button class="arcade-btn primary-action">Launch Mission<span class="hint">ENTER</span><span class="tick"></span></button>
+        <button class="arcade-btn">Continue<span class="hint">SECTOR 7</span><span class="tick"></span></button>
+        <button class="arcade-btn">Loadout<span class="hint">L</span><span class="tick"></span></button>
+        <button class="arcade-btn">Settings<span class="hint">ESC</span><span class="tick"></span></button>
+      </nav>
+    </main>
+
+    <!-- RIGHT: tactical -->
+    <aside class="side right">
+      <div class="arcade-panel hud-block">
+        <div class="arcade-panel-title">Tactical</div>
+        <canvas id="tacticalCanvas" width="492" height="492"></canvas>
+      </div>
+    </aside>
+
+    <!-- Icon dock -->
+    <div class="dock" id="iconDock"></div>
+  </div>
+
+  <div class="readout bl">HELIOS PROTOCOL v2.4.1 // ENGINE: ARCADE-GFX 0.2.0</div>
+  <div class="readout br"><span class="live">◉ UPLINK STABLE</span> // PILOT: VESPER-9</div>
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="scanlines"></div>
+
+  <script type="module">
+    import {
+      ThemeProvider,
+      drawIcon, drawFramedIcon, drawBarGauge, drawRadialGauge, drawRadarDisplay,
+      drawAmbientParticles, withAlpha, rgbaToCss,
+    } from '/dist/index.js';
+
+    // ═══ 1. Theme: one line reskins the whole page ═══
+    const provider = ThemeProvider.create('ELECTRIC_OCEAN');
+    provider.injectCSS();   // CSS vars + component classes + Google Fonts
+
+    const theme = provider.theme;
+    const P = provider.palette.primary.core;
+    const S = provider.palette.secondary.core;
+
+    // ═══ 2. Starfield background ═══
+    const bg = document.getElementById('bgCanvas');
+    const bctx = bg.getContext('2d');
+    function sizeBg() { bg.width = innerWidth; bg.height = innerHeight; }
+    sizeBg(); addEventListener('resize', sizeBg);
+
+    // Deterministic star positions
+    const stars = Array.from({ length: 220 }, (_, i) => {
+      const h = (i * 2654435761) >>> 0;    // unsigned 32-bit hash
+      return {
+        x: (h % 10000) / 10000,
+        y: ((h >>> 8) % 10000) / 10000,
+        z: 0.2 + ((h >>> 16) % 80) / 100,  // depth → size + drift speed
+        tw: (h % 628) / 100,               // twinkle phase
+      };
+    });
+
+    function drawBackground(t) {
+      const w = bg.width, h = bg.height;
+      // Deep radial gradient, never flat black
+      const g = bctx.createRadialGradient(w/2, h*0.42, 0, w/2, h*0.42, Math.max(w, h) * 0.75);
+      g.addColorStop(0, '#0a1018');
+      g.addColorStop(0.55, '#060a10');
+      g.addColorStop(1, '#020305');
+      bctx.fillStyle = g;
+      bctx.fillRect(0, 0, w, h);
+
+      // Stars with parallax drift + twinkle
+      for (const s of stars) {
+        const x = ((s.x * w + t * 4 * s.z) % w + w) % w;
+        const y = s.y * h;
+        const a = 0.25 + 0.55 * s.z * (0.7 + 0.3 * Math.sin(t * 1.7 + s.tw));
+        bctx.fillStyle = `rgba(190, 220, 255, ${a * 0.55})`;
+        bctx.beginPath();
+        bctx.arc(x, y, s.z * 1.3, 0, Math.PI * 2);
+        bctx.fill();
+      }
+
+      // Engine ambient particles (primary-tinted motes)
+      drawAmbientParticles(bctx, w, h, P, 26, t, 7);
+
+      // Horizon accent line low in the frame
+      const hy = h * 0.86;
+      const lg = bctx.createLinearGradient(0, 0, w, 0);
+      lg.addColorStop(0, 'rgba(0,0,0,0)');
+      lg.addColorStop(0.5, rgbaToCss(withAlpha(P, 0.18)));
+      lg.addColorStop(1, 'rgba(0,0,0,0)');
+      bctx.fillStyle = lg;
+      bctx.fillRect(0, hy, w, 1);
+    }
+
+    // ═══ 3. Pilot status panel (engine gauges) ═══
+    const st = document.getElementById('statusCanvas');
+    const sctx = st.getContext('2d');
+    function drawStatus(t) {
+      sctx.clearRect(0, 0, st.width, st.height);
+      const hull    = 0.82 + Math.sin(t * 0.4) * 0.02;
+      const shields = 0.64 + Math.sin(t * 0.9) * 0.06;
+      const energy  = 0.55 + Math.sin(t * 1.6) * 0.2;
+
+      drawBarGauge(sctx, theme, { x: 18, y: 30,  width: 456, height: 30, value: hull,    label: 'HULL',    showValue: true });
+      drawBarGauge(sctx, theme, { x: 18, y: 96,  width: 456, height: 30, value: shields, label: 'SHIELDS', showValue: true, color: S });
+      drawBarGauge(sctx, theme, { x: 18, y: 162, width: 456, height: 30, value: energy,  label: 'ENERGY',  showValue: true });
+
+      drawRadialGauge(sctx, theme, {
+        cx: 124, cy: 272, radius: 52, value: 0.72 + Math.sin(t) * 0.05,
+        label: 'THRUST', showValue: true,
+      });
+      drawRadialGauge(sctx, theme, {
+        cx: 368, cy: 272, radius: 52, value: 0.31 + Math.sin(t * 0.7) * 0.04,
+        label: 'HEAT', showValue: true, color: S,
+      });
+    }
+
+    // ═══ 4. Tactical panel (engine radar) ═══
+    const tac = document.getElementById('tacticalCanvas');
+    const tctx = tac.getContext('2d');
+    function drawTactical(t) {
+      tctx.clearRect(0, 0, tac.width, tac.height);
+      // Blip coordinates are center-relative in [-1, 1]
+      const blips = [
+        { x: Math.cos(t * 0.32) * 0.55, y: Math.sin(t * 0.32) * 0.55, color: S },
+        { x: Math.cos(t * 0.18 + 2.1) * 0.78, y: Math.sin(t * 0.18 + 2.1) * 0.78, color: S },
+        { x: Math.cos(t * 0.5 + 4.4) * 0.3, y: Math.sin(t * 0.5 + 4.4) * 0.3, color: theme.palette.danger.core, size: 4 },
+        { x: 0, y: 0, color: P, size: 3 },
+      ];
+      drawRadarDisplay(tctx, theme, {
+        x: 36, y: 52, size: 420, blips,
+        label: 'SECTOR SCAN', rings: 3, sweepAngle: t * 1.1,
+      });
+    }
+
+    // ═══ 5. Icon dock (engine icons) ═══
+    const dock = document.getElementById('iconDock');
+    const dockIcons = ['play', 'target', 'energy', 'inventory', 'craft', 'settings', 'info'];
+    for (const name of dockIcons) {
+      const cv = document.createElement('canvas');
+      cv.width = 128; cv.height = 128;   // 2x for crispness at 56px display
+      cv.title = name;
+      cv.style.background = 'linear-gradient(180deg, rgba(16, 22, 34, 0.9), rgba(8, 12, 20, 0.9))';
+      cv.style.border = '1px solid ' + rgbaToCss(withAlpha(P, 0.3));
+      cv.style.boxShadow = 'inset 0 1px 0 ' + rgbaToCss(withAlpha(P, 0.15));
+      const ictx = cv.getContext('2d');
+      drawIcon(ictx, name, 64, 64, 96, P);
+      dock.appendChild(cv);
+    }
+
+    // ═══ Animation loop ═══
+    const t0 = performance.now();
+    function frame(now) {
+      const t = (now - t0) / 1000;
+      drawBackground(t);
+      drawStatus(t);
+      drawTactical(t);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

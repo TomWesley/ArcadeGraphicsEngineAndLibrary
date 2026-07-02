@@ -260,27 +260,53 @@ export function suggestAdjustments(
 ): Record<string, number> {
   const adjustments: Record<string, number> = {};
 
+  // Details are formatted as "<metric>: <value> (range: <lo>-<hi>)" or
+  // "<metric>: <value> (max: <n>)" — parse the numbers and compare
+  // directionally rather than matching prose that the checks never emit.
+  const firstNumber = (s: string): number | null => {
+    const m = s.match(/-?\d+(?:\.\d+)?/);
+    return m ? parseFloat(m[0]) : null;
+  };
+  const parseRange = (s: string): [number, number] | null => {
+    const m = s.match(/range:\s*(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)/);
+    return m ? [parseFloat(m[1]), parseFloat(m[2])] : null;
+  };
+
   for (const check of result.checks) {
     if (check.passed) continue;
 
-    if (check.name === 'Contrast' && check.detail.includes('flat')) {
-      adjustments.contrast = 0.1; // increase
-    } else if (check.name === 'Contrast' && check.detail.includes('harsh')) {
-      adjustments.contrast = -0.1; // decrease
+    if (check.name === 'Contrast') {
+      const value = firstNumber(check.detail);
+      const range = parseRange(check.detail);
+      if (value !== null && range) {
+        adjustments.contrast = value < range[0] ? 0.1 : -0.1;
+      }
     }
 
     if (check.name === 'Black levels') {
-      adjustments.atmosphere = 0.1; // more atmosphere lifts blacks
+      adjustments.atmosphere = 0.1; // more atmosphere lifts pure blacks
+    }
+
+    if (check.name === 'White levels') {
+      adjustments.bloom = -0.1; // too many blown-out pixels — pull bloom back
     }
 
     if (check.name === 'Brightness distribution') {
-      if (check.detail.includes('dark overall')) adjustments.contrast = -0.05;
-      if (check.detail.includes('bright pixels')) adjustments.bloom = -0.1;
+      // "Dark 82% / Mid 12% / Bright 6% (target: 55/30/15 ±15)"
+      const m = check.detail.match(/Dark\s+(\d+)%.*?Bright\s+(\d+)%.*?target:\s*(\d+)\/\d+\/(\d+)/);
+      if (m) {
+        const [, dark, bright, targetDark, targetBright] = m.map(Number);
+        if (dark > targetDark) adjustments.contrast = (adjustments.contrast ?? 0) - 0.05;
+        if (bright > targetBright) adjustments.bloom = (adjustments.bloom ?? 0) - 0.1;
+      }
     }
 
     if (check.name === 'Saturation') {
-      if (check.detail.includes('desaturated')) adjustments.saturation = 0.1;
-      if (check.detail.includes('Oversaturated')) adjustments.saturation = -0.1;
+      const value = firstNumber(check.detail);
+      const range = parseRange(check.detail);
+      if (value !== null && range) {
+        adjustments.saturation = value < range[0] ? 0.1 : -0.1;
+      }
     }
   }
 

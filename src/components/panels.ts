@@ -136,7 +136,7 @@ export function drawPanel(
     ctx.shadowColor = rgbaToCss(withAlpha(color, glow.intensity));
     ctx.shadowBlur = glow.innerRadius;
     ctx.fillStyle = rgbaToCss(withAlpha(color, 0.9));
-    ctx.font = `10px "Press Start 2P", monospace`;
+    ctx.font = `10px "Share Tech Mono", "Courier New", monospace`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(opts.title.toUpperCase(), x + cs + 4, y + titleHeight / 2);

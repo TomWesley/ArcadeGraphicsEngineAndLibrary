@@ -3,8 +3,9 @@ import { createTheme } from '../style/theme';
 import {
   PALETTE_NEON_INFERNO, PALETTE_ELECTRIC_OCEAN,
   PALETTE_TOXIC_JUNGLE, PALETTE_SOLAR_STORM,
-  createPalette, rgbaToCss, withAlpha,
+  createPalette, rgbaToCss,
 } from '../style/colors';
+import { FONT_DISPLAY, FONT_BODY, FONT_MONO, injectFonts } from '../style/fonts';
 
 /**
  * Theme Provider — the main entry point for games consuming this engine.
@@ -14,17 +15,21 @@ import {
  *   import { ThemeProvider } from '@tomwesley/arcade-graphics-engine/integration';
  *
  *   const theme = ThemeProvider.create('NEON_INFERNO');
- *   theme.injectCSS();           // Applies CSS custom properties
- *   theme.getCanvas2DAdapter(canvas);  // Returns styled canvas adapter
- *   theme.renderMenu(ctx, menuConfig); // Renders a styled menu
+ *   theme.injectCSS();                     // CSS custom properties + fonts + base classes
+ *   document.body.classList.add('arcade-theme');  // opt the page into themed body styles
  *
- * This is the "install and use" interface. Games don't need to understand
- * the internals — just pick a palette and call the helpers.
+ * After injectCSS(), these classes are available on any element:
+ *   .arcade-btn, .arcade-panel, .arcade-panel-title, .arcade-input,
+ *   .arcade-glow, .arcade-glow-secondary, .arcade-divider,
+ *   .arcade-success, .arcade-warning, .arcade-error
+ *
+ * For canvas rendering, use the engine's draw functions directly with
+ * `theme.palette` (e.g. drawIcon, drawPanel, drawBarGauge, renderMenu).
  */
 
-export type PaletteName = 'NEON_INFERNO' | 'ELECTRIC_OCEAN' | 'TOXIC_JUNGLE' | 'SOLAR_STORM' | 'CUSTOM';
+export type PaletteName = 'NEON_INFERNO' | 'ELECTRIC_OCEAN' | 'TOXIC_JUNGLE' | 'SOLAR_STORM';
 
-const PALETTE_MAP: Record<string, ColorPalette> = {
+const PALETTE_MAP: Record<PaletteName, ColorPalette> = {
   NEON_INFERNO: PALETTE_NEON_INFERNO,
   ELECTRIC_OCEAN: PALETTE_ELECTRIC_OCEAN,
   TOXIC_JUNGLE: PALETTE_TOXIC_JUNGLE,
@@ -41,9 +46,15 @@ export class ThemeProvider {
     this.palette = theme.palette;
   }
 
-  /** Create a theme provider with a built-in palette */
+  /** Create a theme provider with a built-in palette. For custom colors use ThemeProvider.custom(). */
   static create(paletteName: PaletteName = 'NEON_INFERNO'): ThemeProvider {
-    const palette = PALETTE_MAP[paletteName] ?? PALETTE_NEON_INFERNO;
+    const palette = PALETTE_MAP[paletteName];
+    if (!palette) {
+      throw new Error(
+        `Unknown palette "${paletteName}". Built-ins: ${Object.keys(PALETTE_MAP).join(', ')}. ` +
+        'For custom colors use ThemeProvider.custom(name, primaryHue, secondaryHue, tertiaryHue, dangerHue).'
+      );
+    }
     return new ThemeProvider(createTheme(paletteName, palette));
   }
 
@@ -59,24 +70,10 @@ export class ThemeProvider {
     return new ThemeProvider(createTheme(name, palette));
   }
 
-  /**
-   * Inject CSS custom properties into the document.
-   * This lets HTML/CSS-based game UIs use the theme colors directly.
-   *
-   * Injected properties:
-   *   --arcade-bg, --arcade-bg-tint
-   *   --arcade-primary, --arcade-primary-glow, --arcade-primary-dim
-   *   --arcade-secondary, --arcade-secondary-glow, --arcade-secondary-dim
-   *   --arcade-tertiary, --arcade-tertiary-glow, --arcade-tertiary-dim
-   *   --arcade-danger, --arcade-danger-glow, --arcade-danger-dim
-   *   --arcade-font
-   *   --arcade-glow-radius, --arcade-glow-intensity
-   */
-  injectCSS(): void {
-    if (this.cssInjected) return;
-
+  /** Build the full CSS variable map — single source for injectCSS and getCSSVariables. */
+  private buildCSSVariables(): Record<string, string> {
     const p = this.palette;
-    const vars: Record<string, string> = {
+    return {
       '--arcade-bg': rgbaToCss(p.background),
       '--arcade-bg-tint': rgbaToCss(p.backgroundTint),
       '--arcade-primary': rgbaToCss(p.primary.core),
@@ -91,11 +88,28 @@ export class ThemeProvider {
       '--arcade-danger': rgbaToCss(p.danger.core),
       '--arcade-danger-glow': rgbaToCss(p.danger.glow),
       '--arcade-danger-dim': rgbaToCss(p.danger.dim),
-      '--arcade-font': '"Press Start 2P", "Courier New", monospace',
+      '--arcade-font-display': FONT_DISPLAY,
+      '--arcade-font-body': FONT_BODY,
+      '--arcade-font-mono': FONT_MONO,
+      '--arcade-font': FONT_BODY,
       '--arcade-glow-radius': `${this.theme.glow.outerRadius}px`,
       '--arcade-glow-intensity': `${this.theme.glow.intensity}`,
     };
+  }
 
+  /**
+   * Inject CSS custom properties, the Google Fonts stylesheet, and base
+   * component classes into the document.
+   *
+   * Add `class="arcade-theme"` to <body> to opt into themed background/font;
+   * the component classes (.arcade-btn etc.) work on any element regardless.
+   */
+  injectCSS(): void {
+    if (this.cssInjected) return;
+
+    injectFonts();
+
+    const vars = this.buildCSSVariables();
     const style = document.createElement('style');
     style.id = 'arcade-engine-theme';
     style.textContent = `:root {\n${
@@ -114,18 +128,9 @@ export class ThemeProvider {
     this.cssInjected = false;
   }
 
-  /** Get CSS variable map (for frameworks that manage their own styles) */
+  /** Get the full CSS variable map (for frameworks that manage their own styles) */
   getCSSVariables(): Record<string, string> {
-    const p = this.palette;
-    return {
-      '--arcade-bg': rgbaToCss(p.background),
-      '--arcade-primary': rgbaToCss(p.primary.core),
-      '--arcade-primary-glow': rgbaToCss(p.primary.glow),
-      '--arcade-primary-dim': rgbaToCss(p.primary.dim),
-      '--arcade-secondary': rgbaToCss(p.secondary.core),
-      '--arcade-tertiary': rgbaToCss(p.tertiary.core),
-      '--arcade-danger': rgbaToCss(p.danger.core),
-    };
+    return this.buildCSSVariables();
   }
 }
 
@@ -135,7 +140,7 @@ const BASE_CSS = `
 body.arcade-theme {
   background: var(--arcade-bg);
   color: var(--arcade-primary);
-  font-family: var(--arcade-font);
+  font-family: var(--arcade-font-body);
 }
 
 .arcade-theme * {
@@ -158,26 +163,50 @@ body.arcade-theme {
     0 0 16px var(--arcade-secondary-glow);
 }
 
-/* Neon button */
+/* Sleek button — gradient fill, clipped corners, edge accent, hover glow */
 .arcade-btn {
-  background: transparent;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.012) 45%, rgba(0, 0, 0, 0.12) 100%);
   border: 1px solid var(--arcade-primary-dim);
   color: var(--arcade-primary);
-  font-family: var(--arcade-font);
+  font-family: var(--arcade-font-body);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   padding: 10px 20px;
   cursor: pointer;
   position: relative;
   clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
   transition: all 0.2s;
 }
+/* Left edge accent bar */
+.arcade-btn::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 20%;
+  width: 3px; height: 60%;
+  background: linear-gradient(180deg, transparent, var(--arcade-primary), transparent);
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+/* Top edge catch-light */
+.arcade-btn::after {
+  content: '';
+  position: absolute;
+  left: 12px; right: 12px; top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--arcade-primary-glow), transparent);
+  opacity: 0.5;
+}
 .arcade-btn:hover {
   border-color: var(--arcade-primary);
   box-shadow:
-    0 0 8px var(--arcade-primary-glow),
-    inset 0 0 8px var(--arcade-primary-glow);
+    0 0 10px var(--arcade-primary-glow),
+    inset 0 0 12px var(--arcade-primary-glow);
   text-shadow: 0 0 8px currentColor;
-  background: rgba(255, 255, 255, 0.03);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 45%, rgba(0, 0, 0, 0.1) 100%);
 }
+.arcade-btn:hover::before { opacity: 1; }
 .arcade-btn:active {
   transform: scale(0.97);
 }
@@ -192,7 +221,11 @@ body.arcade-theme {
 }
 
 .arcade-panel-title {
-  font-size: 10px;
+  font-family: var(--arcade-font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
   color: var(--arcade-primary);
   text-shadow: 0 0 6px var(--arcade-primary-glow);
   margin-bottom: 12px;
@@ -205,8 +238,8 @@ body.arcade-theme {
   background: rgba(0, 0, 0, 0.5);
   border: 1px solid var(--arcade-primary-dim);
   color: var(--arcade-primary);
-  font-family: var(--arcade-font);
-  font-size: 10px;
+  font-family: var(--arcade-font-mono);
+  font-size: 13px;
   padding: 8px 12px;
   outline: none;
 }

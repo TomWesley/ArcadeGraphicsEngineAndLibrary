@@ -26,7 +26,25 @@
       "Bash(then echo:*)",
       "Bash(npx tsx:*)",
       "Bash(kill %1)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Skill(claude-api)",
+      "Bash(git -C /Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary log -1 --format=%ci -- dist)",
+      "Bash(git -C /Users/tomwesley/LocalGithubFiles/ArcadeGraphicsEngineAndLibrary check-ignore dist)",
+      "Bash(npm run *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(npm pack *)",
+      "Bash(npx tsc *)",
+      "Bash(npx tsup *)",
+      "Bash(npm test *)",
+      "Bash(node tests/integration-test/test-integration.mjs)",
+      "Bash(npx vitest *)",
+      "Bash(npx http-server *)",
+      "Bash(npx tsx -e ' *)",
+      "Bash(npx tsx *)",
+      "Bash(node *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
