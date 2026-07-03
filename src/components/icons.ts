@@ -650,27 +650,37 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
   // ── LEGACY NAMES, REDESIGNED IN THE APPROVED VOCABULARY ──
 
   leaderboard: (d, cx, cy) => {
-    const { x, u, pc, bold, fill, thin, hi, G, N } = d;
-    // Rank bars — three data columns, tallest glowing
-    const bot = cy + u(16), bw = u(9);
-    const bars: [number, number, number][] = [
-      [-u(15), u(14), 0.5],
-      [-u(4.5), u(26), 0.85],
-      [u(6), u(20), 0.65],
+    const { x, u, bold, thin, det, fill, hi, G, N, grad } = d;
+    // Ranking readout — three list rows, 1st place lit (approved rework 2026-07-03)
+    const rows = [
+      { ry: -11, w: 26, a: 0.8, lead: true },
+      { ry: 0,   w: 19, a: 0.45, lead: false },
+      { ry: 11,  w: 13, a: 0.28, lead: false },
     ];
-    for (const [xo, h, a] of bars) {
-      const bx = cx + xo, top = bot - h;
-      const g = x.createLinearGradient(bx, top, bx, bot);
-      g.addColorStop(0, pc(a * 0.6)); g.addColorStop(0.4, pc(0.15)); g.addColorStop(1, pc(0.3));
-      x.fillStyle = g;
-      x.fillRect(bx, top, bw, h);
-      bold(a, 1.5); x.strokeRect(bx, top, bw, h); N();
-      hi(a, 1); x.beginPath(); x.moveTo(bx, top); x.lineTo(bx + bw, top); x.stroke();
+    for (const { ry, w, a, lead } of rows) {
+      // Rank chevron at row head
+      if (lead) hi(0.95, 1.6); else thin(0.55, 1.6);
+      x.beginPath();
+      x.moveTo(cx - u(20), cy + u(ry - 3)); x.lineTo(cx - u(17), cy + u(ry)); x.lineTo(cx - u(20), cy + u(ry + 3));
+      x.stroke();
+      // Score bar — gradient, clipped corner
+      x.fillStyle = grad(cx - u(14), cy + u(ry), cx - u(14) + u(w), cy + u(ry), [[0, a], [1, a * 0.45]]);
+      x.beginPath();
+      x.moveTo(cx - u(14), cy + u(ry - 3.2));
+      x.lineTo(cx - u(14) + u(w) - u(2), cy + u(ry - 3.2));
+      x.lineTo(cx - u(14) + u(w), cy + u(ry - 1.2));
+      x.lineTo(cx - u(14) + u(w), cy + u(ry + 3.2));
+      x.lineTo(cx - u(14), cy + u(ry + 3.2));
+      x.closePath(); x.fill();
+      if (lead) { bold(0.85, 1.3); x.stroke(); N(); }
+      else { thin(0.4, 1); x.stroke(); }
+      // Row divider tick
+      det(0.4, 1);
+      x.beginPath(); x.moveTo(cx - u(14), cy + u(ry + 5.5)); x.lineTo(cx + u(14), cy + u(ry + 5.5)); x.stroke();
     }
-    thin(0.35, 1); x.beginPath(); x.moveTo(cx - u(19), bot); x.lineTo(cx + u(19), bot); x.stroke();
-    // Apex status dot above the leading bar
-    G(5, 0.5); fill(0.8);
-    x.beginPath(); x.arc(cx, bot - u(26) - u(4), u(2), 0, Math.PI * 2); x.fill(); N();
+    // Champion pip — glowing marker on the lead row
+    G(6, 0.7); fill(0.95);
+    x.beginPath(); x.arc(cx + u(16.5), cy - u(11), u(2), 0, Math.PI * 2); x.fill(); N();
   },
 
   shield: (d, cx, cy) => {
@@ -840,15 +850,31 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
   },
 
   crown: (d, cx, cy) => {
-    const { x, u, bold, fill, G, N } = d;
-    // Command rank — stacked chevrons (military insignia)
-    bold(0.85, 2.5);
-    x.beginPath(); x.moveTo(cx - u(16), cy + u(4)); x.lineTo(cx, cy - u(8)); x.lineTo(cx + u(16), cy + u(4)); x.stroke(); N();
-    bold(0.65, 2);
-    x.beginPath(); x.moveTo(cx - u(14), cy + u(12)); x.lineTo(cx, cy); x.lineTo(cx + u(14), cy + u(12)); x.stroke(); N();
-    bold(0.45, 1.5);
-    x.beginPath(); x.moveTo(cx - u(12), cy + u(18)); x.lineTo(cx, cy + u(8)); x.lineTo(cx + u(12), cy + u(18)); x.stroke(); N();
-    G(5, 0.4); fill(0.7); x.beginPath(); x.arc(cx, cy - u(8), u(2.5), 0, Math.PI * 2); x.fill(); N();
+    const { x, u, bold, thin, fill, G, N, grad } = d;
+    // Command wings — winged insignia with center gem (approved rework 2026-07-03)
+    x.fillStyle = grad(cx - u(4.5), cy - u(6), cx + u(4.5), cy + u(6), [[0, 0.85], [1, 0.4]]);
+    x.beginPath();
+    x.moveTo(cx, cy - u(7)); x.lineTo(cx + u(4.5), cy); x.lineTo(cx, cy + u(7)); x.lineTo(cx - u(4.5), cy);
+    x.closePath(); x.fill();
+    bold(0.9, 1.5); x.stroke(); N();
+    // Wing blades — three swept feathers per side
+    const wing = (s: number): void => {
+      bold(0.8, 2);
+      x.beginPath(); x.moveTo(cx + s * u(6), cy - u(1)); x.lineTo(cx + s * u(20), cy - u(9)); x.stroke(); N();
+      bold(0.6, 1.7);
+      x.beginPath(); x.moveTo(cx + s * u(6.5), cy + u(2.5)); x.lineTo(cx + s * u(17), cy - u(3)); x.stroke(); N();
+      bold(0.4, 1.4);
+      x.beginPath(); x.moveTo(cx + s * u(7), cy + u(6)); x.lineTo(cx + s * u(14), cy + u(2.5)); x.stroke(); N();
+    };
+    wing(1); wing(-1);
+    // Base bar — the uniform ribbon
+    bold(0.7, 1.8);
+    x.beginPath(); x.moveTo(cx - u(9), cy + u(12)); x.lineTo(cx + u(9), cy + u(12)); x.stroke(); N();
+    thin(0.4, 1);
+    x.beginPath(); x.moveTo(cx - u(6.5), cy + u(15)); x.lineTo(cx + u(6.5), cy + u(15)); x.stroke();
+    // Gem glow — the highlight
+    G(6, 0.7); fill(0.95);
+    x.beginPath(); x.arc(cx, cy, u(1.8), 0, Math.PI * 2); x.fill(); N();
   },
 
   // ── COMMS / SYSTEMS (approved 2026-07-03) ──

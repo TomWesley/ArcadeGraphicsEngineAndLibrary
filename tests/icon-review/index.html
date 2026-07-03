@@ -169,679 +169,581 @@
       return { x, u, pc, G, N, bold, solid, fill, thin, det, hi, grad };
     }
 
-    // ═══ 15 NEW CANDIDATES ═══
-    // Written in the exact pen idiom of src/components/icons.ts so approved
-    // ones port with zero translation.
+    // ═══ NEW CANDIDATES — ROUND 2 ═══
+    // Round-1 candidates: comms + timer approved and ported; all others
+    // rejected. These are completely different concepts per icon.
     const CANDIDATES = {
 
       lock: (d, cx, cy) => {
         const { x, u, bold, thin, det, fill, G, N, grad } = d;
-        // Vault door body — angular slab with gradient
-        x.fillStyle = grad(cx - u(13), cy - u(2), cx + u(13), cy + u(18), [[0, 0.45], [0.5, 0.15], [1, 0.4]]);
+        // Slide bolt ENGAGED in its receiver
+        // Guide rails
+        thin(0.35, 1.1);
+        x.beginPath(); x.moveTo(cx - u(17), cy - u(6)); x.lineTo(cx + u(17), cy - u(6)); x.stroke();
+        x.beginPath(); x.moveTo(cx - u(17), cy + u(6)); x.lineTo(cx + u(17), cy + u(6)); x.stroke();
+        // Receiver bracket (right)
+        bold(0.8, 2);
         x.beginPath();
-        x.moveTo(cx - u(13), cy - u(2)); x.lineTo(cx + u(13), cy - u(2));
-        x.lineTo(cx + u(13), cy + u(14)); x.lineTo(cx + u(9), cy + u(18));
-        x.lineTo(cx - u(9), cy + u(18)); x.lineTo(cx - u(13), cy + u(14));
-        x.closePath(); x.fill();
-        bold(0.8, 1.8); x.stroke(); N();
-        // Shackle — angular bracket
-        bold(0.75, 2.2);
-        x.beginPath();
-        x.moveTo(cx - u(8), cy - u(2)); x.lineTo(cx - u(8), cy - u(12));
-        x.lineTo(cx - u(4), cy - u(16)); x.lineTo(cx + u(4), cy - u(16));
-        x.lineTo(cx + u(8), cy - u(12)); x.lineTo(cx + u(8), cy - u(2));
+        x.moveTo(cx + u(8), cy - u(8)); x.lineTo(cx + u(16), cy - u(8));
+        x.lineTo(cx + u(16), cy + u(8)); x.lineTo(cx + u(8), cy + u(8));
         x.stroke(); N();
-        // Keyhole reticle — dark slot on the fill
-        det(0.55, 1.4);
-        x.beginPath(); x.moveTo(cx, cy + u(7)); x.lineTo(cx, cy + u(13)); x.stroke();
-        // Status dot with glow
-        G(5, 0.6); fill(0.9);
-        x.beginPath(); x.arc(cx, cy + u(5), u(2.2), 0, Math.PI * 2); x.fill(); N();
+        // Bolt bar — engaged deep into the receiver
+        x.fillStyle = grad(cx - u(14), cy, cx + u(13), cy, [[0, 0.4], [1, 0.85]]);
+        x.beginPath();
+        x.moveTo(cx - u(14), cy - u(2.6)); x.lineTo(cx + u(11), cy - u(2.6));
+        x.lineTo(cx + u(13), cy); x.lineTo(cx + u(11), cy + u(2.6));
+        x.lineTo(cx - u(14), cy + u(2.6));
+        x.closePath(); x.fill();
+        bold(0.75, 1.4); x.stroke(); N();
+        // Handle stub
+        bold(0.8, 2.2);
+        x.beginPath(); x.moveTo(cx - u(7), cy - u(2.6)); x.lineTo(cx - u(7), cy - u(11)); x.stroke(); N();
+        fill(0.8);
+        x.beginPath(); x.arc(cx - u(7), cy - u(12), u(2), 0, Math.PI * 2); x.fill();
+        // Engagement seam — dark detail where bolt meets receiver
+        det(0.55, 1.2);
+        x.beginPath(); x.moveTo(cx + u(8), cy - u(2.6)); x.lineTo(cx + u(8), cy + u(2.6)); x.stroke();
+        // SECURED status dot — the highlight
+        G(6, 0.65); fill(0.95);
+        x.beginPath(); x.arc(cx + u(12), cy + u(11.5), u(1.9), 0, Math.PI * 2); x.fill(); N();
       },
 
       unlock: (d, cx, cy) => {
-        const { x, u, bold, det, fill, G, N, grad } = d;
-        // Same vault body
-        x.fillStyle = grad(cx - u(13), cy - u(2), cx + u(13), cy + u(18), [[0, 0.45], [0.5, 0.15], [1, 0.4]]);
+        const { x, u, bold, thin, det, fill, G, N, grad } = d;
+        // Slide bolt RETRACTED — receiver open
+        thin(0.35, 1.1);
+        x.beginPath(); x.moveTo(cx - u(17), cy - u(6)); x.lineTo(cx + u(17), cy - u(6)); x.stroke();
+        x.beginPath(); x.moveTo(cx - u(17), cy + u(6)); x.lineTo(cx + u(17), cy + u(6)); x.stroke();
+        // Receiver bracket (right) — empty
+        bold(0.8, 2);
         x.beginPath();
-        x.moveTo(cx - u(13), cy - u(2)); x.lineTo(cx + u(13), cy - u(2));
-        x.lineTo(cx + u(13), cy + u(14)); x.lineTo(cx + u(9), cy + u(18));
-        x.lineTo(cx - u(9), cy + u(18)); x.lineTo(cx - u(13), cy + u(14));
-        x.closePath(); x.fill();
-        bold(0.8, 1.8); x.stroke(); N();
-        // Shackle swung open to the right
-        bold(0.75, 2.2);
-        x.beginPath();
-        x.moveTo(cx + u(6), cy - u(2)); x.lineTo(cx + u(6), cy - u(11));
-        x.lineTo(cx + u(10), cy - u(15)); x.lineTo(cx + u(17), cy - u(15));
-        x.lineTo(cx + u(21), cy - u(11)); x.lineTo(cx + u(21), cy - u(6));
+        x.moveTo(cx + u(8), cy - u(8)); x.lineTo(cx + u(16), cy - u(8));
+        x.lineTo(cx + u(16), cy + u(8)); x.lineTo(cx + u(8), cy + u(8));
         x.stroke(); N();
-        // Open slot
-        det(0.55, 1.4);
-        x.beginPath(); x.moveTo(cx, cy + u(7)); x.lineTo(cx, cy + u(13)); x.stroke();
-        // Released status dot
+        // Bolt bar — pulled back left, clear gap before the receiver
+        x.fillStyle = grad(cx - u(16), cy, cx - u(1), cy, [[0, 0.4], [1, 0.85]]);
+        x.beginPath();
+        x.moveTo(cx - u(16), cy - u(2.6)); x.lineTo(cx - u(3), cy - u(2.6));
+        x.lineTo(cx - u(1), cy); x.lineTo(cx - u(3), cy + u(2.6));
+        x.lineTo(cx - u(16), cy + u(2.6));
+        x.closePath(); x.fill();
+        bold(0.75, 1.4); x.stroke(); N();
+        // Handle stub — tilted back (thrown)
+        bold(0.8, 2.2);
+        x.beginPath(); x.moveTo(cx - u(9), cy - u(2.6)); x.lineTo(cx - u(13), cy - u(10.5)); x.stroke(); N();
+        fill(0.8);
+        x.beginPath(); x.arc(cx - u(14), cy - u(11.8), u(2), 0, Math.PI * 2); x.fill();
+        // Release ticks in the open gap
+        thin(0.7, 1.2);
+        x.beginPath(); x.moveTo(cx + u(2.5), cy - u(3)); x.lineTo(cx + u(4.5), cy - u(5)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(3.5), cy); x.lineTo(cx + u(6), cy); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(2.5), cy + u(3)); x.lineTo(cx + u(4.5), cy + u(5)); x.stroke();
+        // OPEN status dot — the highlight
         G(6, 0.7); fill(0.95);
-        x.beginPath(); x.arc(cx, cy + u(5), u(2.2), 0, Math.PI * 2); x.fill(); N();
+        x.beginPath(); x.arc(cx + u(12), cy + u(11.5), u(1.9), 0, Math.PI * 2); x.fill(); N();
       },
 
       save: (d, cx, cy) => {
-        const { x, u, bold, thin, det, fill, G, N, grad } = d;
-        // Data core — hexagonal memory cell
-        const hex = (r) => {
-          x.beginPath();
-          for (let i = 0; i < 6; i++) {
-            const a = (Math.PI / 3) * i - Math.PI / 2;
-            const px = cx + Math.cos(a) * u(r), py = cy + Math.sin(a) * u(r);
-            i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
-          }
-          x.closePath();
-        };
-        x.fillStyle = grad(cx - u(14), cy - u(14), cx + u(14), cy + u(14), [[0, 0.4], [0.5, 0.12], [1, 0.35]]);
-        hex(16); x.fill();
-        bold(0.8, 1.8); hex(16); x.stroke(); N();
-        // Write-beam chevron entering from top
-        bold(0.7, 1.6);
-        x.beginPath(); x.moveTo(cx, cy - u(22)); x.lineTo(cx, cy - u(8)); x.stroke();
-        x.beginPath(); x.moveTo(cx - u(4), cy - u(12)); x.lineTo(cx, cy - u(8)); x.lineTo(cx + u(4), cy - u(12)); x.stroke();
-        N();
-        // Memory banks — dark detail bars
-        det(0.5, 1.2);
-        x.beginPath(); x.moveTo(cx - u(7), cy + u(3)); x.lineTo(cx + u(7), cy + u(3)); x.stroke();
-        x.beginPath(); x.moveTo(cx - u(7), cy + u(7)); x.lineTo(cx + u(7), cy + u(7)); x.stroke();
-        // Core dot
-        G(5, 0.6); fill(0.9);
-        x.beginPath(); x.arc(cx, cy - u(2), u(2.4), 0, Math.PI * 2); x.fill(); N();
+        const { x, u, bold, thin, det, fill, pc, G, N } = d;
+        // Storage platter with write head
+        bold(0.8, 1.8);
+        x.beginPath(); x.arc(cx - u(2), cy + u(1), u(14.5), 0, Math.PI * 2); x.stroke(); N();
+        // Written sectors — thick arcs at radius 9, two committed one faint
+        x.lineCap = 'butt';
+        x.strokeStyle = pc(0.75); x.lineWidth = u(4.5);
+        x.beginPath(); x.arc(cx - u(2), cy + u(1), u(9), -Math.PI * 0.45, Math.PI * 0.2); x.stroke();
+        x.strokeStyle = pc(0.45);
+        x.beginPath(); x.arc(cx - u(2), cy + u(1), u(9), Math.PI * 0.3, Math.PI * 0.85); x.stroke();
+        x.strokeStyle = pc(0.14);
+        x.beginPath(); x.arc(cx - u(2), cy + u(1), u(9), Math.PI * 0.95, Math.PI * 1.45); x.stroke();
+        // Sector divider — dark detail
+        det(0.55, 1.2);
+        x.beginPath(); x.moveTo(cx - u(2), cy + u(1)); x.lineTo(cx - u(2) + Math.cos(Math.PI * 0.25) * u(14.5), cy + u(1) + Math.sin(Math.PI * 0.25) * u(14.5)); x.stroke();
+        // Spindle
+        fill(0.8);
+        x.beginPath(); x.arc(cx - u(2), cy + u(1), u(2.2), 0, Math.PI * 2); x.fill();
+        // Write head — arm from outside pivot to the platter
+        bold(0.85, 2.2);
+        x.beginPath(); x.moveTo(cx + u(17), cy - u(13)); x.lineTo(cx + u(4), cy - u(4)); x.stroke(); N();
+        fill(0.7);
+        x.beginPath(); x.arc(cx + u(17), cy - u(13), u(2.4), 0, Math.PI * 2); x.fill();
+        // Head glow at write point — the highlight
+        G(6, 0.7); fill(0.95);
+        x.beginPath(); x.arc(cx + u(4), cy - u(4), u(2), 0, Math.PI * 2); x.fill(); N();
       },
 
       map: (d, cx, cy) => {
         const { x, u, bold, thin, det, fill, G, N, grad } = d;
-        // Nav chart panel — angular clipped rect
-        x.fillStyle = grad(cx - u(18), cy - u(14), cx + u(18), cy + u(14), [[0, 0.35], [0.5, 0.1], [1, 0.3]]);
+        // Waypoint pin over a perspective grid floor
+        // Grid floor
+        thin(0.4, 1);
+        x.beginPath(); x.moveTo(cx - u(17), cy + u(7)); x.lineTo(cx + u(17), cy + u(7)); x.stroke();
+        thin(0.3, 1);
+        x.beginPath(); x.moveTo(cx - u(19), cy + u(12)); x.lineTo(cx + u(19), cy + u(12)); x.stroke();
+        thin(0.22, 1);
+        x.beginPath(); x.moveTo(cx - u(21), cy + u(17)); x.lineTo(cx + u(21), cy + u(17)); x.stroke();
+        // Converging verticals
+        thin(0.3, 1);
+        for (const [x1, x2] of [[-14, -19], [-5, -6.5], [4, 5.5], [13, 18]]) {
+          x.beginPath(); x.moveTo(cx + u(x1), cy + u(7)); x.lineTo(cx + u(x2), cy + u(17)); x.stroke();
+        }
+        // Landing ring around the pin base
+        thin(0.6, 1.2);
+        x.beginPath(); x.ellipse(cx, cy + u(7), u(6.5), u(2.2), 0, 0, Math.PI * 2); x.stroke();
+        // Pin — diamond head + stem
+        x.fillStyle = grad(cx - u(6.5), cy - u(15), cx + u(6.5), cy - u(2), [[0, 0.85], [1, 0.4]]);
         x.beginPath();
-        x.moveTo(cx - u(18), cy - u(10)); x.lineTo(cx - u(14), cy - u(14)); x.lineTo(cx + u(18), cy - u(14));
-        x.lineTo(cx + u(18), cy + u(10)); x.lineTo(cx + u(14), cy + u(14)); x.lineTo(cx - u(18), cy + u(14));
+        x.moveTo(cx, cy - u(16)); x.lineTo(cx + u(6.5), cy - u(9)); x.lineTo(cx, cy - u(2)); x.lineTo(cx - u(6.5), cy - u(9));
         x.closePath(); x.fill();
-        bold(0.8, 1.6); x.stroke(); N();
-        // Grid detail
-        det(0.4, 0.9);
-        x.beginPath(); x.moveTo(cx - u(6), cy - u(14)); x.lineTo(cx - u(6), cy + u(14)); x.stroke();
-        x.beginPath(); x.moveTo(cx + u(6), cy - u(14)); x.lineTo(cx + u(6), cy + u(14)); x.stroke();
-        x.beginPath(); x.moveTo(cx - u(18), cy); x.lineTo(cx + u(18), cy); x.stroke();
-        // Route — dashed path with waypoints
-        thin(0.75, 1.2);
-        x.setLineDash([u(2.5), u(2)]);
-        x.beginPath();
-        x.moveTo(cx - u(13), cy + u(9)); x.lineTo(cx - u(4), cy + u(2)); x.lineTo(cx + u(5), cy + u(5)); x.lineTo(cx + u(12), cy - u(8));
-        x.stroke();
-        x.setLineDash([]);
-        // Waypoint nodes
-        fill(0.7);
-        x.beginPath(); x.arc(cx - u(13), cy + u(9), u(1.6), 0, Math.PI * 2); x.fill();
-        x.beginPath(); x.arc(cx - u(4), cy + u(2), u(1.6), 0, Math.PI * 2); x.fill();
-        x.beginPath(); x.arc(cx + u(5), cy + u(5), u(1.6), 0, Math.PI * 2); x.fill();
-        // Destination diamond — the highlight
-        G(6, 0.6); fill(0.95);
-        x.beginPath();
-        x.moveTo(cx + u(12), cy - u(11)); x.lineTo(cx + u(15), cy - u(8)); x.lineTo(cx + u(12), cy - u(5)); x.lineTo(cx + u(9), cy - u(8));
-        x.closePath(); x.fill(); N();
+        bold(0.85, 1.7); x.stroke(); N();
+        bold(0.8, 1.8);
+        x.beginPath(); x.moveTo(cx, cy - u(2)); x.lineTo(cx, cy + u(7)); x.stroke(); N();
+        // Pin core — dark detail
+        det(0.55, 1.3);
+        x.beginPath(); x.arc(cx, cy - u(9), u(2.2), 0, Math.PI * 2); x.stroke();
+        // Touchdown glow — the highlight
+        G(6, 0.7); fill(0.95);
+        x.beginPath(); x.arc(cx, cy + u(7), u(1.9), 0, Math.PI * 2); x.fill(); N();
       },
 
       radar: (d, cx, cy) => {
-        const { x, u, bold, thin, fill, pc, G, N } = d;
-        // Scope ring
-        bold(0.8, 1.8);
-        x.beginPath(); x.arc(cx, cy, u(17), 0, Math.PI * 2); x.stroke(); N();
-        thin(0.3, 0.9);
-        x.beginPath(); x.arc(cx, cy, u(11), 0, Math.PI * 2); x.stroke();
-        x.beginPath(); x.arc(cx, cy, u(5.5), 0, Math.PI * 2); x.stroke();
-        // Sweep wedge — gradient filled sector
-        const sweep = x.createConicGradient(-Math.PI * 0.42, cx, cy);
-        sweep.addColorStop(0, pc(0.55));
-        sweep.addColorStop(0.16, pc(0));
-        sweep.addColorStop(1, pc(0));
-        x.fillStyle = sweep;
-        x.beginPath(); x.moveTo(cx, cy); x.arc(cx, cy, u(16.5), 0, Math.PI * 2); x.fill();
-        // Sweep leading edge
-        thin(0.8, 1.1);
-        x.beginPath(); x.moveTo(cx, cy);
-        x.lineTo(cx + Math.cos(-Math.PI * 0.42) * u(16.5), cy + Math.sin(-Math.PI * 0.42) * u(16.5));
-        x.stroke();
-        // Bearing ticks
-        thin(0.4, 1);
-        for (let i = 0; i < 8; i++) {
-          const a = (Math.PI / 4) * i;
-          x.beginPath();
-          x.moveTo(cx + Math.cos(a) * u(17), cy + Math.sin(a) * u(17));
-          x.lineTo(cx + Math.cos(a) * u(19.5), cy + Math.sin(a) * u(19.5));
-          x.stroke();
-        }
-        // Contact blip — the highlight
+        const { x, u, bold, thin, det, fill, G, N, grad } = d;
+        // Dish antenna on a mount, emitting
+        // Base + mast
+        bold(0.75, 1.8);
+        x.beginPath(); x.moveTo(cx - u(9), cy + u(17)); x.lineTo(cx + u(9), cy + u(17)); x.stroke(); N();
+        bold(0.8, 2);
+        x.beginPath(); x.moveTo(cx - u(1), cy + u(17)); x.lineTo(cx - u(5), cy + u(2)); x.stroke(); N();
+        // Dish — crescent reflector facing up-right
+        x.fillStyle = grad(cx - u(16), cy - u(14), cx + u(2), cy + u(2), [[0, 0.55], [1, 0.2]]);
+        x.beginPath();
+        x.moveTo(cx - u(15), cy + u(2));
+        x.quadraticCurveTo(cx - u(15), cy - u(15), cx + u(2), cy - u(15));
+        x.quadraticCurveTo(cx - u(7), cy - u(7), cx - u(15), cy + u(2));
+        x.closePath(); x.fill();
+        bold(0.85, 1.7); x.stroke(); N();
+        // Feed strut + focus
+        thin(0.6, 1.3);
+        x.beginPath(); x.moveTo(cx - u(9), cy - u(9)); x.lineTo(cx + u(1), cy - u(1)); x.stroke();
+        // Focus glow — the highlight
         G(6, 0.7); fill(0.95);
-        x.beginPath(); x.arc(cx + u(7), cy - u(6), u(2), 0, Math.PI * 2); x.fill(); N();
-        // Center
-        fill(0.7); x.beginPath(); x.arc(cx, cy, u(1.4), 0, Math.PI * 2); x.fill();
+        x.beginPath(); x.arc(cx + u(1.5), cy - u(0.5), u(2), 0, Math.PI * 2); x.fill(); N();
+        // Emission wavefronts up-right
+        thin(0.65, 1.4);
+        x.beginPath(); x.arc(cx + u(1.5), cy - u(0.5), u(6), -Math.PI * 0.45, Math.PI * 0.05); x.stroke();
+        thin(0.45, 1.3);
+        x.beginPath(); x.arc(cx + u(1.5), cy - u(0.5), u(11), -Math.PI * 0.42, Math.PI * 0.02); x.stroke();
+        thin(0.28, 1.2);
+        x.beginPath(); x.arc(cx + u(1.5), cy - u(0.5), u(16), -Math.PI * 0.4, 0); x.stroke();
+        // Mount pivot — dark detail
+        det(0.55, 1.2);
+        x.beginPath(); x.arc(cx - u(5), cy + u(2), u(2.4), 0, Math.PI * 2); x.stroke();
       },
 
       volume: (d, cx, cy) => {
-        const { x, u, bold, thin, fill, G, N, grad } = d;
-        // Signal meter — five gradient bars rising
-        const bars = [[-16, 7], [-8, 12], [0, 17], [8, 13], [16, 20]];
-        for (const [bx, bh] of bars) {
-          x.fillStyle = grad(cx + u(bx), cy + u(10), cx + u(bx), cy + u(10 - bh), [[0, 0.25], [1, 0.8]]);
-          x.fillRect(cx + u(bx - 2.4), cy + u(10 - bh), u(4.8), u(bh));
-        }
-        // Baseline
-        bold(0.7, 1.6);
-        x.beginPath(); x.moveTo(cx - u(21), cy + u(12)); x.lineTo(cx + u(21), cy + u(12)); x.stroke(); N();
-        // Peak caps — bright ticks on each bar
-        d.hi(0.95, 1.3);
-        for (const [bx, bh] of bars) {
-          x.beginPath();
-          x.moveTo(cx + u(bx - 2.4), cy + u(10 - bh));
-          x.lineTo(cx + u(bx + 2.4), cy + u(10 - bh));
-          x.stroke();
-        }
-        // Peak dot on tallest bar
+        const { x, u, bold, thin, det, fill, G, N, grad } = d;
+        // Speaker horn + wavefronts
+        x.fillStyle = grad(cx - u(15), cy, cx - u(1), cy, [[0, 0.4], [1, 0.8]]);
+        x.beginPath();
+        x.moveTo(cx - u(15), cy - u(5)); x.lineTo(cx - u(9), cy - u(5));
+        x.lineTo(cx - u(1), cy - u(11)); x.lineTo(cx - u(1), cy + u(11));
+        x.lineTo(cx - u(9), cy + u(5)); x.lineTo(cx - u(15), cy + u(5));
+        x.closePath(); x.fill();
+        bold(0.85, 1.7); x.stroke(); N();
+        // Driver seam — dark detail
+        det(0.55, 1.2);
+        x.beginPath(); x.moveTo(cx - u(9), cy - u(5)); x.lineTo(cx - u(9), cy + u(5)); x.stroke();
+        // Wavefronts
+        thin(0.75, 1.7);
+        x.beginPath(); x.arc(cx - u(1), cy, u(6.5), -Math.PI * 0.32, Math.PI * 0.32); x.stroke();
+        thin(0.5, 1.5);
+        x.beginPath(); x.arc(cx - u(1), cy, u(12), -Math.PI * 0.3, Math.PI * 0.3); x.stroke();
+        thin(0.3, 1.3);
+        x.beginPath(); x.arc(cx - u(1), cy, u(17.5), -Math.PI * 0.28, Math.PI * 0.28); x.stroke();
+        // Throat glow — the highlight
         G(5, 0.6); fill(0.95);
-        x.beginPath(); x.arc(cx + u(16), cy + u(-11.5), u(1.8), 0, Math.PI * 2); x.fill(); N();
+        x.beginPath(); x.arc(cx - u(11.5), cy, u(1.8), 0, Math.PI * 2); x.fill(); N();
       },
 
       mute: (d, cx, cy) => {
-        const { x, u, bold, fill, G, N, grad } = d;
-        // Faint dead bars
-        const bars = [[-16, 7], [-8, 12], [0, 17], [8, 13], [16, 20]];
-        for (const [bx, bh] of bars) {
-          x.fillStyle = grad(cx + u(bx), cy + u(10), cx + u(bx), cy + u(10 - bh), [[0, 0.08], [1, 0.22]]);
-          x.fillRect(cx + u(bx - 2.4), cy + u(10 - bh), u(4.8), u(bh));
-        }
-        bold(0.4, 1.6);
-        x.beginPath(); x.moveTo(cx - u(21), cy + u(12)); x.lineTo(cx + u(21), cy + u(12)); x.stroke(); N();
-        // Kill slash — prohibition stroke, top-left to bottom-right
-        bold(0.9, 2.4);
-        x.beginPath(); x.moveTo(cx - u(17), cy - u(15)); x.lineTo(cx + u(17), cy + u(13)); x.stroke(); N();
-        // Slash terminal dot
+        const { x, u, bold, det, fill, G, N, grad } = d;
+        // Dead speaker horn + kill slash
+        x.fillStyle = grad(cx - u(15), cy, cx - u(1), cy, [[0, 0.12], [1, 0.28]]);
+        x.beginPath();
+        x.moveTo(cx - u(15), cy - u(5)); x.lineTo(cx - u(9), cy - u(5));
+        x.lineTo(cx - u(1), cy - u(11)); x.lineTo(cx - u(1), cy + u(11));
+        x.lineTo(cx - u(9), cy + u(5)); x.lineTo(cx - u(15), cy + u(5));
+        x.closePath(); x.fill();
+        bold(0.45, 1.6); x.stroke(); N();
+        det(0.4, 1.1);
+        x.beginPath(); x.moveTo(cx - u(9), cy - u(5)); x.lineTo(cx - u(9), cy + u(5)); x.stroke();
+        // One dead wavefront — barely there
+        d.thin(0.18, 1.4);
+        x.beginPath(); x.arc(cx - u(1), cy, u(8), -Math.PI * 0.3, Math.PI * 0.3); x.stroke();
+        // Kill slash — prohibition stroke
+        bold(0.95, 2.5);
+        x.beginPath(); x.moveTo(cx - u(14), cy - u(14)); x.lineTo(cx + u(15), cy + u(13)); x.stroke(); N();
+        // Slash terminal — the highlight
         G(5, 0.6); fill(0.9);
-        x.beginPath(); x.arc(cx + u(17), cy + u(13), u(1.8), 0, Math.PI * 2); x.fill(); N();
-      },
-
-      timer: (d, cx, cy) => {
-        const { x, u, bold, thin, fill, pc, G, N } = d;
-        // Chronometer ring
-        bold(0.8, 1.8);
-        x.beginPath(); x.arc(cx, cy + u(1), u(15), 0, Math.PI * 2); x.stroke(); N();
-        // Winding crown
-        bold(0.7, 1.6);
-        x.beginPath(); x.moveTo(cx - u(4), cy - u(17)); x.lineTo(cx + u(4), cy - u(17)); x.stroke();
-        x.beginPath(); x.moveTo(cx, cy - u(17)); x.lineTo(cx, cy - u(14)); x.stroke(); N();
-        // Elapsed arc — thick bright sector
-        x.strokeStyle = pc(0.85); x.lineWidth = u(3); x.lineCap = 'butt';
-        x.shadowColor = pc(0.4); x.shadowBlur = u(5);
-        x.beginPath(); x.arc(cx, cy + u(1), u(11.5), -Math.PI / 2, Math.PI * 0.25); x.stroke(); N();
-        // Remaining arc — faint
-        thin(0.2, 3);
-        x.beginPath(); x.arc(cx, cy + u(1), u(11.5), Math.PI * 0.25, Math.PI * 1.5); x.stroke();
-        // Sector tick marks
-        thin(0.45, 1);
-        for (let i = 0; i < 12; i++) {
-          const a = (Math.PI / 6) * i;
-          x.beginPath();
-          x.moveTo(cx + Math.cos(a) * u(13.2), cy + u(1) + Math.sin(a) * u(13.2));
-          x.lineTo(cx + Math.cos(a) * u(15), cy + u(1) + Math.sin(a) * u(15));
-          x.stroke();
-        }
-        // Needle to elapsed edge + center
-        thin(0.9, 1.4);
-        x.beginPath(); x.moveTo(cx, cy + u(1));
-        x.lineTo(cx + Math.cos(Math.PI * 0.25) * u(9), cy + u(1) + Math.sin(Math.PI * 0.25) * u(9));
-        x.stroke();
-        G(5, 0.6); fill(0.95);
-        x.beginPath(); x.arc(cx, cy + u(1), u(1.8), 0, Math.PI * 2); x.fill(); N();
+        x.beginPath(); x.arc(cx + u(15), cy + u(13), u(1.9), 0, Math.PI * 2); x.fill(); N();
       },
 
       fuel: (d, cx, cy) => {
-        const { x, u, bold, thin, det, fill, G, N, grad } = d;
-        // Fuel cell canister
-        x.fillStyle = grad(cx - u(10), cy - u(12), cx + u(10), cy + u(18), [[0, 0.4], [0.5, 0.14], [1, 0.38]]);
-        x.beginPath();
-        x.moveTo(cx - u(10), cy - u(8)); x.lineTo(cx - u(6), cy - u(12)); x.lineTo(cx + u(6), cy - u(12));
-        x.lineTo(cx + u(10), cy - u(8)); x.lineTo(cx + u(10), cy + u(14)); x.lineTo(cx + u(6), cy + u(18));
-        x.lineTo(cx - u(6), cy + u(18)); x.lineTo(cx - u(10), cy + u(14));
-        x.closePath(); x.fill();
-        bold(0.8, 1.8); x.stroke(); N();
-        // Nozzle port
-        bold(0.7, 1.5);
-        x.beginPath(); x.moveTo(cx + u(10), cy - u(4)); x.lineTo(cx + u(15), cy - u(4)); x.lineTo(cx + u(15), cy + u(2)); x.stroke(); N();
-        // Level bars — three lit, one dark
-        const lv = [[10, 0.85], [4.5, 0.7], [-1, 0.5], [-6.5, 0.12]];
-        for (const [ly, a] of lv) {
-          fill(a);
-          x.fillRect(cx - u(6), cy + u(ly), u(12), u(3.2));
+        const { x, u, bold, thin, det, fill, pc, G, N } = d;
+        // Fuel gauge — dashboard arc, needle near E
+        const gx = cx, gy = cy + u(6);
+        // Gauge arc across the top
+        bold(0.8, 2);
+        x.beginPath(); x.arc(gx, gy, u(15), Math.PI * 0.78, Math.PI * 2.22); x.stroke(); N();
+        // Ticks along the arc
+        thin(0.5, 1.2);
+        for (let i = 0; i <= 8; i++) {
+          const a = Math.PI * 0.78 + (Math.PI * 1.44 * i) / 8;
+          x.beginPath();
+          x.moveTo(gx + Math.cos(a) * u(12.5), gy + Math.sin(a) * u(12.5));
+          x.lineTo(gx + Math.cos(a) * u(15), gy + Math.sin(a) * u(15));
+          x.stroke();
         }
-        // Dark separators
-        det(0.5, 1);
-        for (const [ly] of lv) {
-          x.beginPath(); x.moveTo(cx - u(6), cy + u(ly)); x.lineTo(cx + u(6), cy + u(ly)); x.stroke();
-        }
-        // Level indicator dot at current level
-        G(5, 0.6); fill(0.95);
-        x.beginPath(); x.arc(cx - u(9.8), cy + u(0.5), u(1.6), 0, Math.PI * 2); x.fill(); N();
+        // E / F markers — empty square at E, filled at F
+        thin(0.75, 1.4);
+        x.strokeRect(gx + Math.cos(Math.PI * 0.78) * u(19) - u(1.8), gy + Math.sin(Math.PI * 0.78) * u(19) - u(1.8), u(3.6), u(3.6));
+        fill(0.8);
+        x.fillRect(gx + Math.cos(Math.PI * 2.22) * u(19) - u(1.8), gy + Math.sin(Math.PI * 2.22) * u(19) - u(1.8), u(3.6), u(3.6));
+        // Reserve zone — dark detail arc near E
+        det(0.6, 2.6);
+        x.beginPath(); x.arc(gx, gy, u(13.5), Math.PI * 0.78, Math.PI * 1.0); x.stroke();
+        // Needle — low, in the reserve zone
+        const na = Math.PI * 0.95;
+        x.strokeStyle = pc(0.9); x.lineWidth = u(1.8); x.lineCap = 'round';
+        x.shadowColor = pc(0.4); x.shadowBlur = u(4);
+        x.beginPath(); x.moveTo(gx, gy); x.lineTo(gx + Math.cos(na) * u(11), gy + Math.sin(na) * u(11)); x.stroke(); N();
+        fill(0.85);
+        x.beginPath(); x.arc(gx, gy, u(2.2), 0, Math.PI * 2); x.fill();
+        // Low-fuel warning — the highlight, glowing by the E mark
+        G(6, 0.75); fill(0.95);
+        x.beginPath(); x.arc(gx - u(11), gy + u(12), u(2), 0, Math.PI * 2); x.fill(); N();
       },
 
       repair: (d, cx, cy) => {
-        const { x, u, bold, det, fill, G, N, grad } = d;
-        const nx = cx - u(5), ny = cy + u(8);
-        // Hex nut — the workpiece, gradient filled
-        x.fillStyle = grad(nx - u(9), ny - u(9), nx + u(9), ny + u(9), [[0, 0.45], [0.5, 0.15], [1, 0.4]]);
+        const { x, u, bold, thin, det, fill, G, N, grad } = d;
+        // Hull patch — plate riveted over a crack
+        // The crack, running under the plate
+        thin(0.55, 1.4);
         x.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const a = (Math.PI / 3) * i + Math.PI / 6;
-          const px = nx + Math.cos(a) * u(9), py = ny + Math.sin(a) * u(9);
-          i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
-        }
-        x.closePath(); x.fill();
-        bold(0.8, 1.7); x.stroke(); N();
-        // Socket bore — dark detail
-        det(0.55, 1.3);
-        x.beginPath(); x.arc(nx, ny, u(3.6), 0, Math.PI * 2); x.stroke();
-        // Wrench jaw — open C gripping the nut from the upper-right,
-        // wide gap + grip prongs so it reads "open-end wrench", not a ring
-        bold(0.85, 2.3);
-        x.beginPath(); x.arc(nx, ny, u(13), -Math.PI * 0.62, Math.PI * 0.12); x.stroke(); N();
-        // Grip prongs turning in toward the nut flats
-        bold(0.8, 2.1);
-        x.beginPath();
-        const a1 = -Math.PI * 0.62;
-        x.moveTo(nx + Math.cos(a1) * u(13), ny + Math.sin(a1) * u(13));
-        x.lineTo(nx + Math.cos(a1 + 0.35) * u(8.5), ny + Math.sin(a1 + 0.35) * u(8.5));
+        x.moveTo(cx - u(17), cy + u(13)); x.lineTo(cx - u(8), cy + u(6));
+        x.moveTo(cx + u(6), cy - u(5)); x.lineTo(cx + u(11), cy - u(11)); x.lineTo(cx + u(17), cy - u(13));
         x.stroke();
+        // Patch plate — slightly rotated quad, covers the crack center
+        x.fillStyle = grad(cx - u(11), cy - u(9), cx + u(9), cy + u(9), [[0, 0.5], [0.5, 0.2], [1, 0.42]]);
         x.beginPath();
-        const a2 = Math.PI * 0.12;
-        x.moveTo(nx + Math.cos(a2) * u(13), ny + Math.sin(a2) * u(13));
-        x.lineTo(nx + Math.cos(a2 - 0.35) * u(8.5), ny + Math.sin(a2 - 0.35) * u(8.5));
-        x.stroke(); N();
-        // Straight shaft up-right with a blunt T-cap handle end
-        bold(0.85, 2.4);
-        x.beginPath();
-        x.moveTo(nx + Math.cos(-Math.PI / 4) * u(13), ny + Math.sin(-Math.PI / 4) * u(13));
-        x.lineTo(cx + u(15), cy - u(12));
-        x.stroke(); N();
-        bold(0.75, 2.2);
-        x.beginPath();
-        x.moveTo(cx + u(12.2), cy - u(14.8)); x.lineTo(cx + u(17.8), cy - u(9.2));
-        x.stroke(); N();
-        // Torque spark at the grip point
-        G(6, 0.7); fill(0.95);
-        x.beginPath();
-        x.arc(nx + Math.cos(-Math.PI / 4) * u(13), ny + Math.sin(-Math.PI / 4) * u(13), u(1.9), 0, Math.PI * 2);
-        x.fill(); N();
+        x.moveTo(cx - u(11), cy - u(6)); x.lineTo(cx + u(5), cy - u(10));
+        x.lineTo(cx + u(9), cy + u(6)); x.lineTo(cx - u(7), cy + u(10));
+        x.closePath(); x.fill();
+        bold(0.85, 1.7); x.stroke(); N();
+        // Plate seam — dark detail
+        det(0.5, 1.1);
+        x.beginPath(); x.moveTo(cx - u(8), cy - u(3.5)); x.lineTo(cx + u(6), cy - u(7)); x.stroke();
+        // Rivets — three set, one being driven (the highlight)
+        fill(0.75);
+        x.beginPath(); x.arc(cx - u(8), cy - u(3.8), u(1.5), 0, Math.PI * 2); x.fill();
+        x.beginPath(); x.arc(cx + u(3.5), cy - u(7), u(1.5), 0, Math.PI * 2); x.fill();
+        x.beginPath(); x.arc(cx - u(4.8), cy + u(7), u(1.5), 0, Math.PI * 2); x.fill();
+        G(6, 0.75); fill(0.95);
+        x.beginPath(); x.arc(cx + u(6.2), cy + u(3.5), u(2), 0, Math.PI * 2); x.fill(); N();
+        // Torque ticks radiating off the live rivet
+        thin(0.7, 1.1);
+        x.beginPath(); x.moveTo(cx + u(9.5), cy + u(1)); x.lineTo(cx + u(12), cy - u(1)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(10.5), cy + u(5)); x.lineTo(cx + u(13.5), cy + u(5.5)); x.stroke();
       },
 
       cargo: (d, cx, cy) => {
         const { x, u, bold, thin, det, fill, G, N, grad } = d;
-        // Supply container — angular crate
-        x.fillStyle = grad(cx - u(16), cy - u(12), cx + u(16), cy + u(14), [[0, 0.42], [0.5, 0.14], [1, 0.38]]);
-        x.beginPath();
-        x.moveTo(cx - u(16), cy - u(8)); x.lineTo(cx - u(12), cy - u(12)); x.lineTo(cx + u(12), cy - u(12));
-        x.lineTo(cx + u(16), cy - u(8)); x.lineTo(cx + u(16), cy + u(14)); x.lineTo(cx - u(16), cy + u(14));
-        x.closePath(); x.fill();
-        bold(0.8, 1.8); x.stroke(); N();
-        // Lid seam + panel seams
-        det(0.5, 1.2);
-        x.beginPath(); x.moveTo(cx - u(16), cy - u(4)); x.lineTo(cx + u(16), cy - u(4)); x.stroke();
-        det(0.4, 1);
-        x.beginPath(); x.moveTo(cx - u(5), cy - u(4)); x.lineTo(cx - u(5), cy + u(14)); x.stroke();
-        x.beginPath(); x.moveTo(cx + u(5), cy - u(4)); x.lineTo(cx + u(5), cy + u(14)); x.stroke();
-        // Corner braces
-        thin(0.7, 1.4);
-        x.beginPath(); x.moveTo(cx - u(16), cy + u(9)); x.lineTo(cx - u(11), cy + u(14)); x.stroke();
-        x.beginPath(); x.moveTo(cx + u(16), cy + u(9)); x.lineTo(cx + u(11), cy + u(14)); x.stroke();
-        // ID beacon — highlight
-        G(5, 0.6); fill(0.95);
-        x.beginPath(); x.arc(cx, cy + u(5), u(2), 0, Math.PI * 2); x.fill(); N();
-        thin(0.5, 0.8);
-        x.beginPath(); x.arc(cx, cy + u(5), u(4), 0, Math.PI * 2); x.stroke();
-      },
-
-      comms: (d, cx, cy) => {
-        const { x, u, bold, thin, fill, G, N } = d;
-        // Antenna mast
-        bold(0.85, 2);
-        x.beginPath(); x.moveTo(cx, cy + u(18)); x.lineTo(cx, cy - u(2)); x.stroke(); N();
-        // Base platform
-        bold(0.7, 1.8);
-        x.beginPath(); x.moveTo(cx - u(9), cy + u(18)); x.lineTo(cx + u(9), cy + u(18)); x.stroke(); N();
-        // Support struts
+        // Shipping container, side profile — ribbed, corner castings
+        x.fillStyle = grad(cx - u(17), cy - u(9), cx + u(17), cy + u(11), [[0, 0.45], [0.5, 0.16], [1, 0.4]]);
+        x.fillRect(cx - u(17), cy - u(9), u(34), u(20));
+        bold(0.85, 1.8);
+        x.strokeRect(cx - u(17), cy - u(9), u(34), u(20));
+        N();
+        // Corrugation ribs — dark detail verticals
+        det(0.5, 1.3);
+        for (const rx of [-11, -5.5, 0, 5.5, 11]) {
+          x.beginPath(); x.moveTo(cx + u(rx), cy - u(6)); x.lineTo(cx + u(rx), cy + u(8)); x.stroke();
+        }
+        // Top rail seam
+        det(0.55, 1.1);
+        x.beginPath(); x.moveTo(cx - u(17), cy - u(6)); x.lineTo(cx + u(17), cy - u(6)); x.stroke();
+        // Corner castings — solid blocks
+        fill(0.8);
+        for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+          x.fillRect(cx + sx * u(17) - u(1.7), cy + u(1) + sy * u(10) - u(1.7), u(3.4), u(3.4));
+        }
+        // Lift points — thin brackets above
         thin(0.5, 1.2);
-        x.beginPath(); x.moveTo(cx - u(6), cy + u(18)); x.lineTo(cx, cy + u(8)); x.stroke();
-        x.beginPath(); x.moveTo(cx + u(6), cy + u(18)); x.lineTo(cx, cy + u(8)); x.stroke();
-        // Broadcast arcs — expanding signal
-        thin(0.75, 1.6);
-        x.beginPath(); x.arc(cx, cy - u(6), u(5), -Math.PI * 0.78, -Math.PI * 0.22); x.stroke();
-        thin(0.5, 1.4);
-        x.beginPath(); x.arc(cx, cy - u(6), u(10), -Math.PI * 0.75, -Math.PI * 0.25); x.stroke();
-        thin(0.3, 1.2);
-        x.beginPath(); x.arc(cx, cy - u(6), u(15), -Math.PI * 0.72, -Math.PI * 0.28); x.stroke();
-        // Beacon tip — highlight
-        G(7, 0.7); fill(0.95);
-        x.beginPath(); x.arc(cx, cy - u(5), u(2.6), 0, Math.PI * 2); x.fill(); N();
+        x.beginPath(); x.moveTo(cx - u(13), cy - u(12)); x.lineTo(cx - u(13), cy - u(9)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(13), cy - u(12)); x.lineTo(cx + u(13), cy - u(9)); x.stroke();
+        x.beginPath(); x.moveTo(cx - u(13), cy - u(12)); x.lineTo(cx + u(13), cy - u(12)); x.stroke();
+        // Manifest beacon — the highlight
+        G(6, 0.65); fill(0.95);
+        x.beginPath(); x.arc(cx + u(14), cy - u(2.5), u(1.8), 0, Math.PI * 2); x.fill(); N();
       },
 
       scan: (d, cx, cy) => {
-        const { x, u, bold, thin, det, fill, pc, G, N, grad } = d;
-        // Sensor aperture — hexagonal iris
-        const hex = (r, rot = 0) => {
-          x.beginPath();
-          for (let i = 0; i < 6; i++) {
-            const a = (Math.PI / 3) * i + rot;
-            const px = cx + Math.cos(a) * u(r), py = cy + Math.sin(a) * u(r);
-            i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
-          }
-          x.closePath();
-        };
-        x.fillStyle = grad(cx - u(17), cy - u(17), cx + u(17), cy + u(17), [[0, 0.35], [0.5, 0.1], [1, 0.3]]);
-        hex(18, Math.PI / 6); x.fill();
-        bold(0.8, 1.8); hex(18, Math.PI / 6); x.stroke(); N();
-        // Iris blades — dark radial cuts
-        det(0.5, 1.3);
-        for (let i = 0; i < 6; i++) {
-          const a = (Math.PI / 3) * i;
-          x.beginPath();
-          x.moveTo(cx + Math.cos(a) * u(6), cy + Math.sin(a) * u(6));
-          x.lineTo(cx + Math.cos(a + 0.5) * u(15), cy + Math.sin(a + 0.5) * u(15));
-          x.stroke();
-        }
-        // Sensor eye
-        thin(0.6, 1.2);
-        x.beginPath(); x.arc(cx, cy, u(6), 0, Math.PI * 2); x.stroke();
-        G(6, 0.65); fill(0.95);
-        x.beginPath(); x.arc(cx, cy, u(2.6), 0, Math.PI * 2); x.fill(); N();
-        // Scan line traversing — the active read
-        x.strokeStyle = pc(0.8); x.lineWidth = u(1);
-        x.shadowColor = pc(0.5); x.shadowBlur = u(4);
-        x.beginPath(); x.moveTo(cx - u(15), cy - u(4)); x.lineTo(cx + u(15), cy - u(4)); x.stroke(); N();
+        const { x, u, bold, thin, det, fill, pc, G, N } = d;
+        // Analysis beam passing over a wireframe subject
+        // Subject — dashed wireframe sphere
+        thin(0.55, 1.3);
+        x.setLineDash([u(2.2), u(2.6)]);
+        x.beginPath(); x.arc(cx + u(1), cy + u(2), u(10.5), 0, Math.PI * 2); x.stroke();
+        x.beginPath(); x.ellipse(cx + u(1), cy + u(2), u(10.5), u(3.6), 0, 0, Math.PI * 2); x.stroke();
+        x.setLineDash([]);
+        // Progress rail on top
+        thin(0.4, 1.1);
+        x.beginPath(); x.moveTo(cx - u(15), cy - u(16)); x.lineTo(cx + u(15), cy - u(16)); x.stroke();
+        // Completed portion of the rail
+        d.hi(0.8, 1.6);
+        x.beginPath(); x.moveTo(cx - u(15), cy - u(16)); x.lineTo(cx - u(3), cy - u(16)); x.stroke();
+        // Scan beam — vertical, with a decaying trail behind it
+        const bx2 = cx - u(3);
+        const tg = x.createLinearGradient(bx2 - u(9), 0, bx2, 0);
+        tg.addColorStop(0, pc(0)); tg.addColorStop(1, pc(0.22));
+        x.fillStyle = tg;
+        x.fillRect(bx2 - u(9), cy - u(12), u(9), u(28));
+        x.strokeStyle = pc(0.9); x.lineWidth = u(1.4);
+        x.shadowColor = pc(0.5); x.shadowBlur = u(5);
+        x.beginPath(); x.moveTo(bx2, cy - u(12)); x.lineTo(bx2, cy + u(16)); x.stroke(); N();
+        // Beam intersection markers — where the beam crosses the subject
+        G(6, 0.7); fill(0.95);
+        x.beginPath(); x.arc(bx2, cy + u(2) - u(9.7), u(1.8), 0, Math.PI * 2); x.fill(); N();
+        fill(0.7);
+        x.beginPath(); x.arc(bx2, cy + u(2) + u(9.7), u(1.4), 0, Math.PI * 2); x.fill();
+        // Readout tick — dark detail at the equator crossing
+        det(0.6, 1.2);
+        x.beginPath(); x.moveTo(bx2 - u(2.5), cy + u(2)); x.lineTo(bx2 + u(2.5), cy + u(2)); x.stroke();
       },
 
       pilot: (d, cx, cy) => {
         const { x, u, bold, thin, det, fill, G, N, grad } = d;
-        // Flight helmet — domed top, angular chin guard
-        x.fillStyle = grad(cx - u(13), cy - u(17), cx + u(13), cy + u(14), [[0, 0.45], [0.5, 0.15], [1, 0.4]]);
-        x.beginPath();
-        x.moveTo(cx - u(12), cy + u(6));
-        x.lineTo(cx - u(12), cy - u(6));
-        x.quadraticCurveTo(cx - u(12), cy - u(17), cx, cy - u(17));
-        x.quadraticCurveTo(cx + u(12), cy - u(17), cx + u(12), cy - u(6));
-        x.lineTo(cx + u(12), cy + u(6));
-        x.lineTo(cx + u(7), cy + u(13));
-        x.lineTo(cx - u(7), cy + u(13));
-        x.closePath(); x.fill();
-        bold(0.8, 1.8); x.stroke(); N();
-        // Crest ridge on the dome
-        thin(0.45, 1);
-        x.beginPath(); x.moveTo(cx, cy - u(17)); x.lineTo(cx, cy - u(9)); x.stroke();
-        // Visor — large dark wrap-around band, high on the face
-        const visor = () => {
+        // Pilot profile — bust silhouette inside ID brackets
+        // Corner brackets
+        thin(0.6, 1.5);
+        const B = 16, L = 6;
+        for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
           x.beginPath();
-          x.moveTo(cx - u(9.5), cy - u(7)); x.lineTo(cx + u(9.5), cy - u(7));
-          x.lineTo(cx + u(7.5), cy + u(1)); x.lineTo(cx - u(7.5), cy + u(1));
-          x.closePath();
-        };
-        x.fillStyle = 'rgba(8,7,14,0.85)';
-        visor(); x.fill();
-        det(0.6, 1.1); visor(); x.stroke();
-        // HUD glint inside the visor — the highlight
-        d.hi(0.95, 1.1);
-        x.beginPath(); x.moveTo(cx - u(7), cy - u(4.6)); x.lineTo(cx + u(0.5), cy - u(4.6)); x.stroke();
-        // Breather vents on the chin guard
+          x.moveTo(cx + sx * u(B), cy + sy * u(B - L));
+          x.lineTo(cx + sx * u(B), cy + sy * u(B));
+          x.lineTo(cx + sx * u(B - L), cy + sy * u(B));
+          x.stroke();
+        }
+        // Head — angular dome
+        x.fillStyle = grad(cx - u(5.5), cy - u(12), cx + u(5.5), cy - u(1), [[0, 0.7], [1, 0.35]]);
+        x.beginPath();
+        x.moveTo(cx - u(5.5), cy - u(3));
+        x.lineTo(cx - u(5.5), cy - u(8));
+        x.quadraticCurveTo(cx - u(5.5), cy - u(12.5), cx, cy - u(12.5));
+        x.quadraticCurveTo(cx + u(5.5), cy - u(12.5), cx + u(5.5), cy - u(8));
+        x.lineTo(cx + u(5.5), cy - u(3));
+        x.lineTo(cx, cy - u(0.5));
+        x.closePath(); x.fill();
+        bold(0.8, 1.6); x.stroke(); N();
+        // Visor line — dark detail
+        det(0.6, 1.3);
+        x.beginPath(); x.moveTo(cx - u(4), cy - u(7.5)); x.lineTo(cx + u(4), cy - u(7.5)); x.stroke();
+        // Shoulders — angular flight-suit silhouette
+        x.fillStyle = grad(cx - u(11), cy + u(3), cx + u(11), cy + u(14), [[0, 0.55], [1, 0.22]]);
+        x.beginPath();
+        x.moveTo(cx - u(11), cy + u(14));
+        x.lineTo(cx - u(9), cy + u(5)); x.lineTo(cx - u(4), cy + u(2));
+        x.lineTo(cx + u(4), cy + u(2)); x.lineTo(cx + u(9), cy + u(5));
+        x.lineTo(cx + u(11), cy + u(14));
+        x.closePath(); x.fill();
+        bold(0.8, 1.6); x.stroke(); N();
+        // Collar seam — dark detail
         det(0.5, 1.1);
-        x.beginPath(); x.moveTo(cx - u(3.5), cy + u(6)); x.lineTo(cx + u(3.5), cy + u(6)); x.stroke();
-        x.beginPath(); x.moveTo(cx - u(2.5), cy + u(9)); x.lineTo(cx + u(2.5), cy + u(9)); x.stroke();
-        // Comm module dot on the side
-        G(5, 0.6); fill(0.9);
-        x.beginPath(); x.arc(cx + u(10.5), cy + u(3), u(1.8), 0, Math.PI * 2); x.fill(); N();
+        x.beginPath(); x.moveTo(cx - u(4), cy + u(6)); x.lineTo(cx + u(4), cy + u(6)); x.stroke();
+        // Rank stud on the shoulder — the highlight
+        G(5, 0.65); fill(0.95);
+        x.beginPath(); x.arc(cx + u(7.5), cy + u(7), u(1.7), 0, Math.PI * 2); x.fill(); N();
       },
 
       link: (d, cx, cy) => {
-        const { x, u, bold, thin, fill, G, N, grad } = d;
-        // Two hex nodes joined by a data bus
-        const hex = (hx, hy, r) => {
+        const { x, u, bold, fill, G, N } = d;
+        // Interlocked chain links — elongated octagonal loops, genuinely woven
+        const loop = (lx, ly) => {
+          x.save(); x.translate(lx, ly); x.rotate(-Math.PI / 4);
           x.beginPath();
-          for (let i = 0; i < 6; i++) {
-            const a = (Math.PI / 3) * i;
-            const px = hx + Math.cos(a) * u(r), py = hy + Math.sin(a) * u(r);
-            i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
-          }
-          x.closePath();
+          x.moveTo(-u(9), -u(2)); x.lineTo(-u(6.5), -u(4.5)); x.lineTo(u(6.5), -u(4.5)); x.lineTo(u(9), -u(2));
+          x.lineTo(u(9), u(2)); x.lineTo(u(6.5), u(4.5)); x.lineTo(-u(6.5), u(4.5)); x.lineTo(-u(9), u(2));
+          x.closePath(); x.stroke();
+          x.restore();
         };
-        const n1x = cx - u(11), n1y = cy + u(7);
-        const n2x = cx + u(11), n2y = cy - u(7);
-        // Bus — double line
-        thin(0.6, 1.6);
-        x.beginPath(); x.moveTo(n1x + u(3), n1y - u(2)); x.lineTo(n2x - u(3), n2y + u(2)); x.stroke();
-        thin(0.3, 1);
-        x.beginPath(); x.moveTo(n1x + u(5), n1y + u(1.5)); x.lineTo(n2x - u(1), n2y + u(5.5)); x.stroke();
-        // Nodes with gradient fills
-        for (const [hx, hy] of [[n1x, n1y], [n2x, n2y]]) {
-          x.fillStyle = grad(hx - u(7), hy - u(7), hx + u(7), hy + u(7), [[0, 0.45], [0.5, 0.15], [1, 0.4]]);
-          hex(hx, hy, 7.5); x.fill();
-          bold(0.8, 1.6); hex(hx, hy, 7.5); x.stroke(); N();
-        }
-        // Node cores
-        fill(0.7);
-        x.beginPath(); x.arc(n1x, n1y, u(2), 0, Math.PI * 2); x.fill();
-        x.beginPath(); x.arc(n2x, n2y, u(2), 0, Math.PI * 2); x.fill();
-        // Data pulse on the bus — highlight
+        const ax = cx - u(4.8), ay = cy + u(4.8);   // rear link center
+        const bx2 = cx + u(4.8), by2 = cy - u(4.8); // front link center
+        // Rear link
+        bold(0.55, 2.6);
+        loop(ax, ay); N();
+        // Front link — covers the rear at both crossings
+        bold(0.9, 2.6);
+        loop(bx2, by2); N();
+        // Weave: rear link re-drawn over the front at the lower-left crossing
+        // (over-under-over — the interlock read)
+        x.save();
+        x.beginPath();
+        x.arc(cx - u(3.2), cy - u(3.2), u(4.2), 0, Math.PI * 2);
+        x.clip();
+        bold(0.55, 2.6);
+        loop(ax, ay);
+        x.restore(); N();
+        // Junction pulse — the highlight, at the upper-right crossing
         G(6, 0.7); fill(0.95);
-        x.beginPath(); x.arc(cx, cy, u(2.2), 0, Math.PI * 2); x.fill(); N();
+        x.beginPath(); x.arc(cx + u(3.2), cy + u(3.2), u(1.8), 0, Math.PI * 2); x.fill(); N();
       },
     };
 
-    // ═══ REWORK PROPOSALS — ROUND 2 ═══
-    // Round 1 (2026-07-03): sword, potion, star, inventory, settings,
-    // search, refresh approved and ported into the engine. These six were
-    // rejected — fresh concepts, not iterations of the rejected designs.
+    // ═══ REWORK PROPOSALS — ROUND 3 ═══
+    // crown + leaderboard approved in round 2 and ported. These four have
+    // been rejected twice — again: completely different concepts.
     const REWORKS = {
 
       coin: (d, cx, cy) => {
-        const { x, u, bold, det, fill, thin, G, N, grad } = d;
-        // Credit chip — segmented-rim disc (casino chip, HUD grade)
-        x.fillStyle = grad(cx - u(15), cy - u(15), cx + u(15), cy + u(15), [[0, 0.5], [0.5, 0.18], [1, 0.45]]);
-        x.beginPath(); x.arc(cx, cy, u(15), 0, Math.PI * 2); x.fill();
-        bold(0.85, 1.8);
-        x.beginPath(); x.arc(cx, cy, u(15), 0, Math.PI * 2); x.stroke(); N();
-        // Rim segments — dark edge marks every 45°
-        det(0.6, 2.2);
-        for (let i = 0; i < 8; i++) {
-          const ang = (Math.PI / 4) * i + Math.PI / 8;
+        const { x, u, bold, det, fill, hi, G, N, grad } = d;
+        // Ingot stack — bullion pyramid
+        const ingot = (ix, iy, bright) => {
+          x.fillStyle = grad(cx + u(ix - 7), cy + u(iy - 4), cx + u(ix + 7), cy + u(iy + 4),
+            bright ? [[0, 0.75], [1, 0.4]] : [[0, 0.45], [1, 0.2]]);
           x.beginPath();
-          x.moveTo(cx + Math.cos(ang) * u(12.2), cy + Math.sin(ang) * u(12.2));
-          x.lineTo(cx + Math.cos(ang) * u(15), cy + Math.sin(ang) * u(15));
-          x.stroke();
-        }
-        // Inner face ring
-        thin(0.5, 1.1);
-        x.beginPath(); x.arc(cx, cy, u(10), 0, Math.PI * 2); x.stroke();
-        // Denomination glyph — credit slash mark (bold vertical + double cut)
-        d.hi(0.95, 1.8);
-        x.beginPath(); x.moveTo(cx, cy - u(6.5)); x.lineTo(cx, cy + u(6.5)); x.stroke();
-        thin(0.85, 1.4);
-        x.beginPath(); x.moveTo(cx - u(4.5), cy - u(2.4)); x.lineTo(cx + u(4.5), cy - u(4.4)); x.stroke();
-        x.beginPath(); x.moveTo(cx - u(4.5), cy + u(4.4)); x.lineTo(cx + u(4.5), cy + u(2.4)); x.stroke();
-        // Mint glint — the highlight
-        G(5, 0.6); fill(0.9);
-        x.beginPath(); x.arc(cx + Math.cos(-Math.PI * 0.3) * u(12.5), cy + Math.sin(-Math.PI * 0.3) * u(12.5), u(1.6), 0, Math.PI * 2);
-        x.fill(); N();
-      },
-
-      crown: (d, cx, cy) => {
-        const { x, u, bold, thin, fill, G, N, grad } = d;
-        // Command wings — winged insignia with center gem (pilot-wings rank)
-        // Center diamond
-        x.fillStyle = grad(cx - u(4.5), cy - u(6), cx + u(4.5), cy + u(6), [[0, 0.85], [1, 0.4]]);
-        x.beginPath();
-        x.moveTo(cx, cy - u(7)); x.lineTo(cx + u(4.5), cy); x.lineTo(cx, cy + u(7)); x.lineTo(cx - u(4.5), cy);
-        x.closePath(); x.fill();
-        bold(0.9, 1.5); x.stroke(); N();
-        // Wing blades — three swept feathers per side
-        const wing = (s) => {
-          bold(0.8, 2);
-          x.beginPath(); x.moveTo(cx + s * u(6), cy - u(1)); x.lineTo(cx + s * u(20), cy - u(9)); x.stroke(); N();
-          bold(0.6, 1.7);
-          x.beginPath(); x.moveTo(cx + s * u(6.5), cy + u(2.5)); x.lineTo(cx + s * u(17), cy - u(3)); x.stroke(); N();
-          bold(0.4, 1.4);
-          x.beginPath(); x.moveTo(cx + s * u(7), cy + u(6)); x.lineTo(cx + s * u(14), cy + u(2.5)); x.stroke(); N();
-        };
-        wing(1); wing(-1);
-        // Base bar — the uniform ribbon
-        bold(0.7, 1.8);
-        x.beginPath(); x.moveTo(cx - u(9), cy + u(12)); x.lineTo(cx + u(9), cy + u(12)); x.stroke(); N();
-        thin(0.4, 1);
-        x.beginPath(); x.moveTo(cx - u(6.5), cy + u(15)); x.lineTo(cx + u(6.5), cy + u(15)); x.stroke();
-        // Gem glow — the highlight
-        G(6, 0.7); fill(0.95);
-        x.beginPath(); x.arc(cx, cy, u(1.8), 0, Math.PI * 2); x.fill(); N();
-      },
-
-      leaderboard: (d, cx, cy) => {
-        const { x, u, bold, thin, det, fill, G, N, grad } = d;
-        // Ranking readout — three list rows, 1st place lit
-        const rows = [
-          { ry: -11, w: 26, a: 0.8, lead: true },
-          { ry: 0,   w: 19, a: 0.45, lead: false },
-          { ry: 11,  w: 13, a: 0.28, lead: false },
-        ];
-        for (const { ry, w, a, lead } of rows) {
-          // Rank chevron at row head
-          (lead ? d.hi : thin).call(d, lead ? 0.95 : 0.55, 1.6);
-          x.beginPath();
-          x.moveTo(cx - u(20), cy + u(ry - 3)); x.lineTo(cx - u(17), cy + u(ry)); x.lineTo(cx - u(20), cy + u(ry + 3));
-          x.stroke();
-          // Score bar — gradient, clipped corner
-          x.fillStyle = grad(cx - u(14), cy + u(ry), cx - u(14) + u(w), cy + u(ry), [[0, a], [1, a * 0.45]]);
-          x.beginPath();
-          x.moveTo(cx - u(14), cy + u(ry - 3.2));
-          x.lineTo(cx - u(14) + u(w) - u(2), cy + u(ry - 3.2));
-          x.lineTo(cx - u(14) + u(w), cy + u(ry - 1.2));
-          x.lineTo(cx - u(14) + u(w), cy + u(ry + 3.2));
-          x.lineTo(cx - u(14), cy + u(ry + 3.2));
+          x.moveTo(cx + u(ix - 7.5), cy + u(iy + 4));
+          x.lineTo(cx + u(ix - 5), cy + u(iy - 4));
+          x.lineTo(cx + u(ix + 5), cy + u(iy - 4));
+          x.lineTo(cx + u(ix + 7.5), cy + u(iy + 4));
           x.closePath(); x.fill();
-          if (lead) { bold(0.85, 1.3); x.stroke(); N(); }
-          else { thin(0.4, 1); x.stroke(); }
-          // Row divider tick
-          det(0.4, 1);
-          x.beginPath(); x.moveTo(cx - u(14), cy + u(ry + 5.5)); x.lineTo(cx + u(14), cy + u(ry + 5.5)); x.stroke();
-        }
-        // Champion pip — glowing marker on the lead row
-        G(6, 0.7); fill(0.95);
-        x.beginPath(); x.arc(cx + u(16.5), cy - u(11), u(2), 0, Math.PI * 2); x.fill(); N();
+          bold(bright ? 0.9 : 0.65, 1.6); x.stroke(); N();
+          // Top-face seam
+          det(0.5, 1);
+          x.beginPath();
+          x.moveTo(cx + u(ix - 5), cy + u(iy - 4)); x.lineTo(cx + u(ix - 3.5), cy + u(iy - 1.5));
+          x.lineTo(cx + u(ix + 6), cy + u(iy - 1.5));
+          x.stroke();
+        };
+        ingot(-8, 9, false);
+        ingot(8, 9, false);
+        ingot(0, -1.5, true);
+        // Ground line
+        d.thin(0.45, 1.3);
+        x.beginPath(); x.moveTo(cx - u(19), cy + u(13.5)); x.lineTo(cx + u(19), cy + u(13.5)); x.stroke();
+        // Top-ingot edge glint — the highlight
+        hi(0.95, 1.2);
+        x.beginPath(); x.moveTo(cx - u(4), cy - u(5.5)); x.lineTo(cx + u(2.5), cy - u(5.5)); x.stroke();
+        G(5, 0.6); fill(0.9);
+        x.beginPath(); x.arc(cx - u(5), cy - u(5.5), u(1.5), 0, Math.PI * 2); x.fill(); N();
       },
 
       error: (d, cx, cy) => {
-        const { x, u, bold, det, fill, G, N, grad } = d;
-        // System fault — panel split by a clean lightning fracture,
-        // halves pushed apart
-        // Left shard
-        x.fillStyle = grad(cx - u(17), cy - u(13), cx + u(2), cy + u(13), [[0, 0.42], [1, 0.16]]);
+        const { x, u, bold, thin, det, fill, hi, G, N } = d;
+        // Broken circuit — trace interrupted mid-run, spark at the break
+        // Left trace run
+        bold(0.8, 2);
         x.beginPath();
-        x.moveTo(cx - u(17), cy - u(13));
-        x.lineTo(cx + u(1), cy - u(13));
-        x.lineTo(cx - u(4), cy - u(5));
-        x.lineTo(cx + u(3), cy - u(1));
-        x.lineTo(cx - u(3), cy + u(6));
-        x.lineTo(cx + u(2), cy + u(13));
-        x.lineTo(cx - u(17), cy + u(13));
-        x.closePath(); x.fill();
-        bold(0.8, 1.6); x.stroke(); N();
-        // Right shard — shifted right/down across the gap
-        x.fillStyle = grad(cx + u(3), cy - u(11), cx + u(19), cy + u(15), [[0, 0.34], [1, 0.12]]);
+        x.moveTo(cx - u(19), cy + u(8));
+        x.lineTo(cx - u(11), cy + u(8));
+        x.lineTo(cx - u(11), cy - u(3));
+        x.lineTo(cx - u(3), cy - u(3));
+        x.stroke(); N();
+        // Right trace run
+        bold(0.8, 2);
         x.beginPath();
-        x.moveTo(cx + u(6), cy - u(11));
-        x.lineTo(cx + u(19), cy - u(11));
-        x.lineTo(cx + u(19), cy + u(15));
-        x.lineTo(cx + u(7), cy + u(15));
-        x.lineTo(cx + u(2), cy + u(8));
-        x.lineTo(cx + u(8), cy + u(1));
-        x.lineTo(cx + u(1), cy - u(3));
-        x.closePath(); x.fill();
-        bold(0.65, 1.4); x.stroke(); N();
-        // Fault glyph — dark x etched on the left shard
-        det(0.7, 1.6);
-        x.beginPath(); x.moveTo(cx - u(12), cy - u(4)); x.lineTo(cx - u(7), cy + u(1)); x.stroke();
-        x.beginPath(); x.moveTo(cx - u(7), cy - u(4)); x.lineTo(cx - u(12), cy + u(1)); x.stroke();
-        // Rupture spark — the highlight, glowing in the gap
+        x.moveTo(cx + u(6), cy - u(3));
+        x.lineTo(cx + u(13), cy - u(3));
+        x.lineTo(cx + u(13), cy + u(9));
+        x.lineTo(cx + u(19), cy + u(9));
+        x.stroke(); N();
+        // Circuit nodes at the corners
+        fill(0.8);
+        x.beginPath(); x.arc(cx - u(11), cy + u(8), u(1.8), 0, Math.PI * 2); x.fill();
+        x.beginPath(); x.arc(cx + u(13), cy - u(3), u(1.8), 0, Math.PI * 2); x.fill();
+        // Burnt trace ends — dark scorch ticks
+        det(0.7, 1.7);
+        x.beginPath(); x.moveTo(cx - u(3), cy - u(5.5)); x.lineTo(cx - u(1.5), cy - u(0.5)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(6), cy - u(5.5)); x.lineTo(cx + u(4.5), cy - u(0.5)); x.stroke();
+        // Arc spark jumping the gap — the highlight
+        hi(0.9, 1.3);
+        x.beginPath();
+        x.moveTo(cx - u(1.5), cy - u(3));
+        x.lineTo(cx + u(0.5), cy - u(5));
+        x.lineTo(cx + u(1.5), cy - u(1.5));
+        x.lineTo(cx + u(3.8), cy - u(3.6));
+        x.stroke();
         G(7, 0.75); fill(0.95);
-        x.beginPath(); x.arc(cx + u(4), cy - u(0.5), u(2.2), 0, Math.PI * 2); x.fill(); N();
+        x.beginPath(); x.arc(cx + u(1.5), cy - u(3), u(2), 0, Math.PI * 2); x.fill(); N();
+        // Fault readout ticks below the break
+        thin(0.5, 1.1);
+        x.beginPath(); x.moveTo(cx - u(2), cy + u(3)); x.lineTo(cx + u(4.5), cy + u(3)); x.stroke();
+        thin(0.3, 1);
+        x.beginPath(); x.moveTo(cx - u(0.5), cy + u(6.5)); x.lineTo(cx + u(3), cy + u(6.5)); x.stroke();
       },
 
       info: (d, cx, cy) => {
-        const { x, u, bold, det, fill, thin, G, N, grad } = d;
-        // Data callout — holo tag with pointer notch (tooltip made instrument)
-        const tag = () => {
-          x.beginPath();
-          x.moveTo(cx - u(13), cy - u(13));
-          x.lineTo(cx + u(13), cy - u(13));
-          x.lineTo(cx + u(16), cy - u(10));
-          x.lineTo(cx + u(16), cy + u(6));
-          x.lineTo(cx + u(13), cy + u(9));
-          x.lineTo(cx - u(6), cy + u(9));
-          x.lineTo(cx - u(12), cy + u(17));   // pointer notch
-          x.lineTo(cx - u(10.5), cy + u(9));
-          x.lineTo(cx - u(16), cy + u(9));
-          x.lineTo(cx - u(16), cy - u(10));
-          x.closePath();
-        };
-        x.fillStyle = grad(cx - u(16), cy - u(13), cx + u(16), cy + u(17), [[0, 0.38], [0.5, 0.12], [1, 0.32]]);
-        tag(); x.fill();
-        bold(0.85, 1.7); tag(); x.stroke(); N();
-        // Info dot — glowing, leading the first line
-        G(6, 0.65); fill(0.95);
-        x.beginPath(); x.arc(cx - u(10), cy - u(6.5), u(2.2), 0, Math.PI * 2); x.fill(); N();
-        // Data lines — bright first line, dimmer second/third
-        d.hi(0.85, 1.5);
-        x.beginPath(); x.moveTo(cx - u(5), cy - u(6.5)); x.lineTo(cx + u(11), cy - u(6.5)); x.stroke();
-        thin(0.55, 1.3);
-        x.beginPath(); x.moveTo(cx - u(11), cy - u(0.5)); x.lineTo(cx + u(11), cy - u(0.5)); x.stroke();
-        thin(0.35, 1.2);
-        x.beginPath(); x.moveTo(cx - u(11), cy + u(4.5)); x.lineTo(cx + u(4), cy + u(4.5)); x.stroke();
+        const { x, u, bold, thin, det, fill, hi, G, N } = d;
+        // Terminal readout — bracket frame, data lines, live cursor
+        // Left and right brackets
+        bold(0.8, 1.9);
+        x.beginPath();
+        x.moveTo(cx - u(11), cy - u(13)); x.lineTo(cx - u(16), cy - u(13));
+        x.lineTo(cx - u(16), cy + u(13)); x.lineTo(cx - u(11), cy + u(13));
+        x.stroke(); N();
+        bold(0.8, 1.9);
+        x.beginPath();
+        x.moveTo(cx + u(11), cy - u(13)); x.lineTo(cx + u(16), cy - u(13));
+        x.lineTo(cx + u(16), cy + u(13)); x.lineTo(cx + u(11), cy + u(13));
+        x.stroke(); N();
+        // Header line — bright, with a leading bullet
+        G(5, 0.6); fill(0.9);
+        x.beginPath(); x.arc(cx - u(10), cy - u(7), u(1.8), 0, Math.PI * 2); x.fill(); N();
+        hi(0.9, 1.6);
+        x.beginPath(); x.moveTo(cx - u(6), cy - u(7)); x.lineTo(cx + u(10), cy - u(7)); x.stroke();
+        // Body lines — dimming
+        thin(0.55, 1.4);
+        x.beginPath(); x.moveTo(cx - u(10), cy - u(1)); x.lineTo(cx + u(10), cy - u(1)); x.stroke();
+        thin(0.38, 1.3);
+        x.beginPath(); x.moveTo(cx - u(10), cy + u(5)); x.lineTo(cx + u(1), cy + u(5)); x.stroke();
+        // Live cursor block — the highlight
+        G(6, 0.7); fill(0.95);
+        x.fillRect(cx + u(4), cy + u(2.8), u(3.6), u(4.4));
+        N();
+        // Baseline tick — dark detail
+        det(0.5, 1.1);
+        x.beginPath(); x.moveTo(cx - u(10), cy + u(10)); x.lineTo(cx + u(10), cy + u(10)); x.stroke();
       },
 
       diamond: (d, cx, cy) => {
-        const { x, u, bold, det, fill, thin, G, N, grad } = d;
-        // Crystal shard cluster — three rising shards
-        // Rear-left shard
-        x.fillStyle = grad(cx - u(15), cy - u(4), cx - u(3), cy + u(16), [[0, 0.4], [1, 0.15]]);
+        const { x, u, bold, thin, det, fill, G, N, grad } = d;
+        // Containment core — diamond in a stasis orbit
+        // Rear half of the orbit ring
+        thin(0.3, 1.3);
+        x.beginPath(); x.ellipse(cx, cy, u(17.5), u(5.5), 0, Math.PI, Math.PI * 2); x.stroke();
+        // The core — gradient-filled diamond
+        x.fillStyle = grad(cx - u(11), cy - u(13), cx + u(11), cy + u(13), [[0, 0.7], [0.5, 0.3], [1, 0.6]]);
         x.beginPath();
-        x.moveTo(cx - u(9.5), cy - u(6));
-        x.lineTo(cx - u(4), cy + u(2)); x.lineTo(cx - u(5), cy + u(16)); x.lineTo(cx - u(13), cy + u(16)); x.lineTo(cx - u(14.5), cy + u(3));
+        x.moveTo(cx, cy - u(13)); x.lineTo(cx + u(11), cy); x.lineTo(cx, cy + u(13)); x.lineTo(cx - u(11), cy);
         x.closePath(); x.fill();
-        bold(0.65, 1.4); x.stroke(); N();
-        // Rear-right shard
-        x.fillStyle = grad(cx + u(3), cy + u(0), cx + u(15), cy + u(16), [[0, 0.35], [1, 0.12]]);
-        x.beginPath();
-        x.moveTo(cx + u(10), cy - u(2));
-        x.lineTo(cx + u(14.5), cy + u(6)); x.lineTo(cx + u(12.5), cy + u(16)); x.lineTo(cx + u(5), cy + u(16)); x.lineTo(cx + u(5.5), cy + u(4));
-        x.closePath(); x.fill();
-        bold(0.6, 1.3); x.stroke(); N();
-        // Center shard — tallest, brightest
-        x.fillStyle = grad(cx - u(5), cy - u(18), cx + u(5), cy + u(16), [[0, 0.85], [0.5, 0.4], [1, 0.25]]);
-        x.beginPath();
-        x.moveTo(cx, cy - u(18));
-        x.lineTo(cx + u(5.5), cy - u(8)); x.lineTo(cx + u(4), cy + u(16)); x.lineTo(cx - u(4), cy + u(16)); x.lineTo(cx - u(5.5), cy - u(8));
-        x.closePath(); x.fill();
-        bold(0.85, 1.6); x.stroke(); N();
-        // Facet line down the center shard
-        det(0.5, 1.1);
-        x.beginPath(); x.moveTo(cx - u(1), cy - u(14)); x.lineTo(cx - u(1.5), cy + u(16)); x.stroke();
-        // Ground line
-        thin(0.5, 1.3);
-        x.beginPath(); x.moveTo(cx - u(18), cy + u(16)); x.lineTo(cx + u(18), cy + u(16)); x.stroke();
-        // Tip glint — the highlight
+        bold(0.85, 1.7); x.stroke(); N();
+        // Internal facets — dark detail cross
+        det(0.55, 1.1);
+        x.beginPath(); x.moveTo(cx - u(5.5), cy - u(6.5)); x.lineTo(cx + u(5.5), cy + u(6.5)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(5.5), cy - u(6.5)); x.lineTo(cx - u(5.5), cy + u(6.5)); x.stroke();
+        // Front half of the orbit ring — passes over the core
+        thin(0.7, 1.4);
+        x.beginPath(); x.ellipse(cx, cy, u(17.5), u(5.5), 0, 0, Math.PI); x.stroke();
+        // Orbit particle — the highlight
         G(6, 0.7); fill(0.95);
-        x.beginPath(); x.arc(cx, cy - u(16), u(1.8), 0, Math.PI * 2); x.fill(); N();
+        x.beginPath(); x.arc(cx + u(15.5), cy + u(2.8), u(1.9), 0, Math.PI * 2); x.fill(); N();
+        // Apex tick
+        d.hi(0.85, 1);
+        x.beginPath(); x.moveTo(cx - u(2.2), cy - u(9.5)); x.lineTo(cx + u(0.5), cy - u(9.5)); x.stroke();
       },
     };
 
-    // Round-1 approvals now live in the engine — clear their stale flags
-    const PORTED = ['sword', 'potion', 'star', 'inventory', 'settings', 'search', 'refresh'];
+    // Approved reworks live in the engine — clear their stale flags
+    const PORTED = ['sword', 'potion', 'star', 'inventory', 'settings', 'search', 'refresh', 'crown', 'leaderboard'];
 
     // ═══ State (persisted) ═══
     const store = JSON.parse(localStorage.getItem('iconReview') ?? '{}');
@@ -939,10 +841,6 @@
     }
 
     // Candidates: inline pen implementations
-    // (comms + timer were approved 2026-07-03 and promoted into the engine —
-    // they now appear in the APPROVED section instead)
-    delete CANDIDATES.comms;
-    delete CANDIDATES.timer;
     for (const [name, fn] of Object.entries(CANDIDATES)) {
       candidateGrid.appendChild(makeCard(name, (ctx, SZ) => {
         const pen = makePen(ctx, SZ * 0.62, COLOR);
