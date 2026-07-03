@@ -76,6 +76,8 @@ interface Pen {
   det(a?: number, w?: number): void;
   /** Bright highlight lines. */
   hi(a?: number, w?: number): void;
+  /** Linear gradient in the icon color; stops are [offset, opacity] pairs. */
+  grad(x0: number, y0: number, x1: number, y1: number, stops: [number, number][]): CanvasGradient;
 }
 
 function makePen(x: CanvasRenderingContext2D, size: number, color: RGBA): Pen {
@@ -119,7 +121,15 @@ function makePen(x: CanvasRenderingContext2D, size: number, color: RGBA): Pen {
     x.lineWidth = u(w);
     x.lineCap = 'round';
   };
-  return { x, u, pc, G, N, bold, solid, fill, thin, det, hi };
+  const grad = (
+    x0: number, y0: number, x1: number, y1: number,
+    stops: [number, number][],
+  ): CanvasGradient => {
+    const gr = x.createLinearGradient(x0, y0, x1, y1);
+    for (const [t, a] of stops) gr.addColorStop(t, pc(a));
+    return gr;
+  };
+  return { x, u, pc, G, N, bold, solid, fill, thin, det, hi, grad };
 }
 
 type IconDrawFn = (d: Pen, cx: number, cy: number) => void;
@@ -301,45 +311,94 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
   },
 
   search: (d, cx, cy) => {
-    const { x, u, bold, N } = d;
-    bold(0.7, 2); x.beginPath(); x.arc(cx - u(3), cy - u(3), u(12), 0, Math.PI * 2); x.stroke(); N();
-    bold(0.85, 3); x.beginPath(); x.moveTo(cx + u(6), cy + u(6)); x.lineTo(cx + u(16), cy + u(16)); x.stroke(); N();
+    const { x, u, bold, thin, fill, pc, G, N, grad } = d;
+    // Sensor lens — scan optics with contact (approved rework 2026-07-03)
+    const lx = cx - u(4), ly = cy - u(4);
+    x.fillStyle = grad(lx - u(10), ly - u(10), lx + u(10), ly + u(10), [[0, 0.3], [0.5, 0.08], [1, 0.25]]);
+    x.beginPath(); x.arc(lx, ly, u(10.5), 0, Math.PI * 2); x.fill();
+    bold(0.85, 2); x.beginPath(); x.arc(lx, ly, u(10.5), 0, Math.PI * 2); x.stroke(); N();
+    // Crosshair ticks inside the lens
+    thin(0.5, 1);
+    x.beginPath(); x.moveTo(lx, ly - u(8)); x.lineTo(lx, ly - u(4.5)); x.stroke();
+    x.beginPath(); x.moveTo(lx, ly + u(4.5)); x.lineTo(lx, ly + u(8)); x.stroke();
+    x.beginPath(); x.moveTo(lx - u(8), ly); x.lineTo(lx - u(4.5), ly); x.stroke();
+    x.beginPath(); x.moveTo(lx + u(4.5), ly); x.lineTo(lx + u(8), ly); x.stroke();
+    // Scan line across the lens
+    x.strokeStyle = pc(0.75); x.lineWidth = u(1);
+    x.shadowColor = pc(0.4); x.shadowBlur = u(4);
+    x.beginPath(); x.moveTo(lx - u(9), ly - u(2.5)); x.lineTo(lx + u(9), ly - u(2.5)); x.stroke(); N();
+    // Contact dot in the lens — the find
+    G(5, 0.65); fill(0.95);
+    x.beginPath(); x.arc(lx + u(2.5), ly + u(2.5), u(1.8), 0, Math.PI * 2); x.fill(); N();
+    // Handle — angular grip with blunt cap
+    bold(0.85, 2.6);
+    x.beginPath();
+    x.moveTo(lx + Math.cos(Math.PI / 4) * u(10.5), ly + Math.sin(Math.PI / 4) * u(10.5));
+    x.lineTo(cx + u(14), cy + u(14));
+    x.stroke(); N();
+    bold(0.7, 2.2);
+    x.beginPath(); x.moveTo(cx + u(11.8), cy + u(16.2)); x.lineTo(cx + u(16.2), cy + u(11.8)); x.stroke(); N();
   },
 
   settings: (d, cx, cy) => {
-    const { x, u, bold, fill, thin, G, N } = d;
-    // Interconnected node network (atomic style)
-    G(5, 0.4); fill(0.7); x.beginPath(); x.arc(cx, cy, u(4), 0, Math.PI * 2); x.fill(); N();
-    const nodes: [number, number][] = [
-      [u(14), -Math.PI * 0.3], [u(14), Math.PI * 0.5], [u(14), Math.PI * 1.2],
+    const { x, u, bold, thin, G, N, grad } = d;
+    // Control faders — three rails with staggered handles (approved rework 2026-07-03)
+    const rails = [
+      { ry: -9, hx: -5, bright: false },
+      { ry: 0,  hx: 7,  bright: true },
+      { ry: 9,  hx: -1, bright: false },
     ];
-    for (const [r, a] of nodes) {
-      const nx = cx + Math.cos(a) * r, ny = cy + Math.sin(a) * r;
-      bold(0.5, 1.5); x.beginPath(); x.moveTo(cx, cy); x.lineTo(nx, ny); x.stroke(); N();
-      fill(0.55); x.beginPath(); x.arc(nx, ny, u(3), 0, Math.PI * 2); x.fill();
+    for (const { ry, hx, bright } of rails) {
+      // Rail
+      thin(0.4, 1.4);
+      x.beginPath(); x.moveTo(cx - u(16), cy + u(ry)); x.lineTo(cx + u(16), cy + u(ry)); x.stroke();
+      // Rail end ticks
+      thin(0.55, 1.2);
+      x.beginPath(); x.moveTo(cx - u(16), cy + u(ry - 2)); x.lineTo(cx - u(16), cy + u(ry + 2)); x.stroke();
+      x.beginPath(); x.moveTo(cx + u(16), cy + u(ry - 2)); x.lineTo(cx + u(16), cy + u(ry + 2)); x.stroke();
+      // Active segment — brighter portion of the rail up to the handle
+      thin(0.8, 1.8);
+      x.beginPath(); x.moveTo(cx - u(16), cy + u(ry)); x.lineTo(cx + u(hx), cy + u(ry)); x.stroke();
+      // Handle — angular fader knob, gradient filled
+      x.fillStyle = grad(cx + u(hx), cy + u(ry - 5), cx + u(hx), cy + u(ry + 5), [[0, 0.85], [1, 0.4]]);
+      x.beginPath();
+      x.moveTo(cx + u(hx - 2.6), cy + u(ry - 4));
+      x.lineTo(cx + u(hx + 2.6), cy + u(ry - 4));
+      x.lineTo(cx + u(hx + 2.6), cy + u(ry + 4));
+      x.lineTo(cx + u(hx - 2.6), cy + u(ry + 4));
+      x.closePath();
+      if (bright) { G(6, 0.6); }
+      x.fill();
+      bold(bright ? 0.95 : 0.6, 1.2); x.stroke(); N();
     }
-    thin(0.2, 0.8); x.beginPath(); x.arc(cx, cy, u(14), 0, Math.PI * 2); x.stroke();
   },
 
   refresh: (d, cx, cy) => {
-    const { x, u, bold, fill, N } = d;
-    bold(0.75, 2.5);
-    x.beginPath(); x.arc(cx, cy, u(14), 0.4, Math.PI * 1.7); x.stroke();
-    x.beginPath(); x.arc(cx, cy, u(14), Math.PI + 0.4, Math.PI * 2.7); x.stroke();
+    const { x, u, bold, fill, thin, G, N } = d;
+    // Cycle arcs with solid arrowheads (approved rework 2026-07-03)
+    bold(0.85, 2.2);
+    x.beginPath(); x.arc(cx, cy, u(13), -Math.PI * 0.85, -Math.PI * 0.15); x.stroke(); N();
+    bold(0.85, 2.2);
+    x.beginPath(); x.arc(cx, cy, u(13), Math.PI * 0.15, Math.PI * 0.85); x.stroke(); N();
+    // Solid triangular arrowheads — unmistakable direction
+    const head = (ang: number, rot: number): void => {
+      const hx = cx + Math.cos(ang) * u(13), hy = cy + Math.sin(ang) * u(13);
+      x.save(); x.translate(hx, hy); x.rotate(rot);
+      x.beginPath();
+      x.moveTo(0, -u(4.5)); x.lineTo(u(3.6), u(1.5)); x.lineTo(-u(3.6), u(1.5));
+      x.closePath(); x.fill();
+      x.restore();
+    };
+    G(5, 0.5); fill(0.9);
+    head(-Math.PI * 0.15, Math.PI * 0.42);
+    head(Math.PI * 0.85, Math.PI * 1.42);
     N();
-    fill(0.65);
-    const a1 = 0.4;
-    x.beginPath();
-    x.moveTo(cx + Math.cos(a1) * u(9), cy + Math.sin(a1) * u(9));
-    x.lineTo(cx + Math.cos(a1) * u(19), cy + Math.sin(a1) * u(19));
-    x.lineTo(cx + Math.cos(a1 + 0.5) * u(14), cy + Math.sin(a1 + 0.5) * u(14));
-    x.closePath(); x.fill();
-    const a2 = Math.PI + 0.4;
-    x.beginPath();
-    x.moveTo(cx + Math.cos(a2) * u(9), cy + Math.sin(a2) * u(9));
-    x.lineTo(cx + Math.cos(a2) * u(19), cy + Math.sin(a2) * u(19));
-    x.lineTo(cx + Math.cos(a2 + 0.5) * u(14), cy + Math.sin(a2 + 0.5) * u(14));
-    x.closePath(); x.fill();
+    // Inner ring detail
+    thin(0.3, 1);
+    x.beginPath(); x.arc(cx, cy, u(8), 0, Math.PI * 2); x.stroke();
+    // Sync dot — the highlight
+    G(5, 0.6); fill(0.95);
+    x.beginPath(); x.arc(cx, cy, u(2), 0, Math.PI * 2); x.fill(); N();
   },
 
   plus: (d, cx, cy) => {
@@ -437,27 +496,37 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
   },
 
   inventory: (d, cx, cy) => {
-    const { x, u, pc, bold, fill, thin, G, N } = d;
-    // Cargo manifest — data grid with status indicators
-    bold(0.6, 1.8); x.strokeRect(cx - u(18), cy - u(18), u(36), u(36)); N();
-    const cs = u(12);
-    const status: [number, number][] = [
-      [0.6, 3], [0.3, 2], [0.5, 2.5], [0.25, 2], [0.7, 3], [0, 0], [0.4, 2.5], [0, 0], [0.35, 2],
-    ];
-    for (let row = 0; row < 3; row++) {
-      for (let col = 0; col < 3; col++) {
-        const gx = cx - u(18) + col * cs, gy = cy - u(18) + row * cs;
-        thin(0.25, 0.8); x.strokeRect(gx, gy, cs, cs);
-        const [sa, sr] = status[row * 3 + col];
-        if (sa > 0) {
-          fill(sa);
-          x.beginPath(); x.arc(gx + cs / 2, gy + cs / 2, u(sr), 0, Math.PI * 2); x.fill();
-        }
-      }
+    const { x, u, bold, det, fill, thin, G, N, grad } = d;
+    // Cargo manifest — stocked grid with active bay (approved rework 2026-07-03)
+    x.fillStyle = grad(cx - u(15), cy - u(15), cx + u(15), cy + u(15), [[0, 0.28], [0.5, 0.08], [1, 0.24]]);
+    x.fillRect(cx - u(15), cy - u(15), u(30), u(30));
+    bold(0.8, 1.7);
+    x.strokeRect(cx - u(15), cy - u(15), u(30), u(30));
+    N();
+    // Grid lines — dark detail
+    det(0.5, 1.1);
+    for (const o of [-5, 5]) {
+      x.beginPath(); x.moveTo(cx + u(o), cy - u(15)); x.lineTo(cx + u(o), cy + u(15)); x.stroke();
+      x.beginPath(); x.moveTo(cx - u(15), cy + u(o)); x.lineTo(cx + u(15), cy + u(o)); x.stroke();
     }
-    // Active cell highlight
-    G(4, 0.3); x.strokeStyle = pc(0.7); x.lineWidth = u(1.2);
-    x.strokeRect(cx - u(18), cy - u(18), cs, cs); N();
+    // Stocked cells — varied solid fills (cargo in different bays)
+    fill(0.55); x.fillRect(cx - u(14), cy - u(14), u(8), u(8));
+    fill(0.4);  x.fillRect(cx - u(4),  cy - u(14), u(8), u(8));
+    fill(0.3);  x.fillRect(cx - u(14), cy - u(4),  u(8), u(8));
+    fill(0.45); x.fillRect(cx + u(6),  cy + u(6),  u(8), u(8));
+    // Active bay — glowing dot, the highlight
+    G(6, 0.65); fill(0.95);
+    x.beginPath(); x.arc(cx + u(10), cy, u(2.2), 0, Math.PI * 2); x.fill(); N();
+    // Corner brackets outside the frame
+    thin(0.65, 1.5);
+    const B = 15, L = 5;
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      x.beginPath();
+      x.moveTo(cx + sx * u(B + 3), cy + sy * u(B + 3 - L));
+      x.lineTo(cx + sx * u(B + 3), cy + sy * u(B + 3));
+      x.lineTo(cx + sx * u(B + 3 - L), cy + sy * u(B + 3));
+      x.stroke();
+    }
   },
 
   craft: (d, cx, cy) => {
@@ -501,24 +570,31 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
   },
 
   star: (d, cx, cy) => {
-    const { x, u, bold, fill, G, N } = d;
-    // Constellation: 5 connected dots forming a pentagram
-    const pts: [number, number][] = [];
-    for (let i = 0; i < 5; i++) {
-      const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
-      pts.push([cx + Math.cos(a) * u(16), cy + Math.sin(a) * u(16)]);
-    }
-    bold(0.6, 1.5);
-    x.beginPath();
-    x.moveTo(pts[0][0], pts[0][1]); x.lineTo(pts[2][0], pts[2][1]); x.lineTo(pts[4][0], pts[4][1]);
-    x.lineTo(pts[1][0], pts[1][1]); x.lineTo(pts[3][0], pts[3][1]);
-    x.closePath(); x.stroke(); N();
-    G(5, 0.4); fill(0.75);
-    for (const [px, py] of pts) {
-      x.beginPath(); x.arc(px, py, u(2.5), 0, Math.PI * 2); x.fill();
-    }
-    N();
-    fill(0.4); x.beginPath(); x.arc(cx, cy, u(2), 0, Math.PI * 2); x.fill();
+    const { x, u, bold, thin, fill, G, N, grad } = d;
+    // Nav star — 4 long cardinal points + 4 short diagonals (approved rework 2026-07-03)
+    const starPath = (long: number, short: number): void => {
+      x.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = (Math.PI / 4) * i - Math.PI / 2;
+        const r = i % 2 === 0 ? long : short;
+        const px = cx + Math.cos(a) * u(r), py = cy + Math.sin(a) * u(r);
+        i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+      }
+      x.closePath();
+    };
+    x.fillStyle = grad(cx - u(17), cy - u(17), cx + u(17), cy + u(17), [[0, 0.6], [0.5, 0.22], [1, 0.5]]);
+    starPath(18, 5.5); x.fill();
+    bold(0.85, 1.6); starPath(18, 5.5); x.stroke(); N();
+    // Inner cross — thin detail aligned with the long points
+    thin(0.45, 1);
+    x.beginPath(); x.moveTo(cx, cy - u(12)); x.lineTo(cx, cy + u(12)); x.stroke();
+    x.beginPath(); x.moveTo(cx - u(12), cy); x.lineTo(cx + u(12), cy); x.stroke();
+    // Orbit ring hint
+    thin(0.3, 0.9);
+    x.beginPath(); x.arc(cx, cy, u(10), 0, Math.PI * 2); x.stroke();
+    // Core — glowing center
+    G(7, 0.7); fill(0.95);
+    x.beginPath(); x.arc(cx, cy, u(2.6), 0, Math.PI * 2); x.fill(); N();
   },
 
   heart: (d, cx, cy) => {
@@ -626,36 +702,39 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
   },
 
   sword: (d, cx, cy) => {
-    const { x, u, bold, fill, solid, det, G, N } = d;
-    // Attack vector — angular blade, geometric and sharp
-    solid(0.5);
+    const { x, u, bold, det, fill, hi, G, N, grad } = d;
+    // Attack vector — energy blade on a dynamic diagonal (approved rework
+    // 2026-07-03; authored on a vertical axis, rotated 45°)
+    x.save();
+    x.translate(cx, cy);
+    x.rotate(Math.PI / 4);
+    // Blade — long tapered silhouette, gradient along its length
+    x.fillStyle = grad(0, -u(19), 0, u(5), [[0, 0.9], [0.45, 0.5], [1, 0.3]]);
     x.beginPath();
-    x.moveTo(cx, cy - u(24)); x.lineTo(cx + u(6), cy - u(4)); x.lineTo(cx + u(3), cy + u(2));
-    x.lineTo(cx - u(3), cy + u(2)); x.lineTo(cx - u(6), cy - u(4));
+    x.moveTo(0, -u(19));
+    x.lineTo(u(3.2), -u(13));
+    x.lineTo(u(2.6), u(5));
+    x.lineTo(-u(2.6), u(5));
+    x.lineTo(-u(3.2), -u(13));
     x.closePath(); x.fill();
-    bold(0.85, 1.5); x.stroke(); N();
-    det(0.35, 0.8); x.beginPath(); x.moveTo(cx, cy - u(22)); x.lineTo(cx, cy + u(1)); x.stroke();
-    // Guard — angular horizontal bar
-    solid(0.4);
+    bold(0.8, 1.6); x.stroke(); N();
+    // Fuller — dark center groove
+    det(0.5, 1.1);
+    x.beginPath(); x.moveTo(0, -u(15)); x.lineTo(0, u(3)); x.stroke();
+    // Crossguard — angular, swept
+    bold(0.85, 2.2);
     x.beginPath();
-    x.moveTo(cx - u(14), cy + u(1)); x.lineTo(cx - u(10), cy - u(2)); x.lineTo(cx + u(10), cy - u(2));
-    x.lineTo(cx + u(14), cy + u(1)); x.lineTo(cx + u(10), cy + u(4)); x.lineTo(cx - u(10), cy + u(4));
-    x.closePath(); x.fill();
-    bold(0.65, 1); x.stroke(); N();
-    // Grip
-    solid(0.35); x.fillRect(cx - u(2.5), cy + u(4), u(5), u(12));
-    bold(0.45, 0.8); x.strokeRect(cx - u(2.5), cy + u(4), u(5), u(12)); N();
-    det(0.2, 0.5);
-    for (let i = 0; i < 3; i++) {
-      x.beginPath(); x.moveTo(cx - u(2), cy + u(6) + i * u(3.5)); x.lineTo(cx + u(2), cy + u(6) + i * u(3.5)); x.stroke();
-    }
-    // Pommel — angular cap
-    solid(0.5);
-    x.beginPath(); x.moveTo(cx - u(4), cy + u(16)); x.lineTo(cx, cy + u(20)); x.lineTo(cx + u(4), cy + u(16));
-    x.closePath(); x.fill();
-    bold(0.55, 0.8); x.stroke(); N();
-    // Blade tip glow
-    G(6, 0.5); fill(0.85); x.beginPath(); x.arc(cx, cy - u(23), u(1.5), 0, Math.PI * 2); x.fill(); N();
+    x.moveTo(-u(8), u(7.5)); x.lineTo(-u(5), u(5.5)); x.lineTo(u(5), u(5.5)); x.lineTo(u(8), u(7.5));
+    x.stroke(); N();
+    // Grip + pommel
+    bold(0.7, 2);
+    x.beginPath(); x.moveTo(0, u(7.5)); x.lineTo(0, u(14)); x.stroke(); N();
+    G(5, 0.6); fill(0.9);
+    x.beginPath(); x.arc(0, u(16), u(2), 0, Math.PI * 2); x.fill(); N();
+    // Edge glint — the highlight
+    hi(0.95, 0.9);
+    x.beginPath(); x.moveTo(-u(1.6), -u(16)); x.lineTo(-u(1.6), -u(4)); x.stroke();
+    x.restore();
   },
 
   home: (d, cx, cy) => {
@@ -687,24 +766,45 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
   },
 
   potion: (d, cx, cy) => {
-    const { x, u, bold, solid, det, hi, N } = d;
-    // Resource canister — container with fill-level indicator
-    solid(0.2); x.fillRect(cx - u(10), cy - u(18), u(20), u(36));
-    bold(0.7, 1.8); x.strokeRect(cx - u(10), cy - u(18), u(20), u(36)); N();
-    // Fill level (65%)
-    solid(0.45); x.fillRect(cx - u(9), cy - u(4), u(18), u(21));
-    hi(0.9, 1.2); x.beginPath(); x.moveTo(cx - u(10), cy - u(4)); x.lineTo(cx + u(10), cy - u(4)); x.stroke();
-    // Segment markings
-    det(0.25, 0.6);
-    for (let i = 0; i < 5; i++) {
-      const sy = cy - u(14) + i * u(7);
-      x.beginPath(); x.moveTo(cx - u(10), sy); x.lineTo(cx - u(7), sy); x.stroke();
-      x.beginPath(); x.moveTo(cx + u(10), sy); x.lineTo(cx + u(7), sy); x.stroke();
-    }
-    // Cap
-    solid(0.35); x.fillRect(cx - u(12), cy - u(22), u(24), u(5));
-    bold(0.5, 1); x.strokeRect(cx - u(12), cy - u(22), u(24), u(5)); N();
-    det(0.15, 0.5); x.beginPath(); x.moveTo(cx, cy - u(18)); x.lineTo(cx, cy + u(18)); x.stroke();
+    const { x, u, bold, det, fill, hi, grad } = d;
+    // Resource flask — faceted vessel with liquid fill (approved rework 2026-07-03)
+    const body = (): void => {
+      x.beginPath();
+      x.moveTo(cx - u(3.5), cy - u(16));
+      x.lineTo(cx - u(3.5), cy - u(6));
+      x.lineTo(cx - u(10), cy + u(1));
+      x.lineTo(cx - u(10), cy + u(13));
+      x.lineTo(cx - u(6), cy + u(17));
+      x.lineTo(cx + u(6), cy + u(17));
+      x.lineTo(cx + u(10), cy + u(13));
+      x.lineTo(cx + u(10), cy + u(1));
+      x.lineTo(cx + u(3.5), cy - u(6));
+      x.lineTo(cx + u(3.5), cy - u(16));
+      x.closePath();
+    };
+    // Vessel glass — faint fill
+    x.fillStyle = grad(cx - u(10), cy - u(16), cx + u(10), cy + u(17), [[0, 0.18], [1, 0.08]]);
+    body(); x.fill();
+    // Liquid — bright gradient in the lower body
+    x.save();
+    body(); x.clip();
+    x.fillStyle = grad(cx, cy + u(2), cx, cy + u(17), [[0, 0.75], [1, 0.45]]);
+    x.fillRect(cx - u(10), cy + u(2), u(20), u(15));
+    x.restore();
+    bold(0.8, 1.7); body(); x.stroke(); d.N();
+    // Cap seal
+    bold(0.75, 2);
+    x.beginPath(); x.moveTo(cx - u(5), cy - u(17)); x.lineTo(cx + u(5), cy - u(17)); x.stroke(); d.N();
+    // Meniscus — bright surface line
+    hi(0.9, 1);
+    x.beginPath(); x.moveTo(cx - u(9), cy + u(2)); x.lineTo(cx + u(9), cy + u(2)); x.stroke();
+    // Bubbles rising
+    fill(0.85);
+    x.beginPath(); x.arc(cx + u(3), cy + u(7), u(1.3), 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.arc(cx - u(2.5), cy + u(11), u(1), 0, Math.PI * 2); x.fill();
+    // Fill-level tick on the side
+    det(0.5, 1.1);
+    x.beginPath(); x.moveTo(cx - u(10), cy + u(7)); x.lineTo(cx - u(7.5), cy + u(7)); x.stroke();
   },
 
   coin: (d, cx, cy) => {
