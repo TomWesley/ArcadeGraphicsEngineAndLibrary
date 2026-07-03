@@ -450,34 +450,6 @@
         x.beginPath(); x.moveTo(cx + u(7.5), cy - u(7.5)); x.lineTo(cx + u(15), cy - u(7.5)); x.stroke(); N();
       },
 
-      scan: (d, cx, cy) => {
-        const { x, u, bold, thin, det, fill, pc, G, N } = d;
-        // Analysis beam passing over a wireframe subject
-        // Subject — dashed wireframe sphere
-        thin(0.55, 1.3);
-        x.setLineDash([u(2.2), u(2.6)]);
-        x.beginPath(); x.arc(cx + u(1), cy + u(2), u(10.5), 0, Math.PI * 2); x.stroke();
-        x.beginPath(); x.ellipse(cx + u(1), cy + u(2), u(10.5), u(3.6), 0, 0, Math.PI * 2); x.stroke();
-        x.setLineDash([]);
-        // Progress rail on top
-        thin(0.4, 1.1);
-        x.beginPath(); x.moveTo(cx - u(15), cy - u(16)); x.lineTo(cx + u(15), cy - u(16)); x.stroke();
-        // Completed portion of the rail
-        d.hi(0.8, 1.6);
-        x.beginPath(); x.moveTo(cx - u(15), cy - u(16)); x.lineTo(cx - u(3), cy - u(16)); x.stroke();
-        // Scan beam — vertical, with a decaying trail behind it
-        const bx2 = cx - u(3);
-        const tg = x.createLinearGradient(bx2 - u(9), 0, bx2, 0);
-        tg.addColorStop(0, pc(0)); tg.addColorStop(1, pc(0.22));
-        x.fillStyle = tg;
-        x.fillRect(bx2 - u(9), cy - u(12), u(9), u(28));
-        x.strokeStyle = pc(0.9); x.lineWidth = u(1.4);
-        x.shadowColor = pc(0.5); x.shadowBlur = u(5);
-        x.beginPath(); x.moveTo(bx2, cy - u(12)); x.lineTo(bx2, cy + u(16)); x.stroke(); N();
-        // Readout tick — dark detail at the equator crossing
-        det(0.6, 1.2);
-        x.beginPath(); x.moveTo(bx2 - u(2.5), cy + u(2)); x.lineTo(bx2 + u(2.5), cy + u(2)); x.stroke();
-      },
 
       pilot: (d, cx, cy) => {
         const { x, u, bold, thin, det, fill, G, N, grad } = d;
@@ -678,7 +650,7 @@
     const store = JSON.parse(localStorage.getItem('iconReview') ?? '{}');
     store.rework ??= []; store.add ??= []; store.approveRework ??= [];
     // comms + timer were promoted into the engine — drop stale selections
-    store.add = store.add.filter(n => !['comms', 'timer', 'map'].includes(n));
+    store.add = store.add.filter(n => !['comms', 'timer', 'map', 'scan'].includes(n));
     store.rework = store.rework.filter(n => !PORTED.includes(n));
     store.approveRework = store.approveRework.filter(n => !PORTED.includes(n));
     const save = () => localStorage.setItem('iconReview', JSON.stringify(store));

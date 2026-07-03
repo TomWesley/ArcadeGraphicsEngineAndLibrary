@@ -99,7 +99,7 @@ drawFramedIcon(ctx, 'energy', x, y, size, colorRGBA);   // icon in dark clipped 
 Available names: `play, pause, stop, arrow-up, arrow-down, arrow-left, arrow-right,
 forward, back, fullscreen, info, refresh, quest, search, energy, settings, error,
 download, upload, plus, minus, diamond, star, craft, inventory, heart, skull,
-target, warning, comms, timer, map` plus HUD-styled game icons `leaderboard`
+target, warning, comms, timer, map, scan` plus HUD-styled game icons `leaderboard`
 (ranking readout), `shield` (defense matrix), `sword` (energy blade), `home`
 (base + antenna), `potion` (faceted flask), `coin`, `crown` (command wings), and
 aliases `gear`→settings, `lightning`→energy, `trophy`→leaderboard.
