@@ -31,6 +31,8 @@ type BaseIconName =
   // Game systems
   | 'quest' | 'energy' | 'target' | 'inventory' | 'craft'
   | 'diamond' | 'star' | 'heart' | 'skull'
+  // Comms / systems (approved 2026-07-03)
+  | 'comms' | 'timer'
   // Legacy names, redesigned in the approved vocabulary
   | 'leaderboard' | 'shield' | 'sword' | 'home' | 'potion' | 'coin' | 'crown';
 
@@ -747,6 +749,66 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
     bold(0.45, 1.5);
     x.beginPath(); x.moveTo(cx - u(12), cy + u(18)); x.lineTo(cx, cy + u(8)); x.lineTo(cx + u(12), cy + u(18)); x.stroke(); N();
     G(5, 0.4); fill(0.7); x.beginPath(); x.arc(cx, cy - u(8), u(2.5), 0, Math.PI * 2); x.fill(); N();
+  },
+
+  // ── COMMS / SYSTEMS (approved 2026-07-03) ──
+
+  comms: (d, cx, cy) => {
+    const { x, u, bold, thin, fill, G, N } = d;
+    // Antenna mast
+    bold(0.85, 2);
+    x.beginPath(); x.moveTo(cx, cy + u(18)); x.lineTo(cx, cy - u(2)); x.stroke(); N();
+    // Base platform
+    bold(0.7, 1.8);
+    x.beginPath(); x.moveTo(cx - u(9), cy + u(18)); x.lineTo(cx + u(9), cy + u(18)); x.stroke(); N();
+    // Support struts
+    thin(0.5, 1.2);
+    x.beginPath(); x.moveTo(cx - u(6), cy + u(18)); x.lineTo(cx, cy + u(8)); x.stroke();
+    x.beginPath(); x.moveTo(cx + u(6), cy + u(18)); x.lineTo(cx, cy + u(8)); x.stroke();
+    // Broadcast arcs — expanding signal
+    thin(0.75, 1.6);
+    x.beginPath(); x.arc(cx, cy - u(6), u(5), -Math.PI * 0.78, -Math.PI * 0.22); x.stroke();
+    thin(0.5, 1.4);
+    x.beginPath(); x.arc(cx, cy - u(6), u(10), -Math.PI * 0.75, -Math.PI * 0.25); x.stroke();
+    thin(0.3, 1.2);
+    x.beginPath(); x.arc(cx, cy - u(6), u(15), -Math.PI * 0.72, -Math.PI * 0.28); x.stroke();
+    // Beacon tip — highlight
+    G(7, 0.7); fill(0.95);
+    x.beginPath(); x.arc(cx, cy - u(5), u(2.6), 0, Math.PI * 2); x.fill(); N();
+  },
+
+  timer: (d, cx, cy) => {
+    const { x, u, bold, thin, fill, pc, G, N } = d;
+    // Chronometer ring
+    bold(0.8, 1.8);
+    x.beginPath(); x.arc(cx, cy + u(1), u(15), 0, Math.PI * 2); x.stroke(); N();
+    // Winding crown
+    bold(0.7, 1.6);
+    x.beginPath(); x.moveTo(cx - u(4), cy - u(17)); x.lineTo(cx + u(4), cy - u(17)); x.stroke();
+    x.beginPath(); x.moveTo(cx, cy - u(17)); x.lineTo(cx, cy - u(14)); x.stroke(); N();
+    // Elapsed arc — thick bright sector
+    x.strokeStyle = pc(0.85); x.lineWidth = u(3); x.lineCap = 'butt';
+    x.shadowColor = pc(0.4); x.shadowBlur = u(5);
+    x.beginPath(); x.arc(cx, cy + u(1), u(11.5), -Math.PI / 2, Math.PI * 0.25); x.stroke(); N();
+    // Remaining arc — faint
+    thin(0.2, 3);
+    x.beginPath(); x.arc(cx, cy + u(1), u(11.5), Math.PI * 0.25, Math.PI * 1.5); x.stroke();
+    // Sector tick marks
+    thin(0.45, 1);
+    for (let i = 0; i < 12; i++) {
+      const a = (Math.PI / 6) * i;
+      x.beginPath();
+      x.moveTo(cx + Math.cos(a) * u(13.2), cy + u(1) + Math.sin(a) * u(13.2));
+      x.lineTo(cx + Math.cos(a) * u(15), cy + u(1) + Math.sin(a) * u(15));
+      x.stroke();
+    }
+    // Needle to elapsed edge + center dot
+    thin(0.9, 1.4);
+    x.beginPath(); x.moveTo(cx, cy + u(1));
+    x.lineTo(cx + Math.cos(Math.PI * 0.25) * u(9), cy + u(1) + Math.sin(Math.PI * 0.25) * u(9));
+    x.stroke();
+    G(5, 0.6); fill(0.95);
+    x.beginPath(); x.arc(cx, cy + u(1), u(1.8), 0, Math.PI * 2); x.fill(); N();
   },
 };
 
