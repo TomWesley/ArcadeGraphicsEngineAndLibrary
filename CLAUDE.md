@@ -99,9 +99,9 @@ drawFramedIcon(ctx, 'energy', x, y, size, colorRGBA);   // icon in dark clipped 
 Available names: `play, pause, stop, arrow-up, arrow-down, arrow-left, arrow-right,
 forward, back, fullscreen, info, refresh, quest, search, energy, settings, error,
 download, upload, plus, minus, diamond, star, craft, inventory, heart, skull,
-target, warning` plus HUD-styled game icons `leaderboard` (rank bars), `shield`
-(defense matrix), `sword` (attack vector), `home` (base + antenna), `potion`
-(resource canister), `coin` (hex credit token), `crown` (command chevrons), and
+target, warning, comms, timer, map` plus HUD-styled game icons `leaderboard`
+(ranking readout), `shield` (defense matrix), `sword` (energy blade), `home`
+(base + antenna), `potion` (faceted flask), `coin`, `crown` (command wings), and
 aliases `gear`→settings, `lightning`→energy, `trophy`→leaderboard.
 Unknown names log a console warning. `heart` renders as an EKG vitals line,
 `skull` as a radiation trefoil, `star` as a constellation — spacecraft
@@ -193,7 +193,12 @@ function N(ctx) { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; }
 2. **Use gradient fills**, not flat fills. `createLinearGradient` or `createRadialGradient`.
 3. **Bold outlines** at 0.7-0.9 opacity, 1.2-2.5u width, with `shadowBlur` glow.
 4. **Internal detail lines** using `det()` — dark lines ON TOP of fills showing structure.
-5. **One highlight accent** per icon — a bright dot, edge, or line that draws the eye.
+5. **One highlight accent** per icon — but it must be SEMANTIC, never decorative.
+   A glowing dot is only correct when it *means* something: a status lamp, a
+   radar contact, a beacon, an active cell. If the dot answers no question
+   ("what is lit? what was found? what is active?"), use an edge glint, a
+   bright facet line, or the brightest stroke of the shape instead. A dot
+   pasted on for visual interest is a formula tell — avoid it.
 6. **Think spacecraft instrument**, not illustration. A trophy is rank bars, not a cup. A heart is an EKG monitor, not a valentine. A skull is a radiation trefoil, not a cartoon skull.
 7. **Solid filled shapes** for the primary form, not just stroked outlines.
 8. **The icon should be recognizable from silhouette alone.**
