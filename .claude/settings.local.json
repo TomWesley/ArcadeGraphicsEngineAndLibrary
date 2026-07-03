@@ -45,7 +45,8 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(xargs kill)"
+      "Bash(xargs kill)",
+      "Bash(awk '/target:/,/^  },$/' src/components/icons.ts)"
     ]
   }
 }
