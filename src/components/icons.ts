@@ -32,7 +32,7 @@ type BaseIconName =
   | 'quest' | 'energy' | 'target' | 'inventory' | 'craft'
   | 'diamond' | 'star' | 'heart' | 'skull'
   // Comms / systems (approved 2026-07-03)
-  | 'comms' | 'timer' | 'map'
+  | 'comms' | 'timer' | 'map' | 'scan'
   // Legacy names, redesigned in the approved vocabulary
   | 'leaderboard' | 'shield' | 'sword' | 'home' | 'potion' | 'coin' | 'crown';
 
@@ -281,7 +281,7 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
   info: (d, cx, cy) => {
     const { x, u, bold, fill, N } = d;
     bold(0.45, 1.5); x.beginPath(); x.arc(cx, cy, u(18), 0, Math.PI * 2); x.stroke(); N();
-    fill(0.7); x.beginPath(); x.arc(cx, cy - u(7), u(2.5), 0, Math.PI * 2); x.fill();
+    fill(0.7); x.fillRect(cx - u(2.5), cy - u(9), u(5), u(3.4));
     bold(0.7, 2.5);
     x.beginPath(); x.moveTo(cx, cy - u(1)); x.lineTo(cx, cy + u(10)); x.stroke();
     x.beginPath(); x.moveTo(cx - u(4), cy + u(10)); x.lineTo(cx + u(4), cy + u(10)); x.stroke();
@@ -604,9 +604,7 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
     // Orbit ring hint
     thin(0.3, 0.9);
     x.beginPath(); x.arc(cx, cy, u(10), 0, Math.PI * 2); x.stroke();
-    // Core — glowing center
-    G(7, 0.7); fill(0.95);
-    x.beginPath(); x.arc(cx, cy, u(2.6), 0, Math.PI * 2); x.fill(); N();
+
   },
 
   heart: (d, cx, cy) => {
@@ -690,9 +688,7 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
       det(0.4, 1);
       x.beginPath(); x.moveTo(cx - u(14), cy + u(ry + 5.5)); x.lineTo(cx + u(14), cy + u(ry + 5.5)); x.stroke();
     }
-    // Champion pip — glowing marker on the lead row
-    G(6, 0.7); fill(0.95);
-    x.beginPath(); x.arc(cx + u(16.5), cy - u(11), u(2), 0, Math.PI * 2); x.fill(); N();
+
   },
 
   shield: (d, cx, cy) => {
@@ -719,8 +715,6 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
     x.beginPath();
     x.moveTo(cx, cy - u(16)); x.lineTo(cx + u(13), cy - u(7)); x.lineTo(cx + u(7), cy - u(2)); x.lineTo(cx, cy - u(2));
     x.closePath(); x.fill(); N();
-    // Center status dot
-    G(5, 0.5); fill(0.75); x.beginPath(); x.arc(cx, cy - u(2), u(3), 0, Math.PI * 2); x.fill(); N();
   },
 
   sword: (d, cx, cy) => {
@@ -884,9 +878,9 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
     x.beginPath(); x.moveTo(cx - u(9), cy + u(12)); x.lineTo(cx + u(9), cy + u(12)); x.stroke(); N();
     thin(0.4, 1);
     x.beginPath(); x.moveTo(cx - u(6.5), cy + u(15)); x.lineTo(cx + u(6.5), cy + u(15)); x.stroke();
-    // Gem glow — the highlight
-    G(6, 0.7); fill(0.95);
-    x.beginPath(); x.arc(cx, cy, u(1.8), 0, Math.PI * 2); x.fill(); N();
+    // Gem facet — bright edge on the upper-left face
+    d.hi(0.95, 1);
+    x.beginPath(); x.moveTo(cx - u(3), cy - u(2.2)); x.lineTo(cx - u(0.5), cy - u(5.2)); x.stroke();
   },
 
   // ── COMMS / SYSTEMS (approved 2026-07-03) ──
@@ -980,6 +974,35 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
     // Touchdown glow — the highlight (semantic: the marked location)
     G(6, 0.7); fill(0.95);
     x.beginPath(); x.arc(cx, cy + u(7), u(1.9), 0, Math.PI * 2); x.fill(); N();
+  },
+
+  scan: (d, cx, cy) => {
+    const { x, u, thin, det, hi, pc, N } = d;
+    // Analysis beam traversing a wireframe subject (approved 2026-07-03)
+    // Subject — dashed wireframe sphere
+    thin(0.55, 1.3);
+    x.setLineDash([u(2.2), u(2.6)]);
+    x.beginPath(); x.arc(cx + u(1), cy + u(2), u(10.5), 0, Math.PI * 2); x.stroke();
+    x.beginPath(); x.ellipse(cx + u(1), cy + u(2), u(10.5), u(3.6), 0, 0, Math.PI * 2); x.stroke();
+    x.setLineDash([]);
+    // Progress rail on top
+    thin(0.4, 1.1);
+    x.beginPath(); x.moveTo(cx - u(15), cy - u(16)); x.lineTo(cx + u(15), cy - u(16)); x.stroke();
+    // Completed portion of the rail
+    hi(0.8, 1.6);
+    x.beginPath(); x.moveTo(cx - u(15), cy - u(16)); x.lineTo(cx - u(3), cy - u(16)); x.stroke();
+    // Scan beam — vertical, with a decaying trail behind it
+    const bx = cx - u(3);
+    const tg = x.createLinearGradient(bx - u(9), 0, bx, 0);
+    tg.addColorStop(0, pc(0)); tg.addColorStop(1, pc(0.22));
+    x.fillStyle = tg;
+    x.fillRect(bx - u(9), cy - u(12), u(9), u(28));
+    x.strokeStyle = pc(0.9); x.lineWidth = u(1.4);
+    x.shadowColor = pc(0.5); x.shadowBlur = u(5);
+    x.beginPath(); x.moveTo(bx, cy - u(12)); x.lineTo(bx, cy + u(16)); x.stroke(); N();
+    // Readout tick — dark detail at the equator crossing
+    det(0.6, 1.2);
+    x.beginPath(); x.moveTo(bx - u(2.5), cy + u(2)); x.lineTo(bx + u(2.5), cy + u(2)); x.stroke();
   },
 };
 
