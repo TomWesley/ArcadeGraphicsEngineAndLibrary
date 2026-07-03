@@ -56,6 +56,7 @@
     "test:convert": "npx http-server tests/convert -p 8090 -o",
     "test:mainmenu": "npx http-server tests/main-menu -p 8091 -o",
     "test:iconlib": "npx http-server tests/icon-library -p 8092 -o",
+    "test:iconreview": "npx http-server . -p 8095 -o /tests/icon-review/index.html",
     "test:favicon": "npx http-server tests/favicon -p 8093 -o",
     "test:homepage": "npx http-server . -p 8094 -o /tests/fake-game-home/index.html",
     "typecheck": "tsc --noEmit",

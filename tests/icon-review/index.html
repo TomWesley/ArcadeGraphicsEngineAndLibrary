@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Icon Library Review</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Rajdhani:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: radial-gradient(ellipse at 50% 30%, #12101e 0%, #0a0910 60%, #060509 100%);
+      min-height: 100vh;
+      color: #ccc;
+      font-family: 'Rajdhani', sans-serif;
+      padding: 28px 36px 120px;
+    }
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 20px; letter-spacing: 6px;
+      background: linear-gradient(135deg, #ff7050, #cc3020);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .sub { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #666; letter-spacing: 2px; margin: 4px 0 18px; }
+
+    .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 26px; flex-wrap: wrap; }
+    .controls .lbl { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #777; letter-spacing: 2px; }
+    .pal-btn {
+      background: transparent; border: 1px solid #333; color: #999;
+      font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px;
+      padding: 5px 12px; cursor: pointer;
+    }
+    .pal-btn.active { border-color: #888; color: #eee; box-shadow: 0 0 6px rgba(255,255,255,0.1); }
+
+    h2 {
+      font-family: 'Orbitron', sans-serif; font-size: 13px; letter-spacing: 4px;
+      color: #999; margin: 34px 0 6px; padding-bottom: 6px;
+      border-bottom: 1px solid #222;
+    }
+    h2 .hint { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: #555; letter-spacing: 1px; float: right; margin-top: 4px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+      gap: 12px; margin-top: 14px;
+    }
+    .card {
+      background: rgba(255,255,255,0.015);
+      border: 1px solid #1e1c28;
+      padding: 10px 8px 8px;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+      clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+    }
+    .card:hover { border-color: #444; background: rgba(255,255,255,0.03); }
+    .card canvas.main { width: 84px; height: 84px; }
+    .card canvas.small { width: 20px; height: 20px; position: absolute; top: 8px; right: 8px; opacity: 0.9; }
+    .card .name {
+      font-family: 'Share Tech Mono', monospace; font-size: 10px;
+      letter-spacing: 1px; color: #888;
+    }
+    .card .state {
+      font-family: 'Share Tech Mono', monospace; font-size: 8px; letter-spacing: 1px;
+      height: 12px; color: transparent;
+    }
+    /* Approved section: flagged = needs rework */
+    .card.flagged { border-color: #b03a2a; background: rgba(176, 58, 42, 0.07); }
+    .card.flagged .state { color: #e06050; }
+    .card.flagged .state::before { content: '⚠ NEEDS REWORK'; }
+    /* Candidate section: selected = add to library */
+    .card.selected { border-color: #2a9a6a; background: rgba(42, 154, 106, 0.07); }
+    .card.selected .state { color: #40cc80; }
+    .card.selected .state::before { content: '✓ ADD TO LIBRARY'; }
+
+    /* Report bar */
+    .report {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+      background: rgba(10, 9, 16, 0.95);
+      border-top: 1px solid #2a2836;
+      backdrop-filter: blur(6px);
+      padding: 12px 36px;
+      display: flex; gap: 24px; align-items: center;
+    }
+    .report .stat { font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 1px; color: #888; }
+    .report .stat b.rework { color: #e06050; }
+    .report .stat b.add { color: #40cc80; }
+    .report button {
+      background: transparent; border: 1px solid #555; color: #ccc;
+      font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 12px;
+      letter-spacing: 2px; text-transform: uppercase;
+      padding: 7px 16px; cursor: pointer; transition: all 0.15s;
+      clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px);
+    }
+    .report button:hover { border-color: #999; box-shadow: 0 0 8px rgba(255,255,255,0.1); }
+    .report .copied { color: #40cc80; font-family: 'Share Tech Mono', monospace; font-size: 10px; opacity: 0; transition: opacity 0.3s; }
+    .report .copied.show { opacity: 1; }
+    .report .reset { margin-left: auto; border-color: #3a2a2a; color: #886; }
+  </style>
+</head>
+<body>
+  <h1>ICON LIBRARY REVIEW</h1>
+  <div class="sub">APPROVED SET RENDERED LIVE FROM ENGINE DIST // CANDIDATES INLINE // CLICK CARDS TO FLAG OR SELECT</div>
+
+  <div class="controls">
+    <span class="lbl">PALETTE:</span>
+    <button class="pal-btn active" data-pal="scarlet">SCARLET</button>
+    <button class="pal-btn" data-pal="cyan">CYAN</button>
+    <button class="pal-btn" data-pal="amber">AMBER</button>
+  </div>
+
+  <h2>APPROVED LIBRARY <span class="hint">CLICK = FLAG FOR REWORK</span></h2>
+  <div class="grid" id="approvedGrid"></div>
+
+  <h2>NEW CANDIDATES <span class="hint">CLICK = ADD TO LIBRARY</span></h2>
+  <div class="grid" id="candidateGrid"></div>
+
+  <div class="report">
+    <span class="stat">FLAGGED FOR REWORK: <b class="rework" id="reworkCount">0</b></span>
+    <span class="stat">SELECTED TO ADD: <b class="add" id="addCount">0</b></span>
+    <button id="copyReport">Copy Report</button>
+    <span class="copied" id="copiedMsg">COPIED TO CLIPBOARD</span>
+    <button class="reset" id="resetBtn">Reset Selections</button>
+  </div>
+
+  <script type="module">
+    import { drawIcon, getIconNames } from '/dist/index.js';
+
+    // ═══ Palettes ═══
+    const PALETTES = {
+      scarlet: [200, 50, 50, 1],
+      cyan:    [60, 190, 220, 1],
+      amber:   [230, 160, 50, 1],
+    };
+    let COLOR = PALETTES.scarlet;
+
+    // ═══ Pen (mirrors src/components/icons.ts makePen exactly) ═══
+    function makePen(x, size, color) {
+      const k = size / 48;
+      const [r, g, b] = color.map(Math.round);
+      const u = n => n * k;
+      const pc = a => `rgba(${r},${g},${b},${a})`;
+      const G = (blur, a = 0.5) => { x.shadowColor = pc(a); x.shadowBlur = blur * k; };
+      const N = () => { x.shadowColor = 'transparent'; x.shadowBlur = 0; };
+      const bold = (a = 0.85, w = 2) => { G(6, 0.35); x.strokeStyle = pc(a); x.lineWidth = u(w); x.lineCap = 'round'; x.lineJoin = 'round'; };
+      const solid = (a = 0.7) => { x.fillStyle = pc(a); };
+      const fill = (a = 0.5) => { x.fillStyle = pc(a); };
+      const thin = (a = 0.3, w = 0.8) => { N(); x.strokeStyle = pc(a); x.lineWidth = u(w); x.lineCap = 'round'; };
+      const det = (a = 0.35, w = 1) => { N(); x.strokeStyle = `rgba(15,12,22,${a})`; x.lineWidth = u(w); x.lineCap = 'round'; x.lineJoin = 'round'; };
+      const hi = (a = 0.95, w = 0.7) => { N(); x.strokeStyle = pc(a); x.lineWidth = u(w); x.lineCap = 'round'; };
+      const grad = (x0, y0, x1, y1, stops) => {
+        const gr = x.createLinearGradient(x0, y0, x1, y1);
+        for (const [t, a] of stops) gr.addColorStop(t, pc(a));
+        return gr;
+      };
+      return { x, u, pc, G, N, bold, solid, fill, thin, det, hi, grad };
+    }
+
+    // ═══ 15 NEW CANDIDATES ═══
+    // Written in the exact pen idiom of src/components/icons.ts so approved
+    // ones port with zero translation.
+    const CANDIDATES = {
+
+      lock: (d, cx, cy) => {
+        const { x, u, bold, thin, det, fill, G, N, grad } = d;
+        // Vault door body — angular slab with gradient
+        x.fillStyle = grad(cx - u(13), cy - u(2), cx + u(13), cy + u(18), [[0, 0.45], [0.5, 0.15], [1, 0.4]]);
+        x.beginPath();
+        x.moveTo(cx - u(13), cy - u(2)); x.lineTo(cx + u(13), cy - u(2));
+        x.lineTo(cx + u(13), cy + u(14)); x.lineTo(cx + u(9), cy + u(18));
+        x.lineTo(cx - u(9), cy + u(18)); x.lineTo(cx - u(13), cy + u(14));
+        x.closePath(); x.fill();
+        bold(0.8, 1.8); x.stroke(); N();
+        // Shackle — angular bracket
+        bold(0.75, 2.2);
+        x.beginPath();
+        x.moveTo(cx - u(8), cy - u(2)); x.lineTo(cx - u(8), cy - u(12));
+        x.lineTo(cx - u(4), cy - u(16)); x.lineTo(cx + u(4), cy - u(16));
+        x.lineTo(cx + u(8), cy - u(12)); x.lineTo(cx + u(8), cy - u(2));
+        x.stroke(); N();
+        // Keyhole reticle — dark slot on the fill
+        det(0.55, 1.4);
+        x.beginPath(); x.moveTo(cx, cy + u(7)); x.lineTo(cx, cy + u(13)); x.stroke();
+        // Status dot with glow
+        G(5, 0.6); fill(0.9);
+        x.beginPath(); x.arc(cx, cy + u(5), u(2.2), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      unlock: (d, cx, cy) => {
+        const { x, u, bold, det, fill, G, N, grad } = d;
+        // Same vault body
+        x.fillStyle = grad(cx - u(13), cy - u(2), cx + u(13), cy + u(18), [[0, 0.45], [0.5, 0.15], [1, 0.4]]);
+        x.beginPath();
+        x.moveTo(cx - u(13), cy - u(2)); x.lineTo(cx + u(13), cy - u(2));
+        x.lineTo(cx + u(13), cy + u(14)); x.lineTo(cx + u(9), cy + u(18));
+        x.lineTo(cx - u(9), cy + u(18)); x.lineTo(cx - u(13), cy + u(14));
+        x.closePath(); x.fill();
+        bold(0.8, 1.8); x.stroke(); N();
+        // Shackle swung open to the right
+        bold(0.75, 2.2);
+        x.beginPath();
+        x.moveTo(cx + u(6), cy - u(2)); x.lineTo(cx + u(6), cy - u(11));
+        x.lineTo(cx + u(10), cy - u(15)); x.lineTo(cx + u(17), cy - u(15));
+        x.lineTo(cx + u(21), cy - u(11)); x.lineTo(cx + u(21), cy - u(6));
+        x.stroke(); N();
+        // Open slot
+        det(0.55, 1.4);
+        x.beginPath(); x.moveTo(cx, cy + u(7)); x.lineTo(cx, cy + u(13)); x.stroke();
+        // Released status dot
+        G(6, 0.7); fill(0.95);
+        x.beginPath(); x.arc(cx, cy + u(5), u(2.2), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      save: (d, cx, cy) => {
+        const { x, u, bold, thin, det, fill, G, N, grad } = d;
+        // Data core — hexagonal memory cell
+        const hex = (r) => {
+          x.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const a = (Math.PI / 3) * i - Math.PI / 2;
+            const px = cx + Math.cos(a) * u(r), py = cy + Math.sin(a) * u(r);
+            i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+          }
+          x.closePath();
+        };
+        x.fillStyle = grad(cx - u(14), cy - u(14), cx + u(14), cy + u(14), [[0, 0.4], [0.5, 0.12], [1, 0.35]]);
+        hex(16); x.fill();
+        bold(0.8, 1.8); hex(16); x.stroke(); N();
+        // Write-beam chevron entering from top
+        bold(0.7, 1.6);
+        x.beginPath(); x.moveTo(cx, cy - u(22)); x.lineTo(cx, cy - u(8)); x.stroke();
+        x.beginPath(); x.moveTo(cx - u(4), cy - u(12)); x.lineTo(cx, cy - u(8)); x.lineTo(cx + u(4), cy - u(12)); x.stroke();
+        N();
+        // Memory banks — dark detail bars
+        det(0.5, 1.2);
+        x.beginPath(); x.moveTo(cx - u(7), cy + u(3)); x.lineTo(cx + u(7), cy + u(3)); x.stroke();
+        x.beginPath(); x.moveTo(cx - u(7), cy + u(7)); x.lineTo(cx + u(7), cy + u(7)); x.stroke();
+        // Core dot
+        G(5, 0.6); fill(0.9);
+        x.beginPath(); x.arc(cx, cy - u(2), u(2.4), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      map: (d, cx, cy) => {
+        const { x, u, bold, thin, det, fill, G, N, grad } = d;
+        // Nav chart panel — angular clipped rect
+        x.fillStyle = grad(cx - u(18), cy - u(14), cx + u(18), cy + u(14), [[0, 0.35], [0.5, 0.1], [1, 0.3]]);
+        x.beginPath();
+        x.moveTo(cx - u(18), cy - u(10)); x.lineTo(cx - u(14), cy - u(14)); x.lineTo(cx + u(18), cy - u(14));
+        x.lineTo(cx + u(18), cy + u(10)); x.lineTo(cx + u(14), cy + u(14)); x.lineTo(cx - u(18), cy + u(14));
+        x.closePath(); x.fill();
+        bold(0.8, 1.6); x.stroke(); N();
+        // Grid detail
+        det(0.4, 0.9);
+        x.beginPath(); x.moveTo(cx - u(6), cy - u(14)); x.lineTo(cx - u(6), cy + u(14)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(6), cy - u(14)); x.lineTo(cx + u(6), cy + u(14)); x.stroke();
+        x.beginPath(); x.moveTo(cx - u(18), cy); x.lineTo(cx + u(18), cy); x.stroke();
+        // Route — dashed path with waypoints
+        thin(0.75, 1.2);
+        x.setLineDash([u(2.5), u(2)]);
+        x.beginPath();
+        x.moveTo(cx - u(13), cy + u(9)); x.lineTo(cx - u(4), cy + u(2)); x.lineTo(cx + u(5), cy + u(5)); x.lineTo(cx + u(12), cy - u(8));
+        x.stroke();
+        x.setLineDash([]);
+        // Waypoint nodes
+        fill(0.7);
+        x.beginPath(); x.arc(cx - u(13), cy + u(9), u(1.6), 0, Math.PI * 2); x.fill();
+        x.beginPath(); x.arc(cx - u(4), cy + u(2), u(1.6), 0, Math.PI * 2); x.fill();
+        x.beginPath(); x.arc(cx + u(5), cy + u(5), u(1.6), 0, Math.PI * 2); x.fill();
+        // Destination diamond — the highlight
+        G(6, 0.6); fill(0.95);
+        x.beginPath();
+        x.moveTo(cx + u(12), cy - u(11)); x.lineTo(cx + u(15), cy - u(8)); x.lineTo(cx + u(12), cy - u(5)); x.lineTo(cx + u(9), cy - u(8));
+        x.closePath(); x.fill(); N();
+      },
+
+      radar: (d, cx, cy) => {
+        const { x, u, bold, thin, fill, pc, G, N } = d;
+        // Scope ring
+        bold(0.8, 1.8);
+        x.beginPath(); x.arc(cx, cy, u(17), 0, Math.PI * 2); x.stroke(); N();
+        thin(0.3, 0.9);
+        x.beginPath(); x.arc(cx, cy, u(11), 0, Math.PI * 2); x.stroke();
+        x.beginPath(); x.arc(cx, cy, u(5.5), 0, Math.PI * 2); x.stroke();
+        // Sweep wedge — gradient filled sector
+        const sweep = x.createConicGradient(-Math.PI * 0.42, cx, cy);
+        sweep.addColorStop(0, pc(0.55));
+        sweep.addColorStop(0.16, pc(0));
+        sweep.addColorStop(1, pc(0));
+        x.fillStyle = sweep;
+        x.beginPath(); x.moveTo(cx, cy); x.arc(cx, cy, u(16.5), 0, Math.PI * 2); x.fill();
+        // Sweep leading edge
+        thin(0.8, 1.1);
+        x.beginPath(); x.moveTo(cx, cy);
+        x.lineTo(cx + Math.cos(-Math.PI * 0.42) * u(16.5), cy + Math.sin(-Math.PI * 0.42) * u(16.5));
+        x.stroke();
+        // Bearing ticks
+        thin(0.4, 1);
+        for (let i = 0; i < 8; i++) {
+          const a = (Math.PI / 4) * i;
+          x.beginPath();
+          x.moveTo(cx + Math.cos(a) * u(17), cy + Math.sin(a) * u(17));
+          x.lineTo(cx + Math.cos(a) * u(19.5), cy + Math.sin(a) * u(19.5));
+          x.stroke();
+        }
+        // Contact blip — the highlight
+        G(6, 0.7); fill(0.95);
+        x.beginPath(); x.arc(cx + u(7), cy - u(6), u(2), 0, Math.PI * 2); x.fill(); N();
+        // Center
+        fill(0.7); x.beginPath(); x.arc(cx, cy, u(1.4), 0, Math.PI * 2); x.fill();
+      },
+
+      volume: (d, cx, cy) => {
+        const { x, u, bold, thin, fill, G, N, grad } = d;
+        // Signal meter — five gradient bars rising
+        const bars = [[-16, 7], [-8, 12], [0, 17], [8, 13], [16, 20]];
+        for (const [bx, bh] of bars) {
+          x.fillStyle = grad(cx + u(bx), cy + u(10), cx + u(bx), cy + u(10 - bh), [[0, 0.25], [1, 0.8]]);
+          x.fillRect(cx + u(bx - 2.4), cy + u(10 - bh), u(4.8), u(bh));
+        }
+        // Baseline
+        bold(0.7, 1.6);
+        x.beginPath(); x.moveTo(cx - u(21), cy + u(12)); x.lineTo(cx + u(21), cy + u(12)); x.stroke(); N();
+        // Peak caps — bright ticks on each bar
+        d.hi(0.95, 1.3);
+        for (const [bx, bh] of bars) {
+          x.beginPath();
+          x.moveTo(cx + u(bx - 2.4), cy + u(10 - bh));
+          x.lineTo(cx + u(bx + 2.4), cy + u(10 - bh));
+          x.stroke();
+        }
+        // Peak dot on tallest bar
+        G(5, 0.6); fill(0.95);
+        x.beginPath(); x.arc(cx + u(16), cy + u(-11.5), u(1.8), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      mute: (d, cx, cy) => {
+        const { x, u, bold, fill, G, N, grad } = d;
+        // Faint dead bars
+        const bars = [[-16, 7], [-8, 12], [0, 17], [8, 13], [16, 20]];
+        for (const [bx, bh] of bars) {
+          x.fillStyle = grad(cx + u(bx), cy + u(10), cx + u(bx), cy + u(10 - bh), [[0, 0.08], [1, 0.22]]);
+          x.fillRect(cx + u(bx - 2.4), cy + u(10 - bh), u(4.8), u(bh));
+        }
+        bold(0.4, 1.6);
+        x.beginPath(); x.moveTo(cx - u(21), cy + u(12)); x.lineTo(cx + u(21), cy + u(12)); x.stroke(); N();
+        // Kill slash — prohibition stroke, top-left to bottom-right
+        bold(0.9, 2.4);
+        x.beginPath(); x.moveTo(cx - u(17), cy - u(15)); x.lineTo(cx + u(17), cy + u(13)); x.stroke(); N();
+        // Slash terminal dot
+        G(5, 0.6); fill(0.9);
+        x.beginPath(); x.arc(cx + u(17), cy + u(13), u(1.8), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      timer: (d, cx, cy) => {
+        const { x, u, bold, thin, fill, pc, G, N } = d;
+        // Chronometer ring
+        bold(0.8, 1.8);
+        x.beginPath(); x.arc(cx, cy + u(1), u(15), 0, Math.PI * 2); x.stroke(); N();
+        // Winding crown
+        bold(0.7, 1.6);
+        x.beginPath(); x.moveTo(cx - u(4), cy - u(17)); x.lineTo(cx + u(4), cy - u(17)); x.stroke();
+        x.beginPath(); x.moveTo(cx, cy - u(17)); x.lineTo(cx, cy - u(14)); x.stroke(); N();
+        // Elapsed arc — thick bright sector
+        x.strokeStyle = pc(0.85); x.lineWidth = u(3); x.lineCap = 'butt';
+        x.shadowColor = pc(0.4); x.shadowBlur = u(5);
+        x.beginPath(); x.arc(cx, cy + u(1), u(11.5), -Math.PI / 2, Math.PI * 0.25); x.stroke(); N();
+        // Remaining arc — faint
+        thin(0.2, 3);
+        x.beginPath(); x.arc(cx, cy + u(1), u(11.5), Math.PI * 0.25, Math.PI * 1.5); x.stroke();
+        // Sector tick marks
+        thin(0.45, 1);
+        for (let i = 0; i < 12; i++) {
+          const a = (Math.PI / 6) * i;
+          x.beginPath();
+          x.moveTo(cx + Math.cos(a) * u(13.2), cy + u(1) + Math.sin(a) * u(13.2));
+          x.lineTo(cx + Math.cos(a) * u(15), cy + u(1) + Math.sin(a) * u(15));
+          x.stroke();
+        }
+        // Needle to elapsed edge + center
+        thin(0.9, 1.4);
+        x.beginPath(); x.moveTo(cx, cy + u(1));
+        x.lineTo(cx + Math.cos(Math.PI * 0.25) * u(9), cy + u(1) + Math.sin(Math.PI * 0.25) * u(9));
+        x.stroke();
+        G(5, 0.6); fill(0.95);
+        x.beginPath(); x.arc(cx, cy + u(1), u(1.8), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      fuel: (d, cx, cy) => {
+        const { x, u, bold, thin, det, fill, G, N, grad } = d;
+        // Fuel cell canister
+        x.fillStyle = grad(cx - u(10), cy - u(12), cx + u(10), cy + u(18), [[0, 0.4], [0.5, 0.14], [1, 0.38]]);
+        x.beginPath();
+        x.moveTo(cx - u(10), cy - u(8)); x.lineTo(cx - u(6), cy - u(12)); x.lineTo(cx + u(6), cy - u(12));
+        x.lineTo(cx + u(10), cy - u(8)); x.lineTo(cx + u(10), cy + u(14)); x.lineTo(cx + u(6), cy + u(18));
+        x.lineTo(cx - u(6), cy + u(18)); x.lineTo(cx - u(10), cy + u(14));
+        x.closePath(); x.fill();
+        bold(0.8, 1.8); x.stroke(); N();
+        // Nozzle port
+        bold(0.7, 1.5);
+        x.beginPath(); x.moveTo(cx + u(10), cy - u(4)); x.lineTo(cx + u(15), cy - u(4)); x.lineTo(cx + u(15), cy + u(2)); x.stroke(); N();
+        // Level bars — three lit, one dark
+        const lv = [[10, 0.85], [4.5, 0.7], [-1, 0.5], [-6.5, 0.12]];
+        for (const [ly, a] of lv) {
+          fill(a);
+          x.fillRect(cx - u(6), cy + u(ly), u(12), u(3.2));
+        }
+        // Dark separators
+        det(0.5, 1);
+        for (const [ly] of lv) {
+          x.beginPath(); x.moveTo(cx - u(6), cy + u(ly)); x.lineTo(cx + u(6), cy + u(ly)); x.stroke();
+        }
+        // Level indicator dot at current level
+        G(5, 0.6); fill(0.95);
+        x.beginPath(); x.arc(cx - u(9.8), cy + u(0.5), u(1.6), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      repair: (d, cx, cy) => {
+        const { x, u, bold, det, fill, G, N, grad } = d;
+        const nx = cx - u(5), ny = cy + u(8);
+        // Hex nut — the workpiece, gradient filled
+        x.fillStyle = grad(nx - u(9), ny - u(9), nx + u(9), ny + u(9), [[0, 0.45], [0.5, 0.15], [1, 0.4]]);
+        x.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const a = (Math.PI / 3) * i + Math.PI / 6;
+          const px = nx + Math.cos(a) * u(9), py = ny + Math.sin(a) * u(9);
+          i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+        }
+        x.closePath(); x.fill();
+        bold(0.8, 1.7); x.stroke(); N();
+        // Socket bore — dark detail
+        det(0.55, 1.3);
+        x.beginPath(); x.arc(nx, ny, u(3.6), 0, Math.PI * 2); x.stroke();
+        // Wrench jaw — open C gripping the nut from the upper-right,
+        // wide gap + grip prongs so it reads "open-end wrench", not a ring
+        bold(0.85, 2.3);
+        x.beginPath(); x.arc(nx, ny, u(13), -Math.PI * 0.62, Math.PI * 0.12); x.stroke(); N();
+        // Grip prongs turning in toward the nut flats
+        bold(0.8, 2.1);
+        x.beginPath();
+        const a1 = -Math.PI * 0.62;
+        x.moveTo(nx + Math.cos(a1) * u(13), ny + Math.sin(a1) * u(13));
+        x.lineTo(nx + Math.cos(a1 + 0.35) * u(8.5), ny + Math.sin(a1 + 0.35) * u(8.5));
+        x.stroke();
+        x.beginPath();
+        const a2 = Math.PI * 0.12;
+        x.moveTo(nx + Math.cos(a2) * u(13), ny + Math.sin(a2) * u(13));
+        x.lineTo(nx + Math.cos(a2 - 0.35) * u(8.5), ny + Math.sin(a2 - 0.35) * u(8.5));
+        x.stroke(); N();
+        // Straight shaft up-right with a blunt T-cap handle end
+        bold(0.85, 2.4);
+        x.beginPath();
+        x.moveTo(nx + Math.cos(-Math.PI / 4) * u(13), ny + Math.sin(-Math.PI / 4) * u(13));
+        x.lineTo(cx + u(15), cy - u(12));
+        x.stroke(); N();
+        bold(0.75, 2.2);
+        x.beginPath();
+        x.moveTo(cx + u(12.2), cy - u(14.8)); x.lineTo(cx + u(17.8), cy - u(9.2));
+        x.stroke(); N();
+        // Torque spark at the grip point
+        G(6, 0.7); fill(0.95);
+        x.beginPath();
+        x.arc(nx + Math.cos(-Math.PI / 4) * u(13), ny + Math.sin(-Math.PI / 4) * u(13), u(1.9), 0, Math.PI * 2);
+        x.fill(); N();
+      },
+
+      cargo: (d, cx, cy) => {
+        const { x, u, bold, thin, det, fill, G, N, grad } = d;
+        // Supply container — angular crate
+        x.fillStyle = grad(cx - u(16), cy - u(12), cx + u(16), cy + u(14), [[0, 0.42], [0.5, 0.14], [1, 0.38]]);
+        x.beginPath();
+        x.moveTo(cx - u(16), cy - u(8)); x.lineTo(cx - u(12), cy - u(12)); x.lineTo(cx + u(12), cy - u(12));
+        x.lineTo(cx + u(16), cy - u(8)); x.lineTo(cx + u(16), cy + u(14)); x.lineTo(cx - u(16), cy + u(14));
+        x.closePath(); x.fill();
+        bold(0.8, 1.8); x.stroke(); N();
+        // Lid seam + panel seams
+        det(0.5, 1.2);
+        x.beginPath(); x.moveTo(cx - u(16), cy - u(4)); x.lineTo(cx + u(16), cy - u(4)); x.stroke();
+        det(0.4, 1);
+        x.beginPath(); x.moveTo(cx - u(5), cy - u(4)); x.lineTo(cx - u(5), cy + u(14)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(5), cy - u(4)); x.lineTo(cx + u(5), cy + u(14)); x.stroke();
+        // Corner braces
+        thin(0.7, 1.4);
+        x.beginPath(); x.moveTo(cx - u(16), cy + u(9)); x.lineTo(cx - u(11), cy + u(14)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(16), cy + u(9)); x.lineTo(cx + u(11), cy + u(14)); x.stroke();
+        // ID beacon — highlight
+        G(5, 0.6); fill(0.95);
+        x.beginPath(); x.arc(cx, cy + u(5), u(2), 0, Math.PI * 2); x.fill(); N();
+        thin(0.5, 0.8);
+        x.beginPath(); x.arc(cx, cy + u(5), u(4), 0, Math.PI * 2); x.stroke();
+      },
+
+      comms: (d, cx, cy) => {
+        const { x, u, bold, thin, fill, G, N } = d;
+        // Antenna mast
+        bold(0.85, 2);
+        x.beginPath(); x.moveTo(cx, cy + u(18)); x.lineTo(cx, cy - u(2)); x.stroke(); N();
+        // Base platform
+        bold(0.7, 1.8);
+        x.beginPath(); x.moveTo(cx - u(9), cy + u(18)); x.lineTo(cx + u(9), cy + u(18)); x.stroke(); N();
+        // Support struts
+        thin(0.5, 1.2);
+        x.beginPath(); x.moveTo(cx - u(6), cy + u(18)); x.lineTo(cx, cy + u(8)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(6), cy + u(18)); x.lineTo(cx, cy + u(8)); x.stroke();
+        // Broadcast arcs — expanding signal
+        thin(0.75, 1.6);
+        x.beginPath(); x.arc(cx, cy - u(6), u(5), -Math.PI * 0.78, -Math.PI * 0.22); x.stroke();
+        thin(0.5, 1.4);
+        x.beginPath(); x.arc(cx, cy - u(6), u(10), -Math.PI * 0.75, -Math.PI * 0.25); x.stroke();
+        thin(0.3, 1.2);
+        x.beginPath(); x.arc(cx, cy - u(6), u(15), -Math.PI * 0.72, -Math.PI * 0.28); x.stroke();
+        // Beacon tip — highlight
+        G(7, 0.7); fill(0.95);
+        x.beginPath(); x.arc(cx, cy - u(5), u(2.6), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      scan: (d, cx, cy) => {
+        const { x, u, bold, thin, det, fill, pc, G, N, grad } = d;
+        // Sensor aperture — hexagonal iris
+        const hex = (r, rot = 0) => {
+          x.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const a = (Math.PI / 3) * i + rot;
+            const px = cx + Math.cos(a) * u(r), py = cy + Math.sin(a) * u(r);
+            i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+          }
+          x.closePath();
+        };
+        x.fillStyle = grad(cx - u(17), cy - u(17), cx + u(17), cy + u(17), [[0, 0.35], [0.5, 0.1], [1, 0.3]]);
+        hex(18, Math.PI / 6); x.fill();
+        bold(0.8, 1.8); hex(18, Math.PI / 6); x.stroke(); N();
+        // Iris blades — dark radial cuts
+        det(0.5, 1.3);
+        for (let i = 0; i < 6; i++) {
+          const a = (Math.PI / 3) * i;
+          x.beginPath();
+          x.moveTo(cx + Math.cos(a) * u(6), cy + Math.sin(a) * u(6));
+          x.lineTo(cx + Math.cos(a + 0.5) * u(15), cy + Math.sin(a + 0.5) * u(15));
+          x.stroke();
+        }
+        // Sensor eye
+        thin(0.6, 1.2);
+        x.beginPath(); x.arc(cx, cy, u(6), 0, Math.PI * 2); x.stroke();
+        G(6, 0.65); fill(0.95);
+        x.beginPath(); x.arc(cx, cy, u(2.6), 0, Math.PI * 2); x.fill(); N();
+        // Scan line traversing — the active read
+        x.strokeStyle = pc(0.8); x.lineWidth = u(1);
+        x.shadowColor = pc(0.5); x.shadowBlur = u(4);
+        x.beginPath(); x.moveTo(cx - u(15), cy - u(4)); x.lineTo(cx + u(15), cy - u(4)); x.stroke(); N();
+      },
+
+      pilot: (d, cx, cy) => {
+        const { x, u, bold, thin, det, fill, G, N, grad } = d;
+        // Flight helmet — domed top, angular chin guard
+        x.fillStyle = grad(cx - u(13), cy - u(17), cx + u(13), cy + u(14), [[0, 0.45], [0.5, 0.15], [1, 0.4]]);
+        x.beginPath();
+        x.moveTo(cx - u(12), cy + u(6));
+        x.lineTo(cx - u(12), cy - u(6));
+        x.quadraticCurveTo(cx - u(12), cy - u(17), cx, cy - u(17));
+        x.quadraticCurveTo(cx + u(12), cy - u(17), cx + u(12), cy - u(6));
+        x.lineTo(cx + u(12), cy + u(6));
+        x.lineTo(cx + u(7), cy + u(13));
+        x.lineTo(cx - u(7), cy + u(13));
+        x.closePath(); x.fill();
+        bold(0.8, 1.8); x.stroke(); N();
+        // Crest ridge on the dome
+        thin(0.45, 1);
+        x.beginPath(); x.moveTo(cx, cy - u(17)); x.lineTo(cx, cy - u(9)); x.stroke();
+        // Visor — large dark wrap-around band, high on the face
+        const visor = () => {
+          x.beginPath();
+          x.moveTo(cx - u(9.5), cy - u(7)); x.lineTo(cx + u(9.5), cy - u(7));
+          x.lineTo(cx + u(7.5), cy + u(1)); x.lineTo(cx - u(7.5), cy + u(1));
+          x.closePath();
+        };
+        x.fillStyle = 'rgba(8,7,14,0.85)';
+        visor(); x.fill();
+        det(0.6, 1.1); visor(); x.stroke();
+        // HUD glint inside the visor — the highlight
+        d.hi(0.95, 1.1);
+        x.beginPath(); x.moveTo(cx - u(7), cy - u(4.6)); x.lineTo(cx + u(0.5), cy - u(4.6)); x.stroke();
+        // Breather vents on the chin guard
+        det(0.5, 1.1);
+        x.beginPath(); x.moveTo(cx - u(3.5), cy + u(6)); x.lineTo(cx + u(3.5), cy + u(6)); x.stroke();
+        x.beginPath(); x.moveTo(cx - u(2.5), cy + u(9)); x.lineTo(cx + u(2.5), cy + u(9)); x.stroke();
+        // Comm module dot on the side
+        G(5, 0.6); fill(0.9);
+        x.beginPath(); x.arc(cx + u(10.5), cy + u(3), u(1.8), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      link: (d, cx, cy) => {
+        const { x, u, bold, thin, fill, G, N, grad } = d;
+        // Two hex nodes joined by a data bus
+        const hex = (hx, hy, r) => {
+          x.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const a = (Math.PI / 3) * i;
+            const px = hx + Math.cos(a) * u(r), py = hy + Math.sin(a) * u(r);
+            i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+          }
+          x.closePath();
+        };
+        const n1x = cx - u(11), n1y = cy + u(7);
+        const n2x = cx + u(11), n2y = cy - u(7);
+        // Bus — double line
+        thin(0.6, 1.6);
+        x.beginPath(); x.moveTo(n1x + u(3), n1y - u(2)); x.lineTo(n2x - u(3), n2y + u(2)); x.stroke();
+        thin(0.3, 1);
+        x.beginPath(); x.moveTo(n1x + u(5), n1y + u(1.5)); x.lineTo(n2x - u(1), n2y + u(5.5)); x.stroke();
+        // Nodes with gradient fills
+        for (const [hx, hy] of [[n1x, n1y], [n2x, n2y]]) {
+          x.fillStyle = grad(hx - u(7), hy - u(7), hx + u(7), hy + u(7), [[0, 0.45], [0.5, 0.15], [1, 0.4]]);
+          hex(hx, hy, 7.5); x.fill();
+          bold(0.8, 1.6); hex(hx, hy, 7.5); x.stroke(); N();
+        }
+        // Node cores
+        fill(0.7);
+        x.beginPath(); x.arc(n1x, n1y, u(2), 0, Math.PI * 2); x.fill();
+        x.beginPath(); x.arc(n2x, n2y, u(2), 0, Math.PI * 2); x.fill();
+        // Data pulse on the bus — highlight
+        G(6, 0.7); fill(0.95);
+        x.beginPath(); x.arc(cx, cy, u(2.2), 0, Math.PI * 2); x.fill(); N();
+      },
+    };
+
+    // ═══ State (persisted) ═══
+    const store = JSON.parse(localStorage.getItem('iconReview') ?? '{"rework":[],"add":[]}');
+    const save = () => localStorage.setItem('iconReview', JSON.stringify(store));
+
+    // ═══ Rendering ═══
+    const approvedGrid = document.getElementById('approvedGrid');
+    const candidateGrid = document.getElementById('candidateGrid');
+    const allCards = [];
+
+    function frameBg(ctx, SZ, color) {
+      // Dark framed panel (matches the icon-library review canvas)
+      const m = SZ * 0.03, s = SZ - m * 2, cs = SZ * 0.08;
+      ctx.fillStyle = 'rgba(12,11,20,0.95)';
+      ctx.beginPath();
+      ctx.moveTo(m + cs, m); ctx.lineTo(m + s - cs, m); ctx.lineTo(m + s, m + cs);
+      ctx.lineTo(m + s, m + s - cs); ctx.lineTo(m + s - cs, m + s); ctx.lineTo(m + cs, m + s);
+      ctx.lineTo(m, m + s - cs); ctx.lineTo(m, m + cs); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = `rgba(${color[0]},${color[1]},${color[2]},0.25)`;
+      ctx.lineWidth = 1; ctx.stroke();
+    }
+
+    function makeCard(name, drawFn, mode) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const main = document.createElement('canvas');
+      main.width = 168; main.height = 168; main.className = 'main';
+      const small = document.createElement('canvas');
+      small.width = 40; small.height = 40; small.className = 'small';
+      const label = document.createElement('div');
+      label.className = 'name'; label.textContent = name;
+      const state = document.createElement('div');
+      state.className = 'state';
+      card.append(small, main, label, state);
+
+      const listKey = mode === 'approved' ? 'rework' : 'add';
+      const cls = mode === 'approved' ? 'flagged' : 'selected';
+      if (store[listKey].includes(name)) card.classList.add(cls);
+
+      card.addEventListener('click', () => {
+        const i = store[listKey].indexOf(name);
+        if (i >= 0) store[listKey].splice(i, 1); else store[listKey].push(name);
+        card.classList.toggle(cls);
+        save(); updateCounts();
+      });
+
+      allCards.push({ name, drawFn, main, small });
+      return card;
+    }
+
+    function renderCard({ drawFn, main, small }) {
+      for (const cv of [main, small]) {
+        const ctx = cv.getContext('2d');
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        frameBg(ctx, cv.width, COLOR);
+        drawFn(ctx, cv.width);
+      }
+    }
+
+    function renderAll() {
+      for (const c of allCards) renderCard(c);
+    }
+
+    // Approved: live from engine dist
+    const approvedNames = getIconNames().filter(n => !['gear', 'lightning', 'trophy'].includes(n));
+    for (const name of approvedNames) {
+      approvedGrid.appendChild(makeCard(name, (ctx, SZ) => {
+        drawIcon(ctx, name, SZ / 2, SZ / 2, SZ * 0.62, COLOR);
+      }, 'approved'));
+    }
+
+    // Candidates: inline pen implementations
+    for (const [name, fn] of Object.entries(CANDIDATES)) {
+      candidateGrid.appendChild(makeCard(name, (ctx, SZ) => {
+        const pen = makePen(ctx, SZ * 0.62, COLOR);
+        fn(pen, SZ / 2, SZ / 2);
+      }, 'candidate'));
+    }
+
+    renderAll();
+
+    // ═══ Controls ═══
+    document.querySelectorAll('.pal-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.pal-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        COLOR = PALETTES[btn.dataset.pal];
+        renderAll();
+      });
+    });
+
+    const updateCounts = () => {
+      document.getElementById('reworkCount').textContent = store.rework.length;
+      document.getElementById('addCount').textContent = store.add.length;
+    };
+    updateCounts();
+
+    document.getElementById('copyReport').addEventListener('click', async () => {
+      const report = JSON.stringify({
+        flaggedForRework: store.rework,
+        addToLibrary: store.add,
+      }, null, 2);
+      await navigator.clipboard.writeText(report);
+      const msg = document.getElementById('copiedMsg');
+      msg.classList.add('show');
+      setTimeout(() => msg.classList.remove('show'), 1600);
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      store.rework = []; store.add = [];
+      save(); updateCounts();
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('flagged', 'selected'));
+    });
+  </script>
+</body>
+</html>
