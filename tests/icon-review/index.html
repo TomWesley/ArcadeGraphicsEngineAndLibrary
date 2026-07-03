@@ -203,9 +203,9 @@
         // Engagement seam — dark detail where bolt meets receiver
         det(0.55, 1.2);
         x.beginPath(); x.moveTo(cx + u(8), cy - u(2.6)); x.lineTo(cx + u(8), cy + u(2.6)); x.stroke();
-        // SECURED status dot — the highlight
+        // SECURED lamp — status light set into the receiver plate
         G(6, 0.65); fill(0.95);
-        x.beginPath(); x.arc(cx + u(12), cy + u(11.5), u(1.9), 0, Math.PI * 2); x.fill(); N();
+        x.beginPath(); x.arc(cx + u(12), cy + u(5.5), u(1.7), 0, Math.PI * 2); x.fill(); N();
       },
 
       unlock: (d, cx, cy) => {
@@ -238,9 +238,9 @@
         x.beginPath(); x.moveTo(cx + u(2.5), cy - u(3)); x.lineTo(cx + u(4.5), cy - u(5)); x.stroke();
         x.beginPath(); x.moveTo(cx + u(3.5), cy); x.lineTo(cx + u(6), cy); x.stroke();
         x.beginPath(); x.moveTo(cx + u(2.5), cy + u(3)); x.lineTo(cx + u(4.5), cy + u(5)); x.stroke();
-        // OPEN status dot — the highlight
+        // OPEN lamp — status light set into the receiver plate
         G(6, 0.7); fill(0.95);
-        x.beginPath(); x.arc(cx + u(12), cy + u(11.5), u(1.9), 0, Math.PI * 2); x.fill(); N();
+        x.beginPath(); x.arc(cx + u(12), cy + u(5.5), u(1.7), 0, Math.PI * 2); x.fill(); N();
       },
 
       save: (d, cx, cy) => {
@@ -272,39 +272,6 @@
         x.beginPath(); x.arc(cx + u(4), cy - u(4), u(2), 0, Math.PI * 2); x.fill(); N();
       },
 
-      map: (d, cx, cy) => {
-        const { x, u, bold, thin, det, fill, G, N, grad } = d;
-        // Waypoint pin over a perspective grid floor
-        // Grid floor
-        thin(0.4, 1);
-        x.beginPath(); x.moveTo(cx - u(17), cy + u(7)); x.lineTo(cx + u(17), cy + u(7)); x.stroke();
-        thin(0.3, 1);
-        x.beginPath(); x.moveTo(cx - u(19), cy + u(12)); x.lineTo(cx + u(19), cy + u(12)); x.stroke();
-        thin(0.22, 1);
-        x.beginPath(); x.moveTo(cx - u(21), cy + u(17)); x.lineTo(cx + u(21), cy + u(17)); x.stroke();
-        // Converging verticals
-        thin(0.3, 1);
-        for (const [x1, x2] of [[-14, -19], [-5, -6.5], [4, 5.5], [13, 18]]) {
-          x.beginPath(); x.moveTo(cx + u(x1), cy + u(7)); x.lineTo(cx + u(x2), cy + u(17)); x.stroke();
-        }
-        // Landing ring around the pin base
-        thin(0.6, 1.2);
-        x.beginPath(); x.ellipse(cx, cy + u(7), u(6.5), u(2.2), 0, 0, Math.PI * 2); x.stroke();
-        // Pin — diamond head + stem
-        x.fillStyle = grad(cx - u(6.5), cy - u(15), cx + u(6.5), cy - u(2), [[0, 0.85], [1, 0.4]]);
-        x.beginPath();
-        x.moveTo(cx, cy - u(16)); x.lineTo(cx + u(6.5), cy - u(9)); x.lineTo(cx, cy - u(2)); x.lineTo(cx - u(6.5), cy - u(9));
-        x.closePath(); x.fill();
-        bold(0.85, 1.7); x.stroke(); N();
-        bold(0.8, 1.8);
-        x.beginPath(); x.moveTo(cx, cy - u(2)); x.lineTo(cx, cy + u(7)); x.stroke(); N();
-        // Pin core — dark detail
-        det(0.55, 1.3);
-        x.beginPath(); x.arc(cx, cy - u(9), u(2.2), 0, Math.PI * 2); x.stroke();
-        // Touchdown glow — the highlight
-        G(6, 0.7); fill(0.95);
-        x.beginPath(); x.arc(cx, cy + u(7), u(1.9), 0, Math.PI * 2); x.fill(); N();
-      },
 
       radar: (d, cx, cy) => {
         const { x, u, bold, thin, det, fill, G, N, grad } = d;
@@ -353,16 +320,14 @@
         // Driver seam — dark detail
         det(0.55, 1.2);
         x.beginPath(); x.moveTo(cx - u(9), cy - u(5)); x.lineTo(cx - u(9), cy + u(5)); x.stroke();
-        // Wavefronts
-        thin(0.75, 1.7);
-        x.beginPath(); x.arc(cx - u(1), cy, u(6.5), -Math.PI * 0.32, Math.PI * 0.32); x.stroke();
+        // Wavefronts — nearest one is the bright accent
+        d.hi(0.9, 1.8);
+        x.shadowColor = d.pc(0.4); x.shadowBlur = u(4);
+        x.beginPath(); x.arc(cx - u(1), cy, u(6.5), -Math.PI * 0.32, Math.PI * 0.32); x.stroke(); N();
         thin(0.5, 1.5);
         x.beginPath(); x.arc(cx - u(1), cy, u(12), -Math.PI * 0.3, Math.PI * 0.3); x.stroke();
         thin(0.3, 1.3);
         x.beginPath(); x.arc(cx - u(1), cy, u(17.5), -Math.PI * 0.28, Math.PI * 0.28); x.stroke();
-        // Throat glow — the highlight
-        G(5, 0.6); fill(0.95);
-        x.beginPath(); x.arc(cx - u(11.5), cy, u(1.8), 0, Math.PI * 2); x.fill(); N();
       },
 
       mute: (d, cx, cy) => {
@@ -380,12 +345,9 @@
         // One dead wavefront — barely there
         d.thin(0.18, 1.4);
         x.beginPath(); x.arc(cx - u(1), cy, u(8), -Math.PI * 0.3, Math.PI * 0.3); x.stroke();
-        // Kill slash — prohibition stroke
+        // Kill slash — prohibition stroke, the statement itself
         bold(0.95, 2.5);
         x.beginPath(); x.moveTo(cx - u(14), cy - u(14)); x.lineTo(cx + u(15), cy + u(13)); x.stroke(); N();
-        // Slash terminal — the highlight
-        G(5, 0.6); fill(0.9);
-        x.beginPath(); x.arc(cx + u(15), cy + u(13), u(1.9), 0, Math.PI * 2); x.fill(); N();
       },
 
       fuel: (d, cx, cy) => {
@@ -482,9 +444,10 @@
         x.beginPath(); x.moveTo(cx - u(13), cy - u(12)); x.lineTo(cx - u(13), cy - u(9)); x.stroke();
         x.beginPath(); x.moveTo(cx + u(13), cy - u(12)); x.lineTo(cx + u(13), cy - u(9)); x.stroke();
         x.beginPath(); x.moveTo(cx - u(13), cy - u(12)); x.lineTo(cx + u(13), cy - u(12)); x.stroke();
-        // Manifest beacon — the highlight
-        G(6, 0.65); fill(0.95);
-        x.beginPath(); x.arc(cx + u(14), cy - u(2.5), u(1.8), 0, Math.PI * 2); x.fill(); N();
+        // ID stripe — bright registry mark on the top rail
+        d.hi(0.95, 1.6);
+        x.shadowColor = d.pc(0.4); x.shadowBlur = u(4);
+        x.beginPath(); x.moveTo(cx + u(7.5), cy - u(7.5)); x.lineTo(cx + u(15), cy - u(7.5)); x.stroke(); N();
       },
 
       scan: (d, cx, cy) => {
@@ -511,11 +474,6 @@
         x.strokeStyle = pc(0.9); x.lineWidth = u(1.4);
         x.shadowColor = pc(0.5); x.shadowBlur = u(5);
         x.beginPath(); x.moveTo(bx2, cy - u(12)); x.lineTo(bx2, cy + u(16)); x.stroke(); N();
-        // Beam intersection markers — where the beam crosses the subject
-        G(6, 0.7); fill(0.95);
-        x.beginPath(); x.arc(bx2, cy + u(2) - u(9.7), u(1.8), 0, Math.PI * 2); x.fill(); N();
-        fill(0.7);
-        x.beginPath(); x.arc(bx2, cy + u(2) + u(9.7), u(1.4), 0, Math.PI * 2); x.fill();
         // Readout tick — dark detail at the equator crossing
         det(0.6, 1.2);
         x.beginPath(); x.moveTo(bx2 - u(2.5), cy + u(2)); x.lineTo(bx2 + u(2.5), cy + u(2)); x.stroke();
@@ -560,9 +518,12 @@
         // Collar seam — dark detail
         det(0.5, 1.1);
         x.beginPath(); x.moveTo(cx - u(4), cy + u(6)); x.lineTo(cx + u(4), cy + u(6)); x.stroke();
-        // Rank stud on the shoulder — the highlight
-        G(5, 0.65); fill(0.95);
-        x.beginPath(); x.arc(cx + u(7.5), cy + u(7), u(1.7), 0, Math.PI * 2); x.fill(); N();
+        // Rank chevron on the shoulder — the highlight
+        d.hi(0.95, 1.5);
+        x.shadowColor = d.pc(0.4); x.shadowBlur = u(4);
+        x.beginPath();
+        x.moveTo(cx + u(5.5), cy + u(9)); x.lineTo(cx + u(7.5), cy + u(7)); x.lineTo(cx + u(9.5), cy + u(9));
+        x.stroke(); N();
       },
 
       link: (d, cx, cy) => {
@@ -593,163 +554,131 @@
         bold(0.55, 2.6);
         loop(ax, ay);
         x.restore(); N();
-        // Junction pulse — the highlight, at the upper-right crossing
-        G(6, 0.7); fill(0.95);
-        x.beginPath(); x.arc(cx + u(3.2), cy + u(3.2), u(1.8), 0, Math.PI * 2); x.fill(); N();
       },
     };
 
-    // ═══ REWORK PROPOSALS — ROUND 3 ═══
-    // crown + leaderboard approved in round 2 and ported. These four have
-    // been rejected twice — again: completely different concepts.
+    // ═══ REWORK PROPOSALS — ROUND 4 ═══
+    // diamond approved in round 3 and ported. coin / error / info have been
+    // rejected three times — again completely different concepts, and per
+    // feedback: no decorative dots anywhere.
     const REWORKS = {
 
       coin: (d, cx, cy) => {
-        const { x, u, bold, det, fill, hi, G, N, grad } = d;
-        // Ingot stack — bullion pyramid
-        const ingot = (ix, iy, bright) => {
-          x.fillStyle = grad(cx + u(ix - 7), cy + u(iy - 4), cx + u(ix + 7), cy + u(iy + 4),
-            bright ? [[0, 0.75], [1, 0.4]] : [[0, 0.45], [1, 0.2]]);
-          x.beginPath();
-          x.moveTo(cx + u(ix - 7.5), cy + u(iy + 4));
-          x.lineTo(cx + u(ix - 5), cy + u(iy - 4));
-          x.lineTo(cx + u(ix + 5), cy + u(iy - 4));
-          x.lineTo(cx + u(ix + 7.5), cy + u(iy + 4));
-          x.closePath(); x.fill();
-          bold(bright ? 0.9 : 0.65, 1.6); x.stroke(); N();
-          // Top-face seam
-          det(0.5, 1);
-          x.beginPath();
-          x.moveTo(cx + u(ix - 5), cy + u(iy - 4)); x.lineTo(cx + u(ix - 3.5), cy + u(iy - 1.5));
-          x.lineTo(cx + u(ix + 6), cy + u(iy - 1.5));
-          x.stroke();
-        };
-        ingot(-8, 9, false);
-        ingot(8, 9, false);
-        ingot(0, -1.5, true);
-        // Ground line
-        d.thin(0.45, 1.3);
-        x.beginPath(); x.moveTo(cx - u(19), cy + u(13.5)); x.lineTo(cx + u(19), cy + u(13.5)); x.stroke();
-        // Top-ingot edge glint — the highlight
+        const { x, u, bold, det, hi, N, grad } = d;
+        // Currency glyph — an angular credit sign in its own right
+        // Hexagonal open-C (gradient-filled band built from two hex arcs)
+        x.fillStyle = grad(cx - u(14), cy - u(14), cx + u(10), cy + u(14), [[0, 0.7], [0.5, 0.35], [1, 0.6]]);
+        x.beginPath();
+        // Outer hex arc (opening to the right)
+        x.moveTo(cx + u(11), cy - u(9.5));
+        x.lineTo(cx + u(3), cy - u(14)); x.lineTo(cx - u(8), cy - u(14));
+        x.lineTo(cx - u(14), cy - u(4)); x.lineTo(cx - u(14), cy + u(4));
+        x.lineTo(cx - u(8), cy + u(14)); x.lineTo(cx + u(3), cy + u(14));
+        x.lineTo(cx + u(11), cy + u(9.5));
+        // Return along the inner edge
+        x.lineTo(cx + u(7.5), cy + u(5.5));
+        x.lineTo(cx + u(1.5), cy + u(8.5)); x.lineTo(cx - u(5), cy + u(8.5));
+        x.lineTo(cx - u(8.5), cy + u(2.5)); x.lineTo(cx - u(8.5), cy - u(2.5));
+        x.lineTo(cx - u(5), cy - u(8.5)); x.lineTo(cx + u(1.5), cy - u(8.5));
+        x.lineTo(cx + u(7.5), cy - u(5.5));
+        x.closePath(); x.fill();
+        bold(0.85, 1.5); x.stroke(); N();
+        // Double denomination bars cutting through the glyph
+        bold(0.8, 2);
+        x.beginPath(); x.moveTo(cx - u(2), cy - u(18)); x.lineTo(cx - u(6.5), cy + u(18)); x.stroke(); N();
+        bold(0.55, 1.7);
+        x.beginPath(); x.moveTo(cx + u(4), cy - u(18)); x.lineTo(cx - u(0.5), cy + u(18)); x.stroke(); N();
+        // Mint facet — dark detail on the band
+        det(0.5, 1.1);
+        x.beginPath(); x.moveTo(cx - u(11.2), cy - u(4)); x.lineTo(cx - u(11.2), cy + u(4)); x.stroke();
+        // Edge glint — bright top facet
         hi(0.95, 1.2);
-        x.beginPath(); x.moveTo(cx - u(4), cy - u(5.5)); x.lineTo(cx + u(2.5), cy - u(5.5)); x.stroke();
-        G(5, 0.6); fill(0.9);
-        x.beginPath(); x.arc(cx - u(5), cy - u(5.5), u(1.5), 0, Math.PI * 2); x.fill(); N();
+        x.beginPath(); x.moveTo(cx - u(7), cy - u(11.2)); x.lineTo(cx + u(1), cy - u(11.2)); x.stroke();
       },
 
       error: (d, cx, cy) => {
-        const { x, u, bold, thin, det, fill, hi, G, N } = d;
-        // Broken circuit — trace interrupted mid-run, spark at the break
-        // Left trace run
-        bold(0.8, 2);
+        const { x, u, bold, det, hi, thin, N, grad } = d;
+        // Sheared display — one panel snapped along a fault line
+        // Upper half — shifted LEFT
+        x.fillStyle = grad(cx - u(16), cy - u(12), cx + u(10), cy, [[0, 0.45], [1, 0.2]]);
         x.beginPath();
-        x.moveTo(cx - u(19), cy + u(8));
-        x.lineTo(cx - u(11), cy + u(8));
-        x.lineTo(cx - u(11), cy - u(3));
-        x.lineTo(cx - u(3), cy - u(3));
+        x.moveTo(cx - u(16), cy - u(12)); x.lineTo(cx + u(10), cy - u(12));
+        x.lineTo(cx + u(10), cy - u(5));
+        x.lineTo(cx + u(4), cy - u(1.5));   // shear step down
+        x.lineTo(cx - u(16), cy - u(1.5));
+        x.closePath(); x.fill();
+        bold(0.85, 1.6); x.stroke(); N();
+        // Lower half — shifted RIGHT
+        x.fillStyle = grad(cx - u(10), cy + u(1.5), cx + u(16), cy + u(12), [[0, 0.32], [1, 0.14]]);
+        x.beginPath();
+        x.moveTo(cx - u(10), cy + u(1.5)); x.lineTo(cx + u(2), cy + u(1.5));
+        x.lineTo(cx + u(8), cy + u(5));     // shear step up
+        x.lineTo(cx + u(16), cy + u(5));
+        x.lineTo(cx + u(16), cy + u(12)); x.lineTo(cx - u(10), cy + u(12));
+        x.closePath(); x.fill();
+        bold(0.7, 1.5); x.stroke(); N();
+        // Readout lines interrupted by the shear — dark detail
+        det(0.55, 1.2);
+        x.beginPath(); x.moveTo(cx - u(12), cy - u(8)); x.lineTo(cx + u(6), cy - u(8)); x.stroke();
+        x.beginPath(); x.moveTo(cx - u(6), cy + u(8)); x.lineTo(cx + u(12), cy + u(8)); x.stroke();
+        // Fault gap ticks — severed connections across the break
+        thin(0.45, 1.2);
+        x.beginPath(); x.moveTo(cx - u(13), cy - u(0)); x.lineTo(cx - u(13), cy + u(0.5)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(13), cy - u(0.5)); x.lineTo(cx + u(13), cy + u(3.5)); x.stroke();
+        // Tear line — the bright fault running through the shear gap
+        hi(0.95, 1.5);
+        x.shadowColor = d.pc(0.5); x.shadowBlur = u(5);
+        x.beginPath();
+        x.moveTo(cx - u(18), cy + u(0));
+        x.lineTo(cx + u(1), cy + u(0));
+        x.lineTo(cx + u(6), cy + u(3));
+        x.lineTo(cx + u(18), cy + u(3));
         x.stroke(); N();
-        // Right trace run
-        bold(0.8, 2);
-        x.beginPath();
-        x.moveTo(cx + u(6), cy - u(3));
-        x.lineTo(cx + u(13), cy - u(3));
-        x.lineTo(cx + u(13), cy + u(9));
-        x.lineTo(cx + u(19), cy + u(9));
-        x.stroke(); N();
-        // Circuit nodes at the corners
-        fill(0.8);
-        x.beginPath(); x.arc(cx - u(11), cy + u(8), u(1.8), 0, Math.PI * 2); x.fill();
-        x.beginPath(); x.arc(cx + u(13), cy - u(3), u(1.8), 0, Math.PI * 2); x.fill();
-        // Burnt trace ends — dark scorch ticks
-        det(0.7, 1.7);
-        x.beginPath(); x.moveTo(cx - u(3), cy - u(5.5)); x.lineTo(cx - u(1.5), cy - u(0.5)); x.stroke();
-        x.beginPath(); x.moveTo(cx + u(6), cy - u(5.5)); x.lineTo(cx + u(4.5), cy - u(0.5)); x.stroke();
-        // Arc spark jumping the gap — the highlight
-        hi(0.9, 1.3);
-        x.beginPath();
-        x.moveTo(cx - u(1.5), cy - u(3));
-        x.lineTo(cx + u(0.5), cy - u(5));
-        x.lineTo(cx + u(1.5), cy - u(1.5));
-        x.lineTo(cx + u(3.8), cy - u(3.6));
-        x.stroke();
-        G(7, 0.75); fill(0.95);
-        x.beginPath(); x.arc(cx + u(1.5), cy - u(3), u(2), 0, Math.PI * 2); x.fill(); N();
-        // Fault readout ticks below the break
-        thin(0.5, 1.1);
-        x.beginPath(); x.moveTo(cx - u(2), cy + u(3)); x.lineTo(cx + u(4.5), cy + u(3)); x.stroke();
-        thin(0.3, 1);
-        x.beginPath(); x.moveTo(cx - u(0.5), cy + u(6.5)); x.lineTo(cx + u(3), cy + u(6.5)); x.stroke();
       },
 
       info: (d, cx, cy) => {
-        const { x, u, bold, thin, det, fill, hi, G, N } = d;
-        // Terminal readout — bracket frame, data lines, live cursor
-        // Left and right brackets
-        bold(0.8, 1.9);
+        const { x, u, bold, thin, det, fill, solid, G, N, grad } = d;
+        // Holo-projected "i" — emitter base casting the glyph upward
+        // Emitter base — angular wedge
+        x.fillStyle = grad(cx - u(9), cy + u(11), cx + u(9), cy + u(17), [[0, 0.6], [1, 0.3]]);
         x.beginPath();
-        x.moveTo(cx - u(11), cy - u(13)); x.lineTo(cx - u(16), cy - u(13));
-        x.lineTo(cx - u(16), cy + u(13)); x.lineTo(cx - u(11), cy + u(13));
-        x.stroke(); N();
-        bold(0.8, 1.9);
-        x.beginPath();
-        x.moveTo(cx + u(11), cy - u(13)); x.lineTo(cx + u(16), cy - u(13));
-        x.lineTo(cx + u(16), cy + u(13)); x.lineTo(cx + u(11), cy + u(13));
-        x.stroke(); N();
-        // Header line — bright, with a leading bullet
-        G(5, 0.6); fill(0.9);
-        x.beginPath(); x.arc(cx - u(10), cy - u(7), u(1.8), 0, Math.PI * 2); x.fill(); N();
-        hi(0.9, 1.6);
-        x.beginPath(); x.moveTo(cx - u(6), cy - u(7)); x.lineTo(cx + u(10), cy - u(7)); x.stroke();
-        // Body lines — dimming
-        thin(0.55, 1.4);
-        x.beginPath(); x.moveTo(cx - u(10), cy - u(1)); x.lineTo(cx + u(10), cy - u(1)); x.stroke();
-        thin(0.38, 1.3);
-        x.beginPath(); x.moveTo(cx - u(10), cy + u(5)); x.lineTo(cx + u(1), cy + u(5)); x.stroke();
-        // Live cursor block — the highlight
-        G(6, 0.7); fill(0.95);
-        x.fillRect(cx + u(4), cy + u(2.8), u(3.6), u(4.4));
-        N();
-        // Baseline tick — dark detail
-        det(0.5, 1.1);
-        x.beginPath(); x.moveTo(cx - u(10), cy + u(10)); x.lineTo(cx + u(10), cy + u(10)); x.stroke();
-      },
-
-      diamond: (d, cx, cy) => {
-        const { x, u, bold, thin, det, fill, G, N, grad } = d;
-        // Containment core — diamond in a stasis orbit
-        // Rear half of the orbit ring
-        thin(0.3, 1.3);
-        x.beginPath(); x.ellipse(cx, cy, u(17.5), u(5.5), 0, Math.PI, Math.PI * 2); x.stroke();
-        // The core — gradient-filled diamond
-        x.fillStyle = grad(cx - u(11), cy - u(13), cx + u(11), cy + u(13), [[0, 0.7], [0.5, 0.3], [1, 0.6]]);
-        x.beginPath();
-        x.moveTo(cx, cy - u(13)); x.lineTo(cx + u(11), cy); x.lineTo(cx, cy + u(13)); x.lineTo(cx - u(11), cy);
+        x.moveTo(cx - u(9), cy + u(17)); x.lineTo(cx - u(6), cy + u(12));
+        x.lineTo(cx + u(6), cy + u(12)); x.lineTo(cx + u(9), cy + u(17));
         x.closePath(); x.fill();
-        bold(0.85, 1.7); x.stroke(); N();
-        // Internal facets — dark detail cross
-        det(0.55, 1.1);
-        x.beginPath(); x.moveTo(cx - u(5.5), cy - u(6.5)); x.lineTo(cx + u(5.5), cy + u(6.5)); x.stroke();
-        x.beginPath(); x.moveTo(cx + u(5.5), cy - u(6.5)); x.lineTo(cx - u(5.5), cy + u(6.5)); x.stroke();
-        // Front half of the orbit ring — passes over the core
-        thin(0.7, 1.4);
-        x.beginPath(); x.ellipse(cx, cy, u(17.5), u(5.5), 0, 0, Math.PI); x.stroke();
-        // Orbit particle — the highlight
-        G(6, 0.7); fill(0.95);
-        x.beginPath(); x.arc(cx + u(15.5), cy + u(2.8), u(1.9), 0, Math.PI * 2); x.fill(); N();
-        // Apex tick
-        d.hi(0.85, 1);
-        x.beginPath(); x.moveTo(cx - u(2.2), cy - u(9.5)); x.lineTo(cx + u(0.5), cy - u(9.5)); x.stroke();
+        bold(0.8, 1.6); x.stroke(); N();
+        // Emitter slit — dark detail
+        det(0.6, 1.2);
+        x.beginPath(); x.moveTo(cx - u(3.5), cy + u(14.5)); x.lineTo(cx + u(3.5), cy + u(14.5)); x.stroke();
+        // Projection cone — faint diverging beams
+        thin(0.28, 1.1);
+        x.beginPath(); x.moveTo(cx - u(2.5), cy + u(12)); x.lineTo(cx - u(7), cy - u(14)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(2.5), cy + u(12)); x.lineTo(cx + u(7), cy - u(14)); x.stroke();
+        // Scan shimmer across the hologram
+        thin(0.45, 1);
+        x.beginPath(); x.moveTo(cx - u(5.8), cy - u(7)); x.lineTo(cx + u(5.8), cy - u(7)); x.stroke();
+        // The projected "i" — glowing typography (its dot IS the glyph)
+        G(7, 0.6);
+        solid(0.9);
+        x.beginPath(); x.arc(cx, cy - u(11.5), u(2.6), 0, Math.PI * 2); x.fill();
+        x.beginPath();
+        x.moveTo(cx - u(2), cy - u(5.5)); x.lineTo(cx + u(2), cy - u(5.5));
+        x.lineTo(cx + u(1.5), cy + u(6.5)); x.lineTo(cx - u(1.5), cy + u(6.5));
+        x.closePath(); x.fill();
+        N();
+        // Hologram flicker gap — dark detail across the stem
+        det(0.5, 1.3);
+        x.beginPath(); x.moveTo(cx - u(2.2), cy + u(1)); x.lineTo(cx + u(2.2), cy + u(1)); x.stroke();
       },
     };
 
     // Approved reworks live in the engine — clear their stale flags
-    const PORTED = ['sword', 'potion', 'star', 'inventory', 'settings', 'search', 'refresh', 'crown', 'leaderboard'];
+    const PORTED = ['sword', 'potion', 'star', 'inventory', 'settings', 'search', 'refresh', 'crown', 'leaderboard', 'diamond'];
 
     // ═══ State (persisted) ═══
     const store = JSON.parse(localStorage.getItem('iconReview') ?? '{}');
     store.rework ??= []; store.add ??= []; store.approveRework ??= [];
     // comms + timer were promoted into the engine — drop stale selections
-    store.add = store.add.filter(n => !['comms', 'timer'].includes(n));
+    store.add = store.add.filter(n => !['comms', 'timer', 'map'].includes(n));
     store.rework = store.rework.filter(n => !PORTED.includes(n));
     store.approveRework = store.approveRework.filter(n => !PORTED.includes(n));
     const save = () => localStorage.setItem('iconReview', JSON.stringify(store));

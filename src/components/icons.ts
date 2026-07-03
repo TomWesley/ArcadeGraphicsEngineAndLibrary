@@ -32,7 +32,7 @@ type BaseIconName =
   | 'quest' | 'energy' | 'target' | 'inventory' | 'craft'
   | 'diamond' | 'star' | 'heart' | 'skull'
   // Comms / systems (approved 2026-07-03)
-  | 'comms' | 'timer'
+  | 'comms' | 'timer' | 'map'
   // Legacy names, redesigned in the approved vocabulary
   | 'leaderboard' | 'shield' | 'sword' | 'home' | 'potion' | 'coin' | 'crown';
 
@@ -555,18 +555,30 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
   },
 
   diamond: (d, cx, cy) => {
-    const { x, u, bold, fill, solid, thin, G, N } = d;
-    // Priority marker — concentric diamonds with center dot
-    solid(0.25);
+    const { x, u, bold, thin, det, fill, hi, G, N, grad } = d;
+    // Containment core — diamond in a stasis orbit (approved rework 2026-07-03)
+    // Rear half of the orbit ring
+    thin(0.3, 1.3);
+    x.beginPath(); x.ellipse(cx, cy, u(17.5), u(5.5), 0, Math.PI, Math.PI * 2); x.stroke();
+    // The core — gradient-filled diamond
+    x.fillStyle = grad(cx - u(11), cy - u(13), cx + u(11), cy + u(13), [[0, 0.7], [0.5, 0.3], [1, 0.6]]);
     x.beginPath();
-    x.moveTo(cx, cy - u(20)); x.lineTo(cx + u(16), cy); x.lineTo(cx, cy + u(20)); x.lineTo(cx - u(16), cy);
+    x.moveTo(cx, cy - u(13)); x.lineTo(cx + u(11), cy); x.lineTo(cx, cy + u(13)); x.lineTo(cx - u(11), cy);
     x.closePath(); x.fill();
-    bold(0.8, 2); x.stroke(); N();
-    thin(0.4, 1);
-    x.beginPath();
-    x.moveTo(cx, cy - u(12)); x.lineTo(cx + u(10), cy); x.lineTo(cx, cy + u(12)); x.lineTo(cx - u(10), cy);
-    x.closePath(); x.stroke();
-    G(5, 0.4); fill(0.7); x.beginPath(); x.arc(cx, cy, u(3), 0, Math.PI * 2); x.fill(); N();
+    bold(0.85, 1.7); x.stroke(); N();
+    // Internal facets — dark detail cross
+    det(0.55, 1.1);
+    x.beginPath(); x.moveTo(cx - u(5.5), cy - u(6.5)); x.lineTo(cx + u(5.5), cy + u(6.5)); x.stroke();
+    x.beginPath(); x.moveTo(cx + u(5.5), cy - u(6.5)); x.lineTo(cx - u(5.5), cy + u(6.5)); x.stroke();
+    // Front half of the orbit ring — passes over the core
+    thin(0.7, 1.4);
+    x.beginPath(); x.ellipse(cx, cy, u(17.5), u(5.5), 0, 0, Math.PI); x.stroke();
+    // Orbit particle — the highlight
+    G(6, 0.7); fill(0.95);
+    x.beginPath(); x.arc(cx + u(15.5), cy + u(2.8), u(1.9), 0, Math.PI * 2); x.fill(); N();
+    // Apex tick
+    hi(0.85, 1);
+    x.beginPath(); x.moveTo(cx - u(2.2), cy - u(9.5)); x.lineTo(cx + u(0.5), cy - u(9.5)); x.stroke();
   },
 
   star: (d, cx, cy) => {
@@ -935,6 +947,39 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
     x.stroke();
     G(5, 0.6); fill(0.95);
     x.beginPath(); x.arc(cx, cy + u(1), u(1.8), 0, Math.PI * 2); x.fill(); N();
+  },
+
+  map: (d, cx, cy) => {
+    const { x, u, bold, thin, det, fill, G, N, grad } = d;
+    // Waypoint pin over a perspective grid floor (approved 2026-07-03)
+    thin(0.4, 1);
+    x.beginPath(); x.moveTo(cx - u(17), cy + u(7)); x.lineTo(cx + u(17), cy + u(7)); x.stroke();
+    thin(0.3, 1);
+    x.beginPath(); x.moveTo(cx - u(19), cy + u(12)); x.lineTo(cx + u(19), cy + u(12)); x.stroke();
+    thin(0.22, 1);
+    x.beginPath(); x.moveTo(cx - u(21), cy + u(17)); x.lineTo(cx + u(21), cy + u(17)); x.stroke();
+    // Converging verticals
+    thin(0.3, 1);
+    for (const [x1, x2] of [[-14, -19], [-5, -6.5], [4, 5.5], [13, 18]]) {
+      x.beginPath(); x.moveTo(cx + u(x1), cy + u(7)); x.lineTo(cx + u(x2), cy + u(17)); x.stroke();
+    }
+    // Landing ring around the pin base
+    thin(0.6, 1.2);
+    x.beginPath(); x.ellipse(cx, cy + u(7), u(6.5), u(2.2), 0, 0, Math.PI * 2); x.stroke();
+    // Pin — diamond head + stem
+    x.fillStyle = grad(cx - u(6.5), cy - u(15), cx + u(6.5), cy - u(2), [[0, 0.85], [1, 0.4]]);
+    x.beginPath();
+    x.moveTo(cx, cy - u(16)); x.lineTo(cx + u(6.5), cy - u(9)); x.lineTo(cx, cy - u(2)); x.lineTo(cx - u(6.5), cy - u(9));
+    x.closePath(); x.fill();
+    bold(0.85, 1.7); x.stroke(); N();
+    bold(0.8, 1.8);
+    x.beginPath(); x.moveTo(cx, cy - u(2)); x.lineTo(cx, cy + u(7)); x.stroke(); N();
+    // Pin core — dark detail
+    det(0.55, 1.3);
+    x.beginPath(); x.arc(cx, cy - u(9), u(2.2), 0, Math.PI * 2); x.stroke();
+    // Touchdown glow — the highlight (semantic: the marked location)
+    G(6, 0.7); fill(0.95);
+    x.beginPath(); x.arc(cx, cy + u(7), u(1.9), 0, Math.PI * 2); x.fill(); N();
   },
 };
 
