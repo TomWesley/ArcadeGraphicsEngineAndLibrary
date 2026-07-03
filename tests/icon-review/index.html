@@ -73,6 +73,15 @@
     .card.selected { border-color: #2a9a6a; background: rgba(42, 154, 106, 0.07); }
     .card.selected .state { color: #40cc80; }
     .card.selected .state::before { content: '✓ ADD TO LIBRARY'; }
+    /* Rework section: selected = approve replacement */
+    .card.approved-rework { border-color: #2a9a6a; background: rgba(42, 154, 106, 0.07); }
+    .card.approved-rework .state { color: #40cc80; }
+    .card.approved-rework .state::before { content: '✓ APPROVE REWORK'; }
+    .card .old-tag {
+      position: absolute; top: 30px; right: 6px;
+      font-family: 'Share Tech Mono', monospace; font-size: 7px;
+      color: #555; letter-spacing: 1px;
+    }
 
     /* Report bar */
     .report {
@@ -112,6 +121,9 @@
 
   <h2>APPROVED LIBRARY <span class="hint">CLICK = FLAG FOR REWORK</span></h2>
   <div class="grid" id="approvedGrid"></div>
+
+  <h2>REWORK PROPOSALS <span class="hint">NEW DESIGN SHOWN LARGE, CURRENT INSET TOP-RIGHT // CLICK = APPROVE REPLACEMENT</span></h2>
+  <div class="grid" id="reworkGrid"></div>
 
   <h2>NEW CANDIDATES <span class="hint">CLICK = ADD TO LIBRARY</span></h2>
   <div class="grid" id="candidateGrid"></div>
@@ -623,8 +635,456 @@
       },
     };
 
+    // ═══ 13 REWORK PROPOSALS ═══
+    // Flagged 2026-07-03. Same pen idiom — approved ones replace the
+    // engine implementations directly.
+    const REWORKS = {
+
+      sword: (d, cx, cy) => {
+        const { x, u, bold, det, fill, thin, G, N, grad } = d;
+        // Energy blade at a dynamic diagonal (canvas rotation keeps the
+        // geometry authored on a simple vertical axis)
+        x.save();
+        x.translate(cx, cy);
+        x.rotate(Math.PI / 4);
+        // Blade — long tapered silhouette, gradient along its length
+        x.fillStyle = grad(0, -u(19), 0, u(5), [[0, 0.9], [0.45, 0.5], [1, 0.3]]);
+        x.beginPath();
+        x.moveTo(0, -u(19));                 // tip
+        x.lineTo(u(3.2), -u(13));
+        x.lineTo(u(2.6), u(5));              // right edge to ricasso
+        x.lineTo(-u(2.6), u(5));
+        x.lineTo(-u(3.2), -u(13));
+        x.closePath(); x.fill();
+        bold(0.8, 1.6); x.stroke(); N();
+        // Fuller — dark center groove
+        det(0.5, 1.1);
+        x.beginPath(); x.moveTo(0, -u(15)); x.lineTo(0, u(3)); x.stroke();
+        // Crossguard — angular, swept
+        bold(0.85, 2.2);
+        x.beginPath();
+        x.moveTo(-u(8), u(7.5)); x.lineTo(-u(5), u(5.5)); x.lineTo(u(5), u(5.5)); x.lineTo(u(8), u(7.5));
+        x.stroke(); N();
+        // Grip + pommel
+        bold(0.7, 2);
+        x.beginPath(); x.moveTo(0, u(7.5)); x.lineTo(0, u(14)); x.stroke(); N();
+        G(5, 0.6); fill(0.9);
+        x.beginPath(); x.arc(0, u(16), u(2), 0, Math.PI * 2); x.fill(); N();
+        // Edge glint — the highlight
+        d.hi(0.95, 0.9);
+        x.beginPath(); x.moveTo(-u(1.6), -u(16)); x.lineTo(-u(1.6), -u(4)); x.stroke();
+        x.restore();
+      },
+
+      potion: (d, cx, cy) => {
+        const { x, u, bold, det, fill, thin, G, N, grad } = d;
+        // Angular flask — narrow neck flaring to a faceted body
+        const body = () => {
+          x.beginPath();
+          x.moveTo(cx - u(3.5), cy - u(16));                 // neck left
+          x.lineTo(cx - u(3.5), cy - u(6));
+          x.lineTo(cx - u(10), cy + u(1));                   // shoulder left
+          x.lineTo(cx - u(10), cy + u(13));
+          x.lineTo(cx - u(6), cy + u(17));                   // base left
+          x.lineTo(cx + u(6), cy + u(17));
+          x.lineTo(cx + u(10), cy + u(13));
+          x.lineTo(cx + u(10), cy + u(1));
+          x.lineTo(cx + u(3.5), cy - u(6));                  // shoulder right
+          x.lineTo(cx + u(3.5), cy - u(16));
+          x.closePath();
+        };
+        // Vessel glass — faint fill
+        x.fillStyle = grad(cx - u(10), cy - u(16), cx + u(10), cy + u(17), [[0, 0.18], [1, 0.08]]);
+        body(); x.fill();
+        // Liquid — bright gradient in the lower body
+        x.save();
+        body(); x.clip();
+        x.fillStyle = grad(cx, cy + u(2), cx, cy + u(17), [[0, 0.75], [1, 0.45]]);
+        x.fillRect(cx - u(10), cy + u(2), u(20), u(15));
+        x.restore();
+        bold(0.8, 1.7); body(); x.stroke(); N();
+        // Cap seal
+        bold(0.75, 2);
+        x.beginPath(); x.moveTo(cx - u(5), cy - u(17)); x.lineTo(cx + u(5), cy - u(17)); x.stroke(); N();
+        // Meniscus — bright surface line
+        d.hi(0.9, 1);
+        x.beginPath(); x.moveTo(cx - u(9), cy + u(2)); x.lineTo(cx + u(9), cy + u(2)); x.stroke();
+        // Bubbles rising
+        fill(0.85);
+        x.beginPath(); x.arc(cx + u(3), cy + u(7), u(1.3), 0, Math.PI * 2); x.fill();
+        x.beginPath(); x.arc(cx - u(2.5), cy + u(11), u(1), 0, Math.PI * 2); x.fill();
+        // Fill-level tick on the side
+        det(0.5, 1.1);
+        x.beginPath(); x.moveTo(cx - u(10), cy + u(7)); x.lineTo(cx - u(7.5), cy + u(7)); x.stroke();
+      },
+
+      coin: (d, cx, cy) => {
+        const { x, u, bold, det, fill, thin, G, N, grad } = d;
+        const hex = (hx, hy, r) => {
+          x.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const a = (Math.PI / 3) * i - Math.PI / 6;   // flat-top
+            const px = hx + Math.cos(a) * u(r), py = hy + Math.sin(a) * u(r);
+            i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+          }
+          x.closePath();
+        };
+        // Second token behind — edge only, offset up-right (a stack)
+        thin(0.45, 1.4);
+        hex(cx + u(5), cy - u(5), 13); x.stroke();
+        // Main token — gradient face
+        x.fillStyle = grad(cx - u(14), cy - u(9), cx + u(8), cy + u(15), [[0, 0.5], [0.5, 0.18], [1, 0.45]]);
+        hex(cx - u(3), cy + u(3), 14); x.fill();
+        bold(0.85, 1.8); hex(cx - u(3), cy + u(3), 14); x.stroke(); N();
+        // Inner rim — dark detail ring
+        det(0.5, 1.2);
+        hex(cx - u(3), cy + u(3), 10); x.stroke();
+        // Denomination glyph — angular credit mark (double chevron bar)
+        d.hi(0.95, 1.6);
+        x.beginPath();
+        x.moveTo(cx - u(7), cy + u(5.5)); x.lineTo(cx - u(3), cy - u(1.5)); x.lineTo(cx + u(1), cy + u(5.5));
+        x.stroke();
+        thin(0.7, 1.3);
+        x.beginPath(); x.moveTo(cx - u(7.5), cy + u(8)); x.lineTo(cx + u(1.5), cy + u(8)); x.stroke();
+        // Mint mark — glow dot on the stack edge
+        G(5, 0.6); fill(0.9);
+        x.beginPath(); x.arc(cx + u(11), cy - u(10.5), u(1.7), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      crown: (d, cx, cy) => {
+        const { x, u, bold, det, fill, G, N, grad } = d;
+        // Command crown — angular three-peak silhouette, filled
+        x.fillStyle = grad(cx - u(16), cy - u(12), cx + u(16), cy + u(10), [[0, 0.5], [0.5, 0.18], [1, 0.45]]);
+        x.beginPath();
+        x.moveTo(cx - u(16), cy + u(8));       // base left
+        x.lineTo(cx - u(16), cy - u(6));       // left point
+        x.lineTo(cx - u(8), cy + u(0));        // valley
+        x.lineTo(cx, cy - u(13));              // center point
+        x.lineTo(cx + u(8), cy + u(0));        // valley
+        x.lineTo(cx + u(16), cy - u(6));       // right point
+        x.lineTo(cx + u(16), cy + u(8));       // base right
+        x.closePath(); x.fill();
+        bold(0.85, 1.8); x.stroke(); N();
+        // Band — separated base bar
+        bold(0.75, 2);
+        x.beginPath(); x.moveTo(cx - u(16), cy + u(13)); x.lineTo(cx + u(16), cy + u(13)); x.stroke(); N();
+        // Band studs — dark detail
+        det(0.55, 1.2);
+        x.beginPath(); x.moveTo(cx - u(16), cy + u(4)); x.lineTo(cx + u(16), cy + u(4)); x.stroke();
+        // Peak beacons — center one is the highlight
+        fill(0.75);
+        x.beginPath(); x.arc(cx - u(16), cy - u(7.5), u(1.6), 0, Math.PI * 2); x.fill();
+        x.beginPath(); x.arc(cx + u(16), cy - u(7.5), u(1.6), 0, Math.PI * 2); x.fill();
+        G(6, 0.65); fill(0.95);
+        x.beginPath(); x.arc(cx, cy - u(15), u(2.2), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      leaderboard: (d, cx, cy) => {
+        const { x, u, bold, det, fill, G, N, grad } = d;
+        // Podium — 2nd / 1st / 3rd columns
+        const cols = [
+          { bx: -14.5, h: 15, rank: 2 },
+          { bx: 0,     h: 22, rank: 1 },
+          { bx: 14.5,  h: 10, rank: 3 },
+        ];
+        for (const { bx, h } of cols) {
+          x.fillStyle = grad(cx + u(bx), cy + u(17), cx + u(bx), cy + u(17 - h), [[0, 0.25], [1, 0.7]]);
+          x.beginPath();
+          x.moveTo(cx + u(bx - 6), cy + u(17));
+          x.lineTo(cx + u(bx - 6), cy + u(17 - h) + u(2));
+          x.lineTo(cx + u(bx - 4), cy + u(17 - h));       // clipped corner
+          x.lineTo(cx + u(bx + 4), cy + u(17 - h));
+          x.lineTo(cx + u(bx + 6), cy + u(17 - h) + u(2));
+          x.lineTo(cx + u(bx + 6), cy + u(17));
+          x.closePath(); x.fill();
+          bold(0.7, 1.4); x.stroke(); N();
+        }
+        // Rank pips — dark detail marks, count = rank
+        det(0.6, 1.4);
+        for (const { bx, h, rank } of cols) {
+          for (let i = 0; i < rank; i++) {
+            const py = cy + u(17 - h + 4 + i * 3.4);
+            x.beginPath();
+            x.moveTo(cx + u(bx - 2.5), py); x.lineTo(cx + u(bx + 2.5), py);
+            x.stroke();
+          }
+        }
+        // Baseline
+        bold(0.75, 1.8);
+        x.beginPath(); x.moveTo(cx - u(22), cy + u(17)); x.lineTo(cx + u(22), cy + u(17)); x.stroke(); N();
+        // Apex beacon above 1st place — the highlight
+        G(6, 0.7); fill(0.95);
+        x.beginPath();
+        x.moveTo(cx, cy - u(11)); x.lineTo(cx + u(2.4), cy - u(7.5)); x.lineTo(cx, cy - u(4)); x.lineTo(cx - u(2.4), cy - u(7.5));
+        x.closePath(); x.fill(); N();
+      },
+
+      refresh: (d, cx, cy) => {
+        const { x, u, bold, fill, thin, G, N } = d;
+        // Cycle arcs — two opposing sweeps
+        bold(0.85, 2.2);
+        x.beginPath(); x.arc(cx, cy, u(13), -Math.PI * 0.85, -Math.PI * 0.15); x.stroke(); N();
+        bold(0.85, 2.2);
+        x.beginPath(); x.arc(cx, cy, u(13), Math.PI * 0.15, Math.PI * 0.85); x.stroke(); N();
+        // Solid triangular arrowheads — unmistakable direction
+        const head = (ang, rot) => {
+          const hx = cx + Math.cos(ang) * u(13), hy = cy + Math.sin(ang) * u(13);
+          x.save(); x.translate(hx, hy); x.rotate(rot);
+          x.beginPath();
+          x.moveTo(0, -u(4.5)); x.lineTo(u(3.6), u(1.5)); x.lineTo(-u(3.6), u(1.5));
+          x.closePath(); x.fill();
+          x.restore();
+        };
+        G(5, 0.5); fill(0.9);
+        head(-Math.PI * 0.15, Math.PI * 0.42);   // right arc end, pointing down-right
+        head(Math.PI * 0.85, Math.PI * 1.42);    // left arc end, pointing up-left
+        N();
+        // Inner ring detail
+        thin(0.3, 1);
+        x.beginPath(); x.arc(cx, cy, u(8), 0, Math.PI * 2); x.stroke();
+        // Sync dot — the highlight
+        G(5, 0.6); fill(0.95);
+        x.beginPath(); x.arc(cx, cy, u(2), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      settings: (d, cx, cy) => {
+        const { x, u, bold, thin, fill, G, N, grad } = d;
+        // Control faders — three rails with staggered handles
+        const rails = [
+          { ry: -9,  hx: -5,  bright: false },
+          { ry: 0,   hx: 7,   bright: true },   // highlight handle
+          { ry: 9,   hx: -1,  bright: false },
+        ];
+        for (const { ry, hx, bright } of rails) {
+          // Rail
+          thin(0.4, 1.4);
+          x.beginPath(); x.moveTo(cx - u(16), cy + u(ry)); x.lineTo(cx + u(16), cy + u(ry)); x.stroke();
+          // Rail end ticks
+          thin(0.55, 1.2);
+          x.beginPath(); x.moveTo(cx - u(16), cy + u(ry - 2)); x.lineTo(cx - u(16), cy + u(ry + 2)); x.stroke();
+          x.beginPath(); x.moveTo(cx + u(16), cy + u(ry - 2)); x.lineTo(cx + u(16), cy + u(ry + 2)); x.stroke();
+          // Active segment — brighter portion of the rail up to the handle
+          thin(0.8, 1.8);
+          x.beginPath(); x.moveTo(cx - u(16), cy + u(ry)); x.lineTo(cx + u(hx), cy + u(ry)); x.stroke();
+          // Handle — angular fader knob, gradient filled
+          x.fillStyle = grad(cx + u(hx), cy + u(ry - 5), cx + u(hx), cy + u(ry + 5), [[0, 0.85], [1, 0.4]]);
+          x.beginPath();
+          x.moveTo(cx + u(hx - 2.6), cy + u(ry - 4));
+          x.lineTo(cx + u(hx + 2.6), cy + u(ry - 4));
+          x.lineTo(cx + u(hx + 2.6), cy + u(ry + 4));
+          x.lineTo(cx + u(hx - 2.6), cy + u(ry + 4));
+          x.closePath();
+          if (bright) { G(6, 0.6); }
+          x.fill();
+          bold(bright ? 0.95 : 0.6, 1.2); x.stroke(); N();
+        }
+      },
+
+      search: (d, cx, cy) => {
+        const { x, u, bold, thin, det, fill, pc, G, N, grad } = d;
+        const lx = cx - u(4), ly = cy - u(4);
+        // Sensor lens — gradient-filled disc
+        x.fillStyle = grad(lx - u(10), ly - u(10), lx + u(10), ly + u(10), [[0, 0.3], [0.5, 0.08], [1, 0.25]]);
+        x.beginPath(); x.arc(lx, ly, u(10.5), 0, Math.PI * 2); x.fill();
+        bold(0.85, 2); x.beginPath(); x.arc(lx, ly, u(10.5), 0, Math.PI * 2); x.stroke(); N();
+        // Crosshair ticks inside the lens
+        thin(0.5, 1);
+        x.beginPath(); x.moveTo(lx, ly - u(8)); x.lineTo(lx, ly - u(4.5)); x.stroke();
+        x.beginPath(); x.moveTo(lx, ly + u(4.5)); x.lineTo(lx, ly + u(8)); x.stroke();
+        x.beginPath(); x.moveTo(lx - u(8), ly); x.lineTo(lx - u(4.5), ly); x.stroke();
+        x.beginPath(); x.moveTo(lx + u(4.5), ly); x.lineTo(lx + u(8), ly); x.stroke();
+        // Scan line across the lens
+        x.strokeStyle = pc(0.75); x.lineWidth = u(1);
+        x.shadowColor = pc(0.4); x.shadowBlur = u(4);
+        x.beginPath(); x.moveTo(lx - u(9), ly - u(2.5)); x.lineTo(lx + u(9), ly - u(2.5)); x.stroke(); N();
+        // Contact dot in the lens — the find
+        G(5, 0.65); fill(0.95);
+        x.beginPath(); x.arc(lx + u(2.5), ly + u(2.5), u(1.8), 0, Math.PI * 2); x.fill(); N();
+        // Handle — angular grip with blunt cap
+        bold(0.85, 2.6);
+        x.beginPath();
+        x.moveTo(lx + Math.cos(Math.PI / 4) * u(10.5), ly + Math.sin(Math.PI / 4) * u(10.5));
+        x.lineTo(cx + u(14), cy + u(14));
+        x.stroke(); N();
+        bold(0.7, 2.2);
+        x.beginPath(); x.moveTo(cx + u(11.8), cy + u(16.2)); x.lineTo(cx + u(16.2), cy + u(11.8)); x.stroke(); N();
+      },
+
+      error: (d, cx, cy) => {
+        const { x, u, bold, det, fill, thin, G, N, grad } = d;
+        // Abort octagon — gradient filled
+        const oct = () => {
+          x.beginPath();
+          for (let i = 0; i < 8; i++) {
+            const a = (Math.PI / 4) * i + Math.PI / 8;
+            const px = cx + Math.cos(a) * u(16), py = cy + Math.sin(a) * u(16);
+            i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+          }
+          x.closePath();
+        };
+        x.fillStyle = grad(cx - u(16), cy - u(16), cx + u(16), cy + u(16), [[0, 0.35], [0.5, 0.1], [1, 0.3]]);
+        oct(); x.fill();
+        bold(0.85, 1.9); oct(); x.stroke(); N();
+        // Inner rim
+        det(0.45, 1.1);
+        x.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const a = (Math.PI / 4) * i + Math.PI / 8;
+          const px = cx + Math.cos(a) * u(12.5), py = cy + Math.sin(a) * u(12.5);
+          i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+        }
+        x.closePath(); x.stroke();
+        // Bold X — solid strokes with glow
+        bold(0.95, 2.8);
+        x.beginPath(); x.moveTo(cx - u(6), cy - u(6)); x.lineTo(cx + u(6), cy + u(6)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(6), cy - u(6)); x.lineTo(cx - u(6), cy + u(6)); x.stroke();
+        N();
+        // Corner hazard ticks — outside the octagon at the diagonals
+        thin(0.55, 1.4);
+        for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+          x.beginPath();
+          x.moveTo(cx + sx * u(15), cy + sy * u(15));
+          x.lineTo(cx + sx * u(19), cy + sy * u(19));
+          x.stroke();
+        }
+        // Alert dot — the highlight, top vertex
+        G(5, 0.6); fill(0.95);
+        x.beginPath(); x.arc(cx, cy - u(16), u(1.8), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      info: (d, cx, cy) => {
+        const { x, u, bold, det, fill, thin, G, N, grad } = d;
+        // Data chip — vertical hexagon
+        const hex = () => {
+          x.beginPath();
+          x.moveTo(cx, cy - u(17));
+          x.lineTo(cx + u(13), cy - u(8)); x.lineTo(cx + u(13), cy + u(8));
+          x.lineTo(cx, cy + u(17));
+          x.lineTo(cx - u(13), cy + u(8)); x.lineTo(cx - u(13), cy - u(8));
+          x.closePath();
+        };
+        x.fillStyle = grad(cx - u(13), cy - u(17), cx + u(13), cy + u(17), [[0, 0.4], [0.5, 0.12], [1, 0.35]]);
+        hex(); x.fill();
+        bold(0.85, 1.8); hex(); x.stroke(); N();
+        // Chip pins — small ticks off the side facets
+        thin(0.55, 1.3);
+        for (const sy of [-5, 0, 5]) {
+          x.beginPath(); x.moveTo(cx - u(13), cy + u(sy)); x.lineTo(cx - u(17), cy + u(sy)); x.stroke();
+          x.beginPath(); x.moveTo(cx + u(13), cy + u(sy)); x.lineTo(cx + u(17), cy + u(sy)); x.stroke();
+        }
+        // The "i" — glowing dot + tapered stem, solid fills
+        G(6, 0.65); fill(0.95);
+        x.beginPath(); x.arc(cx, cy - u(8), u(2.4), 0, Math.PI * 2); x.fill(); N();
+        fill(0.85);
+        x.beginPath();
+        x.moveTo(cx - u(2), cy - u(2.5)); x.lineTo(cx + u(2), cy - u(2.5));
+        x.lineTo(cx + u(1.5), cy + u(9)); x.lineTo(cx - u(1.5), cy + u(9));
+        x.closePath(); x.fill();
+        // Stem base serif — dark detail
+        det(0.5, 1.2);
+        x.beginPath(); x.moveTo(cx - u(3.5), cy + u(9)); x.lineTo(cx + u(3.5), cy + u(9)); x.stroke();
+      },
+
+      inventory: (d, cx, cy) => {
+        const { x, u, bold, det, fill, thin, G, N, grad } = d;
+        // Manifest frame — gradient panel
+        x.fillStyle = grad(cx - u(15), cy - u(15), cx + u(15), cy + u(15), [[0, 0.28], [0.5, 0.08], [1, 0.24]]);
+        x.fillRect(cx - u(15), cy - u(15), u(30), u(30));
+        bold(0.8, 1.7);
+        x.strokeRect(cx - u(15), cy - u(15), u(30), u(30));
+        N();
+        // Grid lines — dark detail
+        det(0.5, 1.1);
+        for (const o of [-5, 5]) {
+          x.beginPath(); x.moveTo(cx + u(o), cy - u(15)); x.lineTo(cx + u(o), cy + u(15)); x.stroke();
+          x.beginPath(); x.moveTo(cx - u(15), cy + u(o)); x.lineTo(cx + u(15), cy + u(o)); x.stroke();
+        }
+        // Stocked cells — varied solid fills (cargo in different bays)
+        fill(0.55); x.fillRect(cx - u(14), cy - u(14), u(8), u(8));
+        fill(0.4);  x.fillRect(cx - u(4),  cy - u(14), u(8), u(8));
+        fill(0.3);  x.fillRect(cx - u(14), cy - u(4),  u(8), u(8));
+        fill(0.45); x.fillRect(cx + u(6),  cy + u(6),  u(8), u(8));
+        // Active bay — glowing dot, the highlight
+        G(6, 0.65); fill(0.95);
+        x.beginPath(); x.arc(cx + u(10), cy, u(2.2), 0, Math.PI * 2); x.fill(); N();
+        // Corner brackets outside the frame
+        thin(0.65, 1.5);
+        const B = 15, L = 5;
+        for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+          x.beginPath();
+          x.moveTo(cx + sx * u(B + 3), cy + sy * u(B + 3 - L));
+          x.lineTo(cx + sx * u(B + 3), cy + sy * u(B + 3));
+          x.lineTo(cx + sx * u(B + 3 - L), cy + sy * u(B + 3));
+          x.stroke();
+        }
+      },
+
+      diamond: (d, cx, cy) => {
+        const { x, u, bold, det, fill, thin, G, N, grad } = d;
+        // Faceted gem — crown + pavilion
+        const gem = () => {
+          x.beginPath();
+          x.moveTo(cx - u(9), cy - u(10));    // table left
+          x.lineTo(cx + u(9), cy - u(10));    // table right
+          x.lineTo(cx + u(16), cy - u(2));    // girdle right
+          x.lineTo(cx, cy + u(16));           // culet
+          x.lineTo(cx - u(16), cy - u(2));    // girdle left
+          x.closePath();
+        };
+        x.fillStyle = grad(cx - u(16), cy - u(10), cx + u(16), cy + u(16), [[0, 0.55], [0.5, 0.2], [1, 0.45]]);
+        gem(); x.fill();
+        bold(0.85, 1.8); gem(); x.stroke(); N();
+        // Facet lines — dark detail
+        det(0.55, 1.1);
+        // Girdle line
+        x.beginPath(); x.moveTo(cx - u(16), cy - u(2)); x.lineTo(cx + u(16), cy - u(2)); x.stroke();
+        // Crown facets
+        x.beginPath(); x.moveTo(cx - u(9), cy - u(10)); x.lineTo(cx - u(8), cy - u(2)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(9), cy - u(10)); x.lineTo(cx + u(8), cy - u(2)); x.stroke();
+        // Pavilion facets converging on the culet
+        x.beginPath(); x.moveTo(cx - u(8), cy - u(2)); x.lineTo(cx, cy + u(16)); x.stroke();
+        x.beginPath(); x.moveTo(cx + u(8), cy - u(2)); x.lineTo(cx, cy + u(16)); x.stroke();
+        // Table glint — the highlight
+        d.hi(0.95, 1.2);
+        x.beginPath(); x.moveTo(cx - u(6), cy - u(7)); x.lineTo(cx - u(1), cy - u(7)); x.stroke();
+        G(5, 0.55); fill(0.9);
+        x.beginPath(); x.arc(cx - u(7.5), cy - u(7), u(1.4), 0, Math.PI * 2); x.fill(); N();
+      },
+
+      star: (d, cx, cy) => {
+        const { x, u, bold, thin, fill, G, N, grad } = d;
+        // Nav star — 4 long cardinal points + 4 short diagonals
+        const starPath = (long, short) => {
+          x.beginPath();
+          for (let i = 0; i < 8; i++) {
+            const a = (Math.PI / 4) * i - Math.PI / 2;
+            const r = i % 2 === 0 ? long : short;
+            const px = cx + Math.cos(a) * u(r), py = cy + Math.sin(a) * u(r);
+            i === 0 ? x.moveTo(px, py) : x.lineTo(px, py);
+          }
+          x.closePath();
+        };
+        x.fillStyle = grad(cx - u(17), cy - u(17), cx + u(17), cy + u(17), [[0, 0.6], [0.5, 0.22], [1, 0.5]]);
+        starPath(18, 5.5); x.fill();
+        bold(0.85, 1.6); starPath(18, 5.5); x.stroke(); N();
+        // Inner cross — thin detail aligned with the long points
+        thin(0.45, 1);
+        x.beginPath(); x.moveTo(cx, cy - u(12)); x.lineTo(cx, cy + u(12)); x.stroke();
+        x.beginPath(); x.moveTo(cx - u(12), cy); x.lineTo(cx + u(12), cy); x.stroke();
+        // Orbit ring hint
+        thin(0.3, 0.9);
+        x.beginPath(); x.arc(cx, cy, u(10), 0, Math.PI * 2); x.stroke();
+        // Core — glowing center
+        G(7, 0.7); fill(0.95);
+        x.beginPath(); x.arc(cx, cy, u(2.6), 0, Math.PI * 2); x.fill(); N();
+      },
+    };
+
     // ═══ State (persisted) ═══
-    const store = JSON.parse(localStorage.getItem('iconReview') ?? '{"rework":[],"add":[]}');
+    const store = JSON.parse(localStorage.getItem('iconReview') ?? '{}');
+    store.rework ??= []; store.add ??= []; store.approveRework ??= [];
+    // comms + timer were promoted into the engine — drop stale selections
+    store.add = store.add.filter(n => !['comms', 'timer'].includes(n));
     const save = () => localStorage.setItem('iconReview', JSON.stringify(store));
 
     // ═══ Rendering ═══
@@ -657,8 +1117,8 @@
       state.className = 'state';
       card.append(small, main, label, state);
 
-      const listKey = mode === 'approved' ? 'rework' : 'add';
-      const cls = mode === 'approved' ? 'flagged' : 'selected';
+      const listKey = mode === 'approved' ? 'rework' : mode === 'rework' ? 'approveRework' : 'add';
+      const cls = mode === 'approved' ? 'flagged' : mode === 'rework' ? 'approved-rework' : 'selected';
       if (store[listKey].includes(name)) card.classList.add(cls);
 
       card.addEventListener('click', () => {
@@ -672,13 +1132,16 @@
       return card;
     }
 
-    function renderCard({ drawFn, main, small }) {
-      for (const cv of [main, small]) {
-        const ctx = cv.getContext('2d');
-        ctx.clearRect(0, 0, cv.width, cv.height);
-        frameBg(ctx, cv.width, COLOR);
-        drawFn(ctx, cv.width);
-      }
+    function renderCard({ drawFn, smallDrawFn, main, small }) {
+      const mctx = main.getContext('2d');
+      mctx.clearRect(0, 0, main.width, main.height);
+      frameBg(mctx, main.width, COLOR);
+      drawFn(mctx, main.width);
+      // Corner canvas: silhouette check normally; OLD version on rework cards
+      const sctx = small.getContext('2d');
+      sctx.clearRect(0, 0, small.width, small.height);
+      frameBg(sctx, small.width, COLOR);
+      (smallDrawFn ?? drawFn)(sctx, small.width);
     }
 
     function renderAll() {
@@ -693,7 +1156,28 @@
       }, 'approved'));
     }
 
+    // Rework proposals: new design large; small inset shows the CURRENT
+    // engine version for comparison
+    const reworkGrid = document.getElementById('reworkGrid');
+    for (const [name, fn] of Object.entries(REWORKS)) {
+      const card = makeCard(name, (ctx, SZ) => {
+        const pen = makePen(ctx, SZ * 0.62, COLOR);
+        fn(pen, SZ / 2, SZ / 2);
+      }, 'rework');
+      // The small corner canvas shows the OLD engine version, tagged
+      const entry = allCards[allCards.length - 1];
+      entry.smallDrawFn = (ctx, SZ) => drawIcon(ctx, name, SZ / 2, SZ / 2, SZ * 0.62, COLOR);
+      const tag = document.createElement('div');
+      tag.className = 'old-tag'; tag.textContent = 'OLD';
+      card.appendChild(tag);
+      reworkGrid.appendChild(card);
+    }
+
     // Candidates: inline pen implementations
+    // (comms + timer were approved 2026-07-03 and promoted into the engine —
+    // they now appear in the APPROVED section instead)
+    delete CANDIDATES.comms;
+    delete CANDIDATES.timer;
     for (const [name, fn] of Object.entries(CANDIDATES)) {
       candidateGrid.appendChild(makeCard(name, (ctx, SZ) => {
         const pen = makePen(ctx, SZ * 0.62, COLOR);
@@ -715,13 +1199,14 @@
 
     const updateCounts = () => {
       document.getElementById('reworkCount').textContent = store.rework.length;
-      document.getElementById('addCount').textContent = store.add.length;
+      document.getElementById('addCount').textContent = store.add.length + store.approveRework.length;
     };
     updateCounts();
 
     document.getElementById('copyReport').addEventListener('click', async () => {
       const report = JSON.stringify({
         flaggedForRework: store.rework,
+        approveRework: store.approveRework,
         addToLibrary: store.add,
       }, null, 2);
       await navigator.clipboard.writeText(report);
@@ -731,9 +1216,9 @@
     });
 
     document.getElementById('resetBtn').addEventListener('click', () => {
-      store.rework = []; store.add = [];
+      store.rework = []; store.add = []; store.approveRework = [];
       save(); updateCounts();
-      document.querySelectorAll('.card').forEach(c => c.classList.remove('flagged', 'selected'));
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('flagged', 'selected', 'approved-rework'));
     });
   </script>
 </body>
