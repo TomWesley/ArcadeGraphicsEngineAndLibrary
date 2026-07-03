@@ -64,6 +64,11 @@ Font constants are exported from the engine: `FONT_DISPLAY`, `FONT_BODY`, `FONT_
 - **No pure black** for outlines — use very dark versions of the theme color
 - **Clean geometry** — circles, hexagons, angular shapes. No organic noise.
 - **Everything feels like a spacecraft instrument panel**
+- **Instruments, not primitives** — a radar isn't a circle with dots: it has
+  bearing ticks, range rings, a phosphor sweep that reveals contacts, degree
+  labels. A gauge isn't a filled rect: it has segments, scale ticks, end-cap
+  brackets, a sheen. Detail and texture are what separate an instrument from
+  a wireframe — every component earns 2-3 layers of supporting detail.
 
 ### Color System
 Each game picks its own two-color palette:
