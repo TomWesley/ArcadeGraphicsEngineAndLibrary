@@ -31,9 +31,18 @@ export function drawBarGauge(
 
   ctx.save();
 
-  // Background track
+  // Background track with faint hatching so the empty region reads as
+  // structure, not dead space
   ctx.fillStyle = rgbaToCss(withAlpha(color, 0.05));
   ctx.fillRect(x, y, width, height);
+  ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.05));
+  ctx.lineWidth = 1;
+  for (let hx = x + 6; hx < x + width; hx += 6) {
+    ctx.beginPath();
+    ctx.moveTo(hx, y + height - 2);
+    ctx.lineTo(hx + 3, y + 2);
+    ctx.stroke();
+  }
 
   // Border
   ctx.shadowColor = rgbaToCss(withAlpha(color, glow.intensity * 0.3));
@@ -41,14 +50,23 @@ export function drawBarGauge(
   ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.3));
   ctx.lineWidth = 1;
   ctx.strokeRect(x, y, width, height);
+  ctx.shadowBlur = 0;
 
-  // Fill bar
+  // End-cap brackets — instrument bezel detail
+  ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.55));
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x - 2, y - 2); ctx.lineTo(x - 2, y + height + 2);
+  ctx.moveTo(x + width + 2, y - 2); ctx.lineTo(x + width + 2, y + height + 2);
+  ctx.stroke();
+
+  // Fill bar — segmented like an energy readout
   const fillWidth = width * Math.max(0, Math.min(1, value));
   if (fillWidth > 0) {
     ctx.shadowColor = rgbaToCss(withAlpha(color, glow.intensity));
     ctx.shadowBlur = glow.outerRadius;
 
-    // Gradient fill
+    // Gradient fill with a vertical sheen (brighter along the top edge)
     const grad = ctx.createLinearGradient(x, y, x + fillWidth, y);
     grad.addColorStop(0, rgbaToCss(withAlpha(color, 0.6)));
     grad.addColorStop(0.5, rgbaToCss(color));
@@ -56,9 +74,40 @@ export function drawBarGauge(
     ctx.fillStyle = grad;
     ctx.fillRect(x + 1, y + 1, fillWidth - 2, height - 2);
 
+    const sheen = ctx.createLinearGradient(0, y, 0, y + height);
+    sheen.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
+    sheen.addColorStop(0.35, 'rgba(255, 255, 255, 0)');
+    sheen.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
+    ctx.fillStyle = sheen;
+    ctx.fillRect(x + 1, y + 1, fillWidth - 2, height - 2);
+
+    // Segment dividers carved into the fill
+    ctx.shadowBlur = 0;
+    const segCount = Math.max(6, Math.round(width / 34));
+    const segW = width / segCount;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    for (let i = 1; i < segCount; i++) {
+      const sx = x + i * segW;
+      if (sx < x + fillWidth - 2) ctx.fillRect(sx, y + 1, 1.5, height - 2);
+    }
+
     // Bright edge at fill tip
-    ctx.fillStyle = rgbaToCss(withAlpha(color, 1));
+    ctx.shadowColor = rgbaToCss(withAlpha(color, glow.intensity));
+    ctx.shadowBlur = glow.innerRadius;
+    ctx.fillStyle = rgbaToCss(lerpColor(color, [255, 255, 255, 1], 0.5));
     ctx.fillRect(x + fillWidth - 2, y + 1, 2, height - 2);
+    ctx.shadowBlur = 0;
+  }
+
+  // Scale ticks under the track at 25/50/75%
+  ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.3));
+  ctx.lineWidth = 1;
+  for (const f of [0.25, 0.5, 0.75]) {
+    const tx = x + width * f;
+    ctx.beginPath();
+    ctx.moveTo(tx, y + height + 1);
+    ctx.lineTo(tx, y + height + 4);
+    ctx.stroke();
   }
 
   // Text renders on top of the colored fill — brighten toward white with a
@@ -142,21 +191,39 @@ export function drawRadialGauge(
   ctx.lineCap = 'round';
   ctx.stroke();
 
-  // Tick marks
+  // Tick marks with scale numerals at the majors
   const tickCount = 10;
   for (let i = 0; i <= tickCount; i++) {
     const tickAngle = startAngle + (totalAngle * i) / tickCount;
     const inner = radius - thickness * 1.2;
     const outer = radius - thickness * 0.3;
     const isActive = i / tickCount <= value;
+    const isMajor = i % 5 === 0;
     ctx.beginPath();
     ctx.moveTo(cx + Math.cos(tickAngle) * inner, cy + Math.sin(tickAngle) * inner);
     ctx.lineTo(cx + Math.cos(tickAngle) * outer, cy + Math.sin(tickAngle) * outer);
     ctx.strokeStyle = rgbaToCss(isActive ? withAlpha(color, 0.8) : withAlpha(color, 0.15));
-    ctx.lineWidth = i % 5 === 0 ? 2 : 1;
+    ctx.lineWidth = isMajor ? 2 : 1;
     ctx.shadowBlur = isActive ? 4 : 0;
     ctx.stroke();
+
+    if (isMajor) {
+      ctx.shadowBlur = 0;
+      ctx.font = `${Math.max(7, radius * 0.14)}px "Share Tech Mono", "Courier New", monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = rgbaToCss(withAlpha(color, isActive ? 0.6 : 0.25));
+      const nr = radius - thickness * 2.1;
+      ctx.fillText(String(i * 10), cx + Math.cos(tickAngle) * nr, cy + Math.sin(tickAngle) * nr);
+    }
   }
+
+  // Danger zone arc — top 15% of range marked in a hotter tone
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius + thickness * 0.75, startAngle + totalAngle * 0.85, endAngle);
+  ctx.strokeStyle = rgbaToCss(withAlpha(theme.palette.danger.core, 0.45));
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
   // Needle — bright tip for a crisp instrument read
   const needleAngle = startAngle + totalAngle * Math.max(0, Math.min(1, value));
@@ -325,14 +392,19 @@ export interface MiniMapOptions {
   x: number;
   y: number;
   size: number;
-  blips: { x: number; y: number; color: RGBA; size?: number }[];
+  /** Contact positions relative to center, each axis in [-1, 1] */
+  blips: { x: number; y: number; color: RGBA; size?: number; label?: string }[];
   color?: RGBA;
   label?: string;
   rings?: number;
+  /** Current sweep angle in radians. When set, blips are REVEALED by the
+   *  sweep: full brightness as the beam passes, fading until the next pass. */
   sweepAngle?: number;
+  /** Show bearing tick marks + cardinal degree labels (default true) */
+  markings?: boolean;
 }
 
-/** Radar/minimap display with sweep animation */
+/** Radar/minimap display with sweep animation and sweep-revealed contacts */
 export function drawRadarDisplay(
   ctx: CanvasRenderingContext2D,
   theme: ArcadeTheme,
@@ -345,72 +417,160 @@ export function drawRadarDisplay(
   const cy = y + size / 2;
   const r = size / 2;
   const rings = opts.rings ?? 3;
+  const markings = opts.markings ?? true;
+  const TAU = Math.PI * 2;
 
   ctx.save();
 
   // Clip to circle
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.arc(cx, cy, r, 0, TAU);
   ctx.clip();
 
-  // Background
-  ctx.fillStyle = rgbaToCss(withAlpha(color, 0.02));
+  // Background — subtle radial depth, brighter at center like a powered scope
+  const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  bgGrad.addColorStop(0, rgbaToCss(withAlpha(color, 0.05)));
+  bgGrad.addColorStop(0.7, rgbaToCss(withAlpha(color, 0.02)));
+  bgGrad.addColorStop(1, rgbaToCss(withAlpha(color, 0.005)));
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(x, y, size, size);
 
-  // Rings
-  for (let i = 1; i <= rings; i++) {
+  // Fine polar grid — radial spokes every 30°
+  ctx.lineWidth = 1;
+  for (let d = 0; d < 360; d += 30) {
+    const a = (d * Math.PI) / 180;
     ctx.beginPath();
-    ctx.arc(cx, cy, (r * i) / rings, 0, Math.PI * 2);
-    ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.1));
-    ctx.lineWidth = 1;
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    ctx.strokeStyle = rgbaToCss(withAlpha(color, d % 90 === 0 ? 0.09 : 0.04));
     ctx.stroke();
   }
 
-  // Crosshairs
-  ctx.beginPath();
-  ctx.moveTo(cx - r, cy);
-  ctx.lineTo(cx + r, cy);
-  ctx.moveTo(cx, cy - r);
-  ctx.lineTo(cx, cy + r);
-  ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.08));
-  ctx.stroke();
-
-  // Sweep
-  if (opts.sweepAngle !== undefined) {
-    const sweepGrad = ctx.createConicGradient(opts.sweepAngle, cx, cy);
-    sweepGrad.addColorStop(0, rgbaToCss(withAlpha(color, 0.2)));
-    sweepGrad.addColorStop(0.15, rgbaToCss(withAlpha(color, 0)));
-    sweepGrad.addColorStop(1, rgbaToCss(withAlpha(color, 0)));
-    ctx.fillStyle = sweepGrad;
+  // Range rings with faint dashed intermediates
+  for (let i = 1; i <= rings; i++) {
+    const rr = (r * i) / rings;
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(cx, cy, rr, 0, TAU);
+    ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.12));
+    ctx.setLineDash([]);
+    ctx.stroke();
+    // Dashed half-ring between majors
+    if (i < rings) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, rr + (r / rings) * 0.5, 0, TAU);
+      ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.05));
+      ctx.setLineDash([3, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
 
-  // Blips
+  // Sweep beam — bright leading edge + long phosphor trail
+  if (opts.sweepAngle !== undefined) {
+    const sweepGrad = ctx.createConicGradient(opts.sweepAngle - TAU, cx, cy);
+    // Trail decays behind the leading edge (conic gradient runs "behind" the beam)
+    sweepGrad.addColorStop(0, rgbaToCss(withAlpha(color, 0)));
+    sweepGrad.addColorStop(0.55, rgbaToCss(withAlpha(color, 0.015)));
+    sweepGrad.addColorStop(0.85, rgbaToCss(withAlpha(color, 0.06)));
+    sweepGrad.addColorStop(0.985, rgbaToCss(withAlpha(color, 0.16)));
+    sweepGrad.addColorStop(1, rgbaToCss(withAlpha(color, 0.3)));
+    ctx.fillStyle = sweepGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, TAU);
+    ctx.fill();
+
+    // Crisp leading-edge line
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(opts.sweepAngle) * r, cy + Math.sin(opts.sweepAngle) * r);
+    ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.55));
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = rgbaToCss(withAlpha(color, glow.intensity * 0.6));
+    ctx.shadowBlur = glow.outerRadius * 0.6;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  // Blips — revealed by the sweep, fading as it recedes
   for (const blip of blips) {
     const bx = cx + blip.x * r;
     const by = cy + blip.y * r;
     const bs = blip.size ?? 3;
 
-    ctx.shadowColor = rgbaToCss(withAlpha(blip.color, glow.intensity));
-    ctx.shadowBlur = glow.outerRadius;
-    ctx.fillStyle = rgbaToCss(blip.color);
+    // How long ago did the sweep pass this contact? 0 = just now.
+    let reveal = 1;
+    if (opts.sweepAngle !== undefined) {
+      const blipAngle = Math.atan2(by - cy, bx - cx);
+      const behind = (((opts.sweepAngle - blipAngle) % TAU) + TAU) % TAU;
+      reveal = Math.max(0.06, 1 - behind / TAU);   // linear phosphor decay, faint floor
+    }
+
+    // Contact dot
+    ctx.shadowColor = rgbaToCss(withAlpha(blip.color, glow.intensity * reveal));
+    ctx.shadowBlur = glow.outerRadius * reveal;
+    ctx.fillStyle = rgbaToCss(withAlpha(blip.color, reveal));
     ctx.beginPath();
-    ctx.arc(bx, by, bs, 0, Math.PI * 2);
+    ctx.arc(bx, by, bs, 0, TAU);
     ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Fresh contacts get a targeting ring that expands and fades
+    if (reveal > 0.7) {
+      const ringT = (1 - reveal) / 0.3;            // 0 = just swept, 1 = ring gone
+      ctx.beginPath();
+      ctx.arc(bx, by, bs + 3 + ringT * 7, 0, TAU);
+      ctx.strokeStyle = rgbaToCss(withAlpha(blip.color, 0.6 * (1 - ringT)));
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
   }
 
   ctx.restore();
 
-  // Outer ring (outside clip)
+  // ── Outside the clip: rim instrumentation ──
+
+  // Bearing ticks — every 15°, longer/brighter at 45°
+  if (markings) {
+    ctx.save();
+    for (let d = 0; d < 360; d += 15) {
+      const a = (d * Math.PI) / 180;
+      const major = d % 45 === 0;
+      const inner = r + 2;
+      const outer = r + (major ? 8 : 4);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+      ctx.lineTo(cx + Math.cos(a) * outer, cy + Math.sin(a) * outer);
+      ctx.strokeStyle = rgbaToCss(withAlpha(color, major ? 0.5 : 0.22));
+      ctx.lineWidth = major ? 1.5 : 1;
+      ctx.stroke();
+    }
+    // Cardinal degree labels
+    ctx.font = `${Math.max(8, size * 0.035)}px "Share Tech Mono", "Courier New", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = rgbaToCss(withAlpha(color, 0.55));
+    const lr = r + Math.max(14, size * 0.05);
+    ctx.fillText('000', cx, cy - lr);
+    ctx.fillText('090', cx + lr, cy);
+    ctx.fillText('180', cx, cy + lr);
+    ctx.fillText('270', cx - lr, cy);
+    ctx.restore();
+  }
+
+  // Outer ring — double line for instrument bezel feel
   ctx.save();
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.arc(cx, cy, r, 0, TAU);
   ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.5));
   ctx.shadowColor = rgbaToCss(withAlpha(color, glow.intensity * 0.5));
   ctx.shadowBlur = glow.outerRadius;
   ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - 3, 0, TAU);
+  ctx.strokeStyle = rgbaToCss(withAlpha(color, 0.12));
+  ctx.lineWidth = 1;
   ctx.stroke();
   ctx.restore();
 
