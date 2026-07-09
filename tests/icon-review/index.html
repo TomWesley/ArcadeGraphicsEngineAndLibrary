@@ -529,124 +529,11 @@
       },
     };
 
-    // ═══ REWORK PROPOSALS — ROUND 4 ═══
-    // diamond approved in round 3 and ported. coin / error / info have been
-    // rejected three times — again completely different concepts, and per
-    // feedback: no decorative dots anywhere.
-    const REWORKS = {
-
-      coin: (d, cx, cy) => {
-        const { x, u, bold, thin, det, hi, N, grad } = d;
-        // Credits — standing coin against a lying stack (classic silhouette,
-        // premium execution)
-        // Lying stack behind — two elliptical coins
-        thin(0.5, 1.4);
-        x.beginPath(); x.ellipse(cx + u(8), cy + u(13), u(9), u(3), 0, 0, Math.PI * 2); x.stroke();
-        x.fillStyle = grad(cx - u(1), cy + u(6), cx + u(17), cy + u(12), [[0, 0.35], [1, 0.15]]);
-        x.beginPath(); x.ellipse(cx + u(8), cy + u(9.5), u(9), u(3), 0, 0, Math.PI * 2); x.fill();
-        thin(0.6, 1.4);
-        x.beginPath(); x.ellipse(cx + u(8), cy + u(9.5), u(9), u(3), 0, 0, Math.PI * 2); x.stroke();
-        // Standing coin — bold disc with gradient face
-        x.fillStyle = grad(cx - u(17), cy - u(14), cx + u(5), cy + u(8), [[0, 0.55], [0.5, 0.22], [1, 0.5]]);
-        x.beginPath(); x.arc(cx - u(6), cy - u(3), u(12.5), 0, Math.PI * 2); x.fill();
-        bold(0.85, 1.8);
-        x.beginPath(); x.arc(cx - u(6), cy - u(3), u(12.5), 0, Math.PI * 2); x.stroke(); N();
-        // Inner rim — dark detail ring
-        det(0.55, 1.2);
-        x.beginPath(); x.arc(cx - u(6), cy - u(3), u(9), 0, Math.PI * 2); x.stroke();
-        // Emblem — angular chevron struck into the face
-        det(0.65, 2);
-        x.beginPath();
-        x.moveTo(cx - u(10.5), cy - u(1)); x.lineTo(cx - u(6), cy - u(6.5)); x.lineTo(cx - u(1.5), cy - u(1));
-        x.stroke();
-        // Milled edge — short radial ticks around the rim
-        thin(0.45, 1);
-        for (let i = 0; i < 12; i++) {
-          const a = (Math.PI / 6) * i + Math.PI / 12;
-          x.beginPath();
-          x.moveTo(cx - u(6) + Math.cos(a) * u(10.7), cy - u(3) + Math.sin(a) * u(10.7));
-          x.lineTo(cx - u(6) + Math.cos(a) * u(12.4), cy - u(3) + Math.sin(a) * u(12.4));
-          x.stroke();
-        }
-        // Rim glint — bright arc on the upper-left edge
-        hi(0.95, 1.6);
-        x.beginPath(); x.arc(cx - u(6), cy - u(3), u(12.5), Math.PI * 0.85, Math.PI * 1.25); x.stroke();
-      },
-
-      error: (d, cx, cy) => {
-        const { x, u, bold, det, hi, thin, N, grad } = d;
-        // Sheared display — one panel snapped along a fault line
-        // Upper half — shifted LEFT
-        x.fillStyle = grad(cx - u(16), cy - u(12), cx + u(10), cy, [[0, 0.45], [1, 0.2]]);
-        x.beginPath();
-        x.moveTo(cx - u(16), cy - u(12)); x.lineTo(cx + u(10), cy - u(12));
-        x.lineTo(cx + u(10), cy - u(5));
-        x.lineTo(cx + u(4), cy - u(1.5));   // shear step down
-        x.lineTo(cx - u(16), cy - u(1.5));
-        x.closePath(); x.fill();
-        bold(0.85, 1.6); x.stroke(); N();
-        // Lower half — shifted RIGHT
-        x.fillStyle = grad(cx - u(10), cy + u(1.5), cx + u(16), cy + u(12), [[0, 0.32], [1, 0.14]]);
-        x.beginPath();
-        x.moveTo(cx - u(10), cy + u(1.5)); x.lineTo(cx + u(2), cy + u(1.5));
-        x.lineTo(cx + u(8), cy + u(5));     // shear step up
-        x.lineTo(cx + u(16), cy + u(5));
-        x.lineTo(cx + u(16), cy + u(12)); x.lineTo(cx - u(10), cy + u(12));
-        x.closePath(); x.fill();
-        bold(0.7, 1.5); x.stroke(); N();
-        // Readout lines interrupted by the shear — dark detail
-        det(0.55, 1.2);
-        x.beginPath(); x.moveTo(cx - u(12), cy - u(8)); x.lineTo(cx + u(6), cy - u(8)); x.stroke();
-        x.beginPath(); x.moveTo(cx - u(6), cy + u(8)); x.lineTo(cx + u(12), cy + u(8)); x.stroke();
-        // Fault gap ticks — severed connections across the break
-        thin(0.45, 1.2);
-        x.beginPath(); x.moveTo(cx - u(13), cy - u(0)); x.lineTo(cx - u(13), cy + u(0.5)); x.stroke();
-        x.beginPath(); x.moveTo(cx + u(13), cy - u(0.5)); x.lineTo(cx + u(13), cy + u(3.5)); x.stroke();
-        // Tear line — the bright fault running through the shear gap
-        hi(0.95, 1.5);
-        x.shadowColor = d.pc(0.5); x.shadowBlur = u(5);
-        x.beginPath();
-        x.moveTo(cx - u(18), cy + u(0));
-        x.lineTo(cx + u(1), cy + u(0));
-        x.lineTo(cx + u(6), cy + u(3));
-        x.lineTo(cx + u(18), cy + u(3));
-        x.stroke(); N();
-      },
-
-      info: (d, cx, cy) => {
-        const { x, u, bold, thin, det, solid, hi, N, grad } = d;
-        // Bold "i" as premium typography — minimal scaffolding
-        // Faint hexagonal field behind the glyph
-        thin(0.3, 1.2);
-        x.beginPath();
-        x.moveTo(cx, cy - u(19));
-        x.lineTo(cx + u(14.5), cy - u(9.5)); x.lineTo(cx + u(14.5), cy + u(9.5));
-        x.lineTo(cx, cy + u(19));
-        x.lineTo(cx - u(14.5), cy + u(9.5)); x.lineTo(cx - u(14.5), cy - u(9.5));
-        x.closePath(); x.stroke();
-        // Tittle — solid diamond
-        x.fillStyle = grad(cx - u(3.6), cy - u(13), cx + u(3.6), cy - u(6), [[0, 0.95], [1, 0.6]]);
-        x.beginPath();
-        x.moveTo(cx, cy - u(13.5)); x.lineTo(cx + u(3.6), cy - u(9.75));
-        x.lineTo(cx, cy - u(6)); x.lineTo(cx - u(3.6), cy - u(9.75));
-        x.closePath(); x.fill();
-        bold(0.85, 1.4); x.stroke(); N();
-        // Stem — tapered slab with a base flare
-        x.fillStyle = grad(cx, cy - u(2.5), cx, cy + u(13), [[0, 0.85], [1, 0.45]]);
-        x.beginPath();
-        x.moveTo(cx - u(2.6), cy - u(2.5)); x.lineTo(cx + u(2.6), cy - u(2.5));
-        x.lineTo(cx + u(2.2), cy + u(9.5)); x.lineTo(cx + u(4.5), cy + u(13));
-        x.lineTo(cx - u(4.5), cy + u(13)); x.lineTo(cx - u(2.2), cy + u(9.5));
-        x.closePath(); x.fill();
-        bold(0.8, 1.4); x.stroke(); N();
-        // Serif shoulder on the stem head — dark detail
-        det(0.5, 1.2);
-        x.beginPath(); x.moveTo(cx - u(2.4), cy + u(0.5)); x.lineTo(cx + u(2.4), cy + u(0.5)); x.stroke();
-        // Edge glint on the tittle's upper-left facet
-        hi(0.95, 1.1);
-        x.beginPath(); x.moveTo(cx - u(2.4), cy - u(11.2)); x.lineTo(cx - u(0.4), cy - u(12.9)); x.stroke();
-      },
-    };
+    // ═══ REWORK PROPOSALS ═══
+    // Icon rework phase closed 2026-07-09: coin + info reworks dropped
+    // (original info kept, brightened to uniform opacity; coin keeps its
+    // existing implementation). Board empty until something new is flagged.
+    const REWORKS = {};
 
     // Approved reworks live in the engine — clear their stale flags
     const PORTED = ['sword', 'potion', 'star', 'inventory', 'settings', 'search', 'refresh', 'crown', 'leaderboard', 'diamond'];
@@ -656,7 +543,7 @@
     store.rework ??= []; store.add ??= []; store.approveRework ??= [];
     // comms + timer were promoted into the engine — drop stale selections
     store.add = store.add.filter(n => !['comms', 'timer', 'map', 'scan'].includes(n));
-    store.rework = store.rework.filter(n => !PORTED.includes(n));
+    store.rework = store.rework.filter(n => !PORTED.includes(n) && !['coin', 'info', 'error'].includes(n));
     store.approveRework = store.approveRework.filter(n => !PORTED.includes(n));
     const save = () => localStorage.setItem('iconReview', JSON.stringify(store));
 
@@ -732,6 +619,10 @@
     // Rework proposals: new design large; small inset shows the CURRENT
     // engine version for comparison
     const reworkGrid = document.getElementById('reworkGrid');
+    if (Object.keys(REWORKS).length === 0) {
+      reworkGrid.previousElementSibling.style.display = 'none';
+      reworkGrid.style.display = 'none';
+    }
     for (const [name, fn] of Object.entries(REWORKS)) {
       const card = makeCard(name, (ctx, SZ) => {
         const pen = makePen(ctx, SZ * 0.62, COLOR);
