@@ -51,7 +51,9 @@
       "Bash(node /private/tmp/claude-501/-Users-tomwesley-LocalGithubFiles-ArcadeGraphicsEngineAndLibrary/f50ac22a-5515-4182-8993-1a02450c2219/scratchpad/port-round2.mjs)",
       "Bash(node /private/tmp/claude-501/-Users-tomwesley-LocalGithubFiles-ArcadeGraphicsEngineAndLibrary/f50ac22a-5515-4182-8993-1a02450c2219/scratchpad/port-round3.mjs)",
       "Bash(node /private/tmp/claude-501/-Users-tomwesley-LocalGithubFiles-ArcadeGraphicsEngineAndLibrary/f50ac22a-5515-4182-8993-1a02450c2219/scratchpad/port-scan.mjs)",
-      "Bash(grep -n \"coin: \\(d, cx, cy\\)\\\\|info: \\(d, cx, cy\\)\\\\|^      },$\\\\|const REWORKS\\\\|const PORTED\" tests/icon-review/index.html)"
+      "Bash(grep -n \"coin: \\(d, cx, cy\\)\\\\|info: \\(d, cx, cy\\)\\\\|^      },$\\\\|const REWORKS\\\\|const PORTED\" tests/icon-review/index.html)",
+      "Bash(awk *)",
+      "Bash(node -e ' *)"
     ]
   }
 }

@@ -279,10 +279,11 @@ const ICONS: Record<BaseIconName, IconDrawFn> = {
   },
 
   info: (d, cx, cy) => {
-    const { x, u, bold, fill, N } = d;
+    const { x, u, bold, solid, N } = d;
     bold(0.45, 1.5); x.beginPath(); x.arc(cx, cy, u(18), 0, Math.PI * 2); x.stroke(); N();
-    fill(0.7); x.fillRect(cx - u(2.5), cy - u(9), u(5), u(3.4));
-    bold(0.7, 2.5);
+    // The "i" — uniform full brightness across tittle, stem, and base
+    solid(0.92); x.fillRect(cx - u(2.5), cy - u(9), u(5), u(3.4));
+    bold(0.92, 2.5);
     x.beginPath(); x.moveTo(cx, cy - u(1)); x.lineTo(cx, cy + u(10)); x.stroke();
     x.beginPath(); x.moveTo(cx - u(4), cy + u(10)); x.lineTo(cx + u(4), cy + u(10)); x.stroke();
     N();
