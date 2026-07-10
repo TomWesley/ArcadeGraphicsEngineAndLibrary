@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brand Guide — Arcade Graphics Engine</title>
+  <!-- Fonts injected by ThemeProvider; everything below renders from /dist -->
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { padding: 40px 48px 80px; }
+    .page { max-width: 1180px; margin: 0 auto; }
+
+    header { margin-bottom: 40px; }
+    header .sub { color: var(--arcade-primary-dim); margin-top: 8px; }
+
+    section { margin-bottom: 48px; }
+    .rule-note {
+      color: #8a8a96; max-width: 70ch; margin: 6px 0 18px;
+    }
+
+    /* Palette swatches */
+    .pal-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+    .pal-name { width: 170px; }
+    .swatch {
+      width: 92px; height: 56px; position: relative;
+      clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    }
+    .swatch span {
+      position: absolute; left: 6px; bottom: 4px;
+      font-family: var(--arcade-font-mono); font-size: 8px; letter-spacing: 1px;
+      color: rgba(255,255,255,0.75); mix-blend-mode: screen;
+    }
+
+    /* Type specimens */
+    .spec-row {
+      display: grid; grid-template-columns: 150px 1fr; gap: 18px;
+      align-items: baseline; padding: 12px 0; border-bottom: 1px solid #1a1922;
+    }
+    .spec-meta { color: #666; }
+
+    /* Icon grid */
+    .icon-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    .icon-cell {
+      width: 74px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .icon-cell canvas { width: 56px; height: 56px; }
+    .icon-cell span { font-family: var(--arcade-font-mono); font-size: 8px; color: #666; letter-spacing: 1px; }
+
+    /* Component row */
+    .comp-row { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+    .comp-block canvas { display: block; }
+    .comp-block .cap { font-family: var(--arcade-font-mono); font-size: 9px; color: #666; letter-spacing: 2px; margin-top: 6px; text-align: center; }
+
+    /* Voice samples */
+    .voice { display: flex; gap: 26px; flex-wrap: wrap; }
+    .voice .good, .voice .bad {
+      padding: 14px 18px; border: 1px solid #222;
+      clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    }
+    .voice .bad { opacity: 0.55; }
+    .voice .tag { font-family: var(--arcade-font-mono); font-size: 9px; letter-spacing: 2px; margin-bottom: 8px; }
+    .voice .good .tag { color: #40cc80; }
+    .voice .bad .tag { color: #e06050; }
+    .voice div p { margin: 3px 0; }
+  </style>
+</head>
+<body class="arcade-theme">
+  <div class="page">
+    <header>
+      <div class="arcade-display" style="font-size:38px">Brand Guide</div>
+      <div class="arcade-micro sub">ARCADE GRAPHICS ENGINE // LIVING SPECIMEN — EVERYTHING ON THIS PAGE RENDERS FROM DIST/</div>
+    </header>
+
+    <section>
+      <div class="arcade-heading arcade-glow">01 // Identity</div>
+      <p class="arcade-body rule-note">
+        Every surface looks like an instrument on a military spacecraft — precise, powered,
+        engineered, never decorated. Reference points: Halo HUD, Elite Dangerous, 2001.
+        The test for any asset: could this plausibly be a readout on a spacecraft bridge?
+      </p>
+    </section>
+
+    <section>
+      <div class="arcade-heading arcade-glow">02 // Color System</div>
+      <p class="arcade-body rule-note">
+        Four palettes, five fixed roles, three intensities each. Dark dominates (~85% of
+        any screen); color is an accent that earns attention. Same roles + same ratios =
+        sibling games, different palettes.
+      </p>
+      <div id="palettes"></div>
+    </section>
+
+    <section>
+      <div class="arcade-heading arcade-glow">03 // Typography</div>
+      <p class="arcade-body rule-note">
+        Three faces, seven roles, zero per-game decisions. Only body is sentence case;
+        tracking widens as size shrinks. Never mix roles within a line.
+      </p>
+      <div id="typeSpecimens"></div>
+    </section>
+
+    <section>
+      <div class="arcade-heading arcade-glow">04 // Iconography</div>
+      <p class="arcade-body rule-note">
+        Instruments, not primitives — gradient silhouette, glowing outline, dark internal
+        detail, one semantic highlight. Recognizable from silhouette at 16px.
+      </p>
+      <div class="icon-grid" id="iconGrid"></div>
+    </section>
+
+    <section>
+      <div class="arcade-heading arcade-glow">05 // Components</div>
+      <p class="arcade-body rule-note">
+        Clipped corners, thin lines, selective glow. Instrument detail is mandatory:
+        gauges get segments and scale ticks, radar gets bearing marks and a phosphor sweep.
+      </p>
+      <div class="comp-row" id="components"></div>
+      <div style="margin-top:22px; display:flex; gap:14px; flex-wrap:wrap; align-items:center">
+        <button class="arcade-btn">Primary Action</button>
+        <button class="arcade-btn" style="opacity:0.75">Secondary</button>
+        <input class="arcade-input" value="PILOT VESPER-9" readonly>
+        <span class="arcade-success arcade-data">SYS NOMINAL</span>
+        <span class="arcade-warning arcade-data">HEAT 84%</span>
+        <span class="arcade-error arcade-data">HULL CRITICAL</span>
+      </div>
+    </section>
+
+    <section>
+      <div class="arcade-heading arcade-glow">06 // Voice</div>
+      <div class="voice">
+        <div class="good">
+          <div class="tag">✓ TRANSMISSION-TERSE</div>
+          <p class="arcade-label">Launch Mission</p>
+          <p class="arcade-data">UPLINK STABLE // SECTOR 7</p>
+          <p class="arcade-data">JUMP RANGE 14.2 LY</p>
+          <p class="arcade-micro">HELIOS PROTOCOL V2.4.1</p>
+        </div>
+        <div class="bad">
+          <div class="tag">✗ OFF-BRAND</div>
+          <p class="arcade-body">Welcome back, Commander! 🚀</p>
+          <p class="arcade-body">Ready to jump? Let's go!!</p>
+          <p class="arcade-body">You've got 14.2 light years left</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="arcade-divider"></div>
+    <div class="arcade-micro" style="color:var(--arcade-primary-dim)">
+      FULL RULES: BRANDING.MD // INTEGRATION: CLAUDE.MD // ENGINE: ARCADE-GFX
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      ThemeProvider, ALL_PALETTES, rgbaToCss,
+      TYPE_SCALE, applyType, typeCase,
+      drawIcon, getIconNames,
+      drawPanel, drawBarGauge, drawRadialGauge, drawRadarDisplay,
+    } from '/dist/index.js';
+
+    // ═══ Theme: scarlet default so the guide matches the review pages ═══
+    const provider = ThemeProvider.custom('BRAND', 350, 190, 45, 0);
+    provider.injectCSS();
+    const theme = provider.theme;
+    const P = provider.palette.primary.core;
+    const S = provider.palette.secondary.core;
+
+    // ═══ 02 Palettes — swatches straight from the engine's palette objects ═══
+    const palDiv = document.getElementById('palettes');
+    for (const pal of ALL_PALETTES) {
+      const row = document.createElement('div');
+      row.className = 'pal-row';
+      const name = document.createElement('div');
+      name.className = 'pal-name arcade-data';
+      name.textContent = pal.name;
+      row.appendChild(name);
+      const cells = [
+        ['BG', pal.background],
+        ['PRIMARY', pal.primary.core],
+        ['GLOW', pal.primary.glow],
+        ['DIM', pal.primary.dim],
+        ['SECONDARY', pal.secondary.core],
+        ['TERTIARY', pal.tertiary.core],
+        ['DANGER', pal.danger.core],
+      ];
+      for (const [label, color] of cells) {
+        const sw = document.createElement('div');
+        sw.className = 'swatch';
+        sw.style.background = rgbaToCss(color);
+        if (label === 'BG') sw.style.border = '1px solid #222';
+        const tag = document.createElement('span');
+        tag.textContent = label;
+        sw.appendChild(tag);
+        row.appendChild(sw);
+      }
+      palDiv.appendChild(row);
+    }
+
+    // ═══ 03 Type specimens — one row per role from TYPE_SCALE ═══
+    const specDiv = document.getElementById('typeSpecimens');
+    const sampleText = {
+      display: 'Helios', title: 'Mission Briefing', heading: 'Pilot Status',
+      label: 'Launch Mission', body: 'Route plotted through the Epsilon Reach. Fuel reserves within tolerance.',
+      data: 'CR 48,220 // 14.2 LY', micro: 'Arcade-GFX V0.2.0',
+    };
+    for (const [role, spec] of Object.entries(TYPE_SCALE)) {
+      const row = document.createElement('div');
+      row.className = 'spec-row';
+      const meta = document.createElement('div');
+      meta.className = 'spec-meta arcade-micro';
+      meta.innerHTML = role + '<br>' + spec.weight + ' · ' + spec.size + 'px · +' + spec.tracking + 'em';
+      const sample = document.createElement('div');
+      sample.className = 'arcade-' + role;
+      sample.style.color = 'var(--arcade-primary)';
+      if (role === 'display') sample.style.fontSize = '40px';
+      sample.textContent = sampleText[role] ?? 'Specimen';
+      row.append(meta, sample);
+      specDiv.appendChild(row);
+    }
+
+    // ═══ 04 Icons — full shipped library from the engine ═══
+    const iconGrid = document.getElementById('iconGrid');
+    for (const name of getIconNames().filter(n => !['gear', 'lightning', 'trophy'].includes(n))) {
+      const cell = document.createElement('div');
+      cell.className = 'icon-cell';
+      const cv = document.createElement('canvas');
+      cv.width = 112; cv.height = 112;
+      const ctx = cv.getContext('2d');
+      drawIcon(ctx, name, 56, 56, 72, P);
+      const cap = document.createElement('span');
+      cap.textContent = name;
+      cell.append(cv, cap);
+      iconGrid.appendChild(cell);
+    }
+
+    // ═══ 05 Components — live engine renders ═══
+    const comps = document.getElementById('components');
+    function block(w, h, cap, draw) {
+      const wrap = document.createElement('div');
+      wrap.className = 'comp-block';
+      const cv = document.createElement('canvas');
+      cv.width = w * 2; cv.height = h * 2;
+      cv.style.width = w + 'px'; cv.style.height = h + 'px';
+      const ctx = cv.getContext('2d');
+      ctx.scale(2, 2);
+      draw(ctx);
+      const c = document.createElement('div');
+      c.className = 'cap'; c.textContent = cap;
+      wrap.append(cv, c);
+      comps.appendChild(wrap);
+    }
+    block(280, 120, 'PANEL + BAR GAUGES', (ctx) => {
+      drawPanel(ctx, theme, { x: 4, y: 4, width: 272, height: 112, title: 'STATUS' });
+      drawBarGauge(ctx, theme, { x: 20, y: 42, width: 240, height: 20, value: 0.72, label: 'HULL', showValue: true });
+      drawBarGauge(ctx, theme, { x: 20, y: 78, width: 240, height: 20, value: 0.45, label: 'SHIELDS', showValue: true, color: S });
+    });
+    block(150, 120, 'RADIAL GAUGE', (ctx) => {
+      drawRadialGauge(ctx, theme, { cx: 75, cy: 62, radius: 42, value: 0.68, label: 'THRUST', showValue: true });
+    });
+    block(170, 170, 'RADAR', (ctx) => {
+      drawRadarDisplay(ctx, theme, {
+        x: 22, y: 24, size: 124, rings: 3, sweepAngle: 0.9,
+        blips: [
+          { x: 0.45, y: -0.3, color: S },
+          { x: -0.5, y: 0.42, color: S },
+          { x: 0.1, y: 0.15, color: theme.palette.danger.core, size: 3 },
+        ],
+      });
+    });
+  </script>
+</body>
+</html>
