@@ -5,6 +5,11 @@ A sleek futuristic graphics engine for browser-based arcade games. Provides a un
 
 **Style reference**: Think Halo HUD, Elite Dangerous cockpit, 2001: A Space Odyssey interfaces. Clean, geometric, adult, military-grade. NOT pixel art, NOT retro, NOT cute.
 
+**BRANDING.md is the definitive brand reference** (identity, color roles,
+typography kit, shape language, glow rules, motion, voice). This file is the
+integration manual; when generating anything user-visible, follow BRANDING.md.
+Living specimen page: `npm run test:brand`.
+
 ## Installation
 ```bash
 npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary
@@ -51,6 +56,15 @@ ThemeProvider, include:
 - **Share Tech Mono** — data readouts, stats, version info (monospace, technical)
 
 Font constants are exported from the engine: `FONT_DISPLAY`, `FONT_BODY`, `FONT_MONO`.
+
+### Typography kit
+Seven fixed type roles (see BRANDING.md §3 for the full spec table):
+`display, title, heading, label, body, data, micro`. Use them via:
+- **CSS**: classes `.arcade-display` … `.arcade-micro` (after `injectCSS()`)
+- **Canvas**: `applyType(ctx, 'label')` sets font + letter-spacing;
+  `canvasFont('data', 16)` returns a font string; `typeCase('label', text)`
+  applies the role's casing. `TYPE_SCALE` exposes the raw spec.
+Only `body` is sentence case — everything else renders uppercase.
 
 ## Visual Style Rules
 

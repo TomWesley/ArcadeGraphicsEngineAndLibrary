@@ -147,6 +147,43 @@ body.arcade-theme {
   box-sizing: border-box;
 }
 
+/* ── Typography kit — one class per type role ── */
+.arcade-display {
+  font-family: var(--arcade-font-display);
+  font-weight: 900; font-size: 56px; letter-spacing: 0.18em;
+  line-height: 1.05; text-transform: uppercase;
+}
+.arcade-title {
+  font-family: var(--arcade-font-display);
+  font-weight: 700; font-size: 26px; letter-spacing: 0.14em;
+  line-height: 1.15; text-transform: uppercase;
+}
+.arcade-heading {
+  font-family: var(--arcade-font-display);
+  font-weight: 600; font-size: 13px; letter-spacing: 0.24em;
+  line-height: 1.3; text-transform: uppercase;
+}
+.arcade-label {
+  font-family: var(--arcade-font-body);
+  font-weight: 600; font-size: 14px; letter-spacing: 0.14em;
+  line-height: 1.3; text-transform: uppercase;
+}
+.arcade-body {
+  font-family: var(--arcade-font-body);
+  font-weight: 400; font-size: 15px; letter-spacing: 0.02em;
+  line-height: 1.5;
+}
+.arcade-data {
+  font-family: var(--arcade-font-mono);
+  font-weight: 400; font-size: 13px; letter-spacing: 0.1em;
+  line-height: 1.4; text-transform: uppercase;
+}
+.arcade-micro {
+  font-family: var(--arcade-font-mono);
+  font-weight: 400; font-size: 10px; letter-spacing: 0.2em;
+  line-height: 1.4; text-transform: uppercase;
+}
+
 /* Neon text glow */
 .arcade-glow {
   text-shadow:
