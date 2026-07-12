@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TWS — Logo Round 3</title>
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <title>TWS — Logo Round 4</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -12,237 +12,110 @@
       min-height: 100vh; color: #d9d9d4;
       font-family: 'Rajdhani', sans-serif;
       padding: 36px 44px 100px;
+      display: flex; flex-direction: column; align-items: center;
     }
-    h1 { font-family: 'Share Tech Mono', monospace; font-size: 16px; letter-spacing: 6px; color: #f7f7f2; }
-    .sub { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #5c5c55; letter-spacing: 2px; margin: 6px 0 34px; }
+    h1 { font-family: 'Share Tech Mono', monospace; font-size: 16px; letter-spacing: 6px; color: #f7f7f2; align-self: flex-start; }
+    .sub { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #5c5c55; letter-spacing: 2px; margin: 6px 0 34px; align-self: flex-start; }
     .sub b { color: #FFDA03; font-weight: 400; }
 
-    .options { display: flex; flex-direction: column; gap: 34px; max-width: 1060px; margin: 0 auto; }
-    .option {
-      display: grid; grid-template-columns: 620px 1fr; gap: 26px;
-      border: 1px solid #1d1d1f; padding: 24px;
-      clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px);
-    }
-    .stage {
+    .hero {
+      width: min(920px, 100%);
       background: #0a0a0b; border: 1px solid #17171a;
       display: flex; align-items: center; justify-content: center;
-      min-height: 300px;
+      padding: 30px 0;
+      margin-bottom: 26px;
     }
-    .stage svg { width: 100%; max-width: 540px; height: auto; }
-    .meta h2 { font-family: 'Share Tech Mono', monospace; font-size: 13px; letter-spacing: 3px; color: #f7f7f2; margin-bottom: 2px; }
-    .meta .tag { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 2px; color: #FFDA03; margin-bottom: 12px; }
-    .meta p { font-size: 14px; line-height: 1.55; color: #98988f; max-width: 40ch; margin-bottom: 16px; }
-    .previews { display: flex; gap: 10px; align-items: center; }
-    .previews .chip {
-      width: 128px; height: 82px; display: flex; align-items: center; justify-content: center;
+    .hero svg { width: 100%; max-width: 760px; height: auto; }
+
+    .chips { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+    .chip {
+      width: 300px; height: 190px;
+      display: flex; align-items: center; justify-content: center;
       border: 1px solid #1d1d1f;
     }
-    .previews .chip.light { background: #ffffff; }
-    .previews .chip.yellow { background: #FFDA03; }
-    .previews .chip svg { width: 106px; height: auto; }
-    .cap { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: #5c5c55; letter-spacing: 1px; margin-top: 5px; }
+    .chip.light { background: #ffffff; }
+    .chip.yellow { background: #FFDA03; }
+    .chip svg { width: 260px; height: auto; }
+    .cap { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: #5c5c55; letter-spacing: 2px; margin-top: 22px; }
   </style>
 </head>
 <body>
   <h1>THE WINNING SEQUENCE</h1>
-  <div class="sub">LOGO ROUND 3 // SIGNATURE LETTERFORM CONSTRUCTIONS // BLACK · WHITE · <b>#FFDA03</b></div>
+  <div class="sub">LOGO ROUND 4 // RELAY — CLEANED VECTOR BUILD // BLACK · WHITE · <b>#FFDA03</b> // CODE · CREATE · COMPETE</div>
 
-  <div class="options">
-
-    <div class="option">
-      <div class="stage" id="stage1"></div>
-      <div class="meta">
-        <h2>R3-A — SCANLINE</h2>
-        <div class="tag">EVERY LETTER IS A SEQUENCE</div>
-        <p>The IBM move, made ours: the letters exist only as stacked data
-           rows — and one row is the winning one. It runs yellow through
-           all three letters, bridges the gaps, and exits with the arrow.
-           The concept and the construction are the same thing.</p>
-        <div class="previews" id="prev1"></div>
-        <div class="cap">LIGHT / YELLOW SURFACE</div>
-      </div>
-    </div>
-
-    <div class="option">
-      <div class="stage" id="stage2"></div>
-      <div class="meta">
-        <h2>R3-B — APEX</h2>
-        <div class="tag">THE WIN INSIDE THE W</div>
-        <p>The FedEx move: heavy beveled letterforms cut with 45° chamfers,
-           and a single yellow chevron living in the W's counter — an
-           upward arrow hidden at the center of the company's own name.
-           One accent, nothing else. The most corporate of the three.</p>
-        <div class="previews" id="prev2"></div>
-        <div class="cap">LIGHT / YELLOW SURFACE</div>
-      </div>
-    </div>
-
-    <div class="option">
-      <div class="stage" id="stage3"></div>
-      <div class="meta">
-        <h2>R3-C — SEGMENT</h2>
-        <div class="tag">SCOREBOARD HERITAGE, RISING</div>
-        <p>Letters assembled from chamfered scoreboard segments with true
-           LED gaps. Three segments burn yellow — low in the T, the W's
-           center post, the S's full top bar — a diagonal climb across the
-           mark that exits high with the arrow. Sports timing-board DNA.</p>
-        <div class="previews" id="prev3"></div>
-        <div class="cap">LIGHT / YELLOW SURFACE</div>
-      </div>
-    </div>
-
-  </div>
+  <div class="hero" id="hero"></div>
+  <div class="chips" id="chips"></div>
+  <div class="cap">LIGHT AND YELLOW SURFACES // MARK IS PURE SVG GEOMETRY — NO FONT IN THE MONOGRAM</div>
 
   <script>
-    // ═══ Strict palette ═══
     const YELLOW = '#FFDA03';
     const WHITE = '#F7F7F2';
     const BLACK = '#0B0B0C';
+    // ink = T/W + words; accent = S + periods + relay tail
     const SURFACES = {
-      dark:   { bg: '#0a0a0b', ink: WHITE, accent: YELLOW },
-      light:  { bg: '#ffffff', ink: BLACK, accent: YELLOW },
-      yellow: { bg: YELLOW,    ink: BLACK, accent: WHITE },
+      dark:   { ink: WHITE, accent: YELLOW },
+      light:  { ink: BLACK, accent: YELLOW },
+      yellow: { ink: BLACK, accent: WHITE },
     };
-    const OX = 42, OY = 46;   // mark origin in 360x252
-    const rect = (x, y, w, h, c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`;
-    const arrow = (x, y, c) => `<path d="M${x},${y - 7} L${x + 15},${y} L${x},${y + 7} Z" fill="${c}"/>`;
-    const tick = (x, y, c) => `<rect x="${x - 1.75}" y="${y - 7}" width="3.5" height="14" fill="${c}"/>`;
-    const wordmark = (ink) => `<text x="180" y="216" font-family="'Share Tech Mono', monospace" font-size="11.5"
-      fill="${ink}" opacity="0.55" text-anchor="middle" letter-spacing="6">THE WINNING SEQUENCE</text>`;
 
-    // ═══════════ R3-A — SCANLINE ═══════════
-    // Letters exist only as 6 stacked rows; row 3 is the winning row.
-    function svg1(surface) {
+    function svgMark(surface) {
       const { ink, accent } = SURFACES[surface];
-      const ROWS = [0, 17.2, 34.4, 51.6, 68.8, 86];   // row tops, h=10
-      const H = 10, WIN = 3;
-      // Per-letter segments per row: [x, w] in letter-local space
-      const T = r => r === 0 ? [[0, 76]] : [[28, 20]];
-      const W = r => {
-        // True W anatomy sliced into rows: four diagonal strokes
-        // A(2,0)→B(20,96), B→C(38,10), C→D(56,96), D→E(74,0)
-        const yc = ROWS[r] + H / 2;
-        const strokes = [
-          [2, 0, 20, 96], [38, 10, 20, 96], [38, 10, 56, 96], [74, 0, 56, 96],
-        ];
-        const segs = [];
-        for (const [xa, ya, xb, yb] of strokes) {
-          const lo = Math.min(ya, yb), hi = Math.max(ya, yb);
-          if (yc < lo || yc > hi) continue;
-          const xc = xa + (xb - xa) * (yc - ya) / (yb - ya);
-          segs.push([xc - 7.5, 15]);
-        }
-        // Merge overlapping slices (strokes meet at the vertices)
-        segs.sort((p, q) => p[0] - q[0]);
-        const merged = [];
-        for (const [x, w] of segs) {
-          const last = merged[merged.length - 1];
-          if (last && x <= last[0] + last[1] + 1) {
-            last[1] = Math.max(last[1], x + w - last[0]);
-          } else merged.push([x, w]);
-        }
-        return merged;
-      };
-      const S = r => [
-        [[2, 74]], [[2, 20]], [[2, 72]], [[54, 22]], [[54, 22]], [[0, 74]],
-      ][r];
-      const LX = { T: OX, W: OX + 100, S: OX + 200 };
-      let bars = '';
-      for (let r = 0; r < 6; r++) {
-        const y = OY + ROWS[r];
-        const c = r === WIN ? accent : ink;
-        for (const [name, fn] of [['T', T], ['W', W], ['S', S]]) {
-          for (const [x, w] of fn(r)) bars += rect(LX[name] + x, y, w, H, c);
-        }
-      }
-      const ty = OY + ROWS[WIN] + H / 2;
+
+      // ── The monogram — heavy oblique strokes, interlocked ──
+      // Drawn upright, skewed as a group. Stroke 21, butt caps, miter joins.
+      // T:  bar 0..80, stem at 40
+      // W:  58..150 — first stroke tucks under the T bar
+      // S:  top bar reaches back under the W's final stroke
+      const letters = `
+        <g stroke="${ink}" stroke-width="21" fill="none"
+           stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="2">
+          <!-- T: stem overlaps fully into the bar — no seam -->
+          <path d="M0,10.5 L84,10.5"/>
+          <path d="M42,2 L42,96"/>
+          <!-- W: first stroke tucks under the T bar; last rises to the cap -->
+          <path d="M62,12 L84,96 L106,14 L128,96 L150,0"/>
+        </g>
+        <!-- S: one continuous path — mitered corners, no seams; terminal
+             hooks (top-right down, bottom-left up) break the '5' reading -->
+        <g stroke="${accent}" stroke-width="21" fill="none"
+           stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="2">
+          <path d="M242,26 L242,10.5 L174,10.5 L174,42.5 L228,42.5 L228,85.5 L158,85.5 L158,68"/>
+        </g>`;
+
+      // ── The relay line — white leg hands off to the yellow leg ──
+      const relay = `
+        <g>
+          <rect x="-2" y="-26" width="114" height="4.2" fill="${ink}"/>
+          <path d="M112,-30.5 L126,-23.9 L112,-17.3 Z" fill="${ink}"/>
+          <path d="M134,-30.5 L142,-23.9 L134,-17.3 L139.5,-17.3 L147.5,-23.9 L139.5,-30.5 Z" fill="${accent}"/>
+          <rect x="154" y="-26" width="74" height="4.2" fill="${accent}"/>
+          <path d="M228,-30.5 L242,-23.9 L228,-17.3 Z" fill="${accent}"/>
+        </g>`;
+
+      // ── Tagline — CODE. CREATE. COMPETE. with accent periods ──
+      const tagline = `
+        <text x="180" y="212" font-family="Rajdhani, sans-serif" font-weight="600"
+              font-size="17" letter-spacing="4" text-anchor="middle" fill="${ink}"
+              >CODE<tspan fill="${accent}">.</tspan>&#8195;CREATE<tspan fill="${accent}">.</tspan>&#8195;COMPETE<tspan fill="${accent}">.</tspan></text>
+        <path d="M320,201 L327,206.5 L320,212 L324,212 L331,206.5 L324,201 Z" fill="${accent}"/>`;
+
       return `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 252">
-  <line x1="26" y1="${ty}" x2="330" y2="${ty}" stroke="${accent}" stroke-width="2.6"/>
-  ${bars}
-  ${tick(26, ty, accent)}
-  ${arrow(330, ty, accent)}
-  ${wordmark(SURFACES[surface].ink)}
-</svg>`;
-    }
-
-    // ═══════════ R3-B — APEX ═══════════
-    // Heavy bevel-joined strokes; yellow chevron in the W's counter.
-    function svg2(surface) {
-      const { ink, accent } = SURFACES[surface];
-      const o = (x, y) => `${OX + x},${OY + y}`;
-      return `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 252">
-  <g stroke="${ink}" stroke-width="22" fill="none" stroke-linecap="butt" stroke-linejoin="bevel">
-    <!-- T -->
-    <path d="M${o(0, 11)} L${o(76, 11)}"/>
-    <path d="M${o(38, 22)} L${o(38, 96)}"/>
-    <!-- W — full-height apex, bevel joins chamfer the peaks -->
-    <path d="M${o(102, 2)} L${o(120, 96)} L${o(144, 10)} L${o(168, 96)} L${o(186, 2)}"/>
-    <!-- S — angular Z-stack -->
-    <path d="M${o(278, 11)} L${o(215, 11)} L${o(215, 48)} L${o(269, 48)} L${o(269, 85)} L${o(206, 85)}"/>
+  <g transform="translate(74,62) skewX(-12)">
+    ${relay}
+    ${letters}
   </g>
-  <!-- The win: a single chevron in the W's counter -->
-  <path d="M${o(130, 58)} L${o(144, 32)} L${o(158, 58)}"
-        stroke="${accent}" stroke-width="9" fill="none" stroke-linecap="butt" stroke-linejoin="miter"/>
-  ${wordmark(ink)}
+  ${tagline}
 </svg>`;
     }
 
-    // ═══════════ R3-C — SEGMENT ═══════════
-    // Chamfered scoreboard segments with LED gaps; ascending yellow.
-    function svg3(surface) {
-      const { ink, accent } = SURFACES[surface];
-      // Chamfered segment: hexagon, short ends taper to points
-      const hseg = (x, y, w, h, c) => {
-        const ch = h / 2;
-        return `<path d="M${x},${y + ch} L${x + ch},${y} L${x + w - ch},${y} L${x + w},${y + ch} L${x + w - ch},${y + h} L${x + ch},${y + h} Z" fill="${c}"/>`;
-      };
-      const vseg = (x, y, w, h, c) => {
-        const ch = w / 2;
-        return `<path d="M${x + ch},${y} L${x + w},${y + ch} L${x + w},${y + h - ch} L${x + ch},${y + h} L${x},${y + h - ch} L${x},${y + ch} Z" fill="${c}"/>`;
-      };
-      const LX = { T: OX, W: OX + 100, S: OX + 200 };
-      let s = '';
-      // T — top bar + two stem segments (lower one wins)
-      s += hseg(LX.T + 0, OY + 0, 76, 13, ink);
-      s += vseg(LX.T + 31.5, OY + 17, 13, 36, ink);
-      s += vseg(LX.T + 31.5, OY + 57, 13, 39, accent);          // WIN — low
-      // W — four diagonal segments (true W anatomy) with LED gaps
-      // at the vertices; the second stroke burns yellow
-      const dseg = (x1, y1, x2, y2, c) => {
-        const hw = 6.5;
-        return `<path d="M${x1 - hw},${y1} L${x1 + hw},${y1} L${x2 + hw},${y2} L${x2 - hw},${y2} Z" fill="${c}"/>`;
-      };
-      const wo = LX.W;
-      s += dseg(wo + 9.5, OY + 0,  wo + 24, OY + 92, ink);
-      s += dseg(wo + 26, OY + 88, wo + 37, OY + 16, accent);    // WIN — mid
-      s += dseg(wo + 41, OY + 16, wo + 52, OY + 88, ink);
-      s += dseg(wo + 54, OY + 92, wo + 68.5, OY + 0, ink);
-      // S — five segments (top bar wins)
-      s += hseg(LX.S + 2, OY + 0, 74, 13, accent);              // WIN — high
-      s += vseg(LX.S + 2, OY + 17, 13, 20.5, ink);
-      s += hseg(LX.S + 2, OY + 41.5, 74, 13, ink);
-      s += vseg(LX.S + 61, OY + 58, 13, 21, ink);
-      s += hseg(LX.S + 2, OY + 83, 74, 13, ink);
-      return `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 252">
-  ${s}
-  ${arrow(OX + 284, OY + 6.5, accent)}
-  ${wordmark(ink)}
-</svg>`;
-    }
-
-    // ═══ Mount ═══
-    for (const [n, fn] of [[1, svg1], [2, svg2], [3, svg3]]) {
-      document.getElementById('stage' + n).innerHTML = fn('dark');
-      const prev = document.getElementById('prev' + n);
-      for (const sName of ['light', 'yellow']) {
-        const chip = document.createElement('div');
-        chip.className = 'chip ' + sName;
-        chip.innerHTML = fn(sName);
-        prev.appendChild(chip);
-      }
+    document.getElementById('hero').innerHTML = svgMark('dark');
+    const chips = document.getElementById('chips');
+    for (const s of ['light', 'yellow']) {
+      const chip = document.createElement('div');
+      chip.className = 'chip ' + s;
+      chip.innerHTML = svgMark(s);
+      chips.appendChild(chip);
     }
   </script>
 </body>
