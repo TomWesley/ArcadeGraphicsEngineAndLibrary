@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TWS — Logo Round 2</title>
+  <title>TWS — Logo Round 3</title>
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,23 +13,18 @@
       font-family: 'Rajdhani', sans-serif;
       padding: 36px 44px 100px;
     }
-    h1 {
-      font-family: 'Share Tech Mono', monospace; font-size: 16px; letter-spacing: 6px;
-      color: #f7f7f2;
-    }
+    h1 { font-family: 'Share Tech Mono', monospace; font-size: 16px; letter-spacing: 6px; color: #f7f7f2; }
     .sub { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #5c5c55; letter-spacing: 2px; margin: 6px 0 34px; }
     .sub b { color: #FFDA03; font-weight: 400; }
 
     .options { display: flex; flex-direction: column; gap: 34px; max-width: 1060px; margin: 0 auto; }
     .option {
       display: grid; grid-template-columns: 620px 1fr; gap: 26px;
-      border: 1px solid #1d1d1f;
-      padding: 24px;
+      border: 1px solid #1d1d1f; padding: 24px;
       clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px);
     }
     .stage {
-      background: #0a0a0b;
-      border: 1px solid #17171a;
+      background: #0a0a0b; border: 1px solid #17171a;
       display: flex; align-items: center; justify-content: center;
       min-height: 300px;
     }
@@ -43,7 +38,6 @@
       border: 1px solid #1d1d1f;
     }
     .previews .chip.light { background: #ffffff; }
-    .previews .chip.dark { background: #0a0a0b; }
     .previews .chip.yellow { background: #FFDA03; }
     .previews .chip svg { width: 106px; height: auto; }
     .cap { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: #5c5c55; letter-spacing: 1px; margin-top: 5px; }
@@ -51,19 +45,19 @@
 </head>
 <body>
   <h1>THE WINNING SEQUENCE</h1>
-  <div class="sub">LOGO ROUND 2 // OPTION-B LINEAGE // CUSTOM LETTERFORMS // BLACK · WHITE · <b>#FFDA03</b></div>
+  <div class="sub">LOGO ROUND 3 // SIGNATURE LETTERFORM CONSTRUCTIONS // BLACK · WHITE · <b>#FFDA03</b></div>
 
   <div class="options">
 
     <div class="option">
       <div class="stage" id="stage1"></div>
       <div class="meta">
-        <h2>B1 — CHANNEL</h2>
-        <div class="tag">THE SEQUENCE CUTS THROUGH</div>
-        <p>The closest heir to option B. Custom-drawn slab letterforms are
-           split by a horizontal channel and the sequence runs inside it —
-           through the letters, not behind them. Nodes surface in the gaps;
-           the current exits past the S.</p>
+        <h2>R3-A — SCANLINE</h2>
+        <div class="tag">EVERY LETTER IS A SEQUENCE</div>
+        <p>The IBM move, made ours: the letters exist only as stacked data
+           rows — and one row is the winning one. It runs yellow through
+           all three letters, bridges the gaps, and exits with the arrow.
+           The concept and the construction are the same thing.</p>
         <div class="previews" id="prev1"></div>
         <div class="cap">LIGHT / YELLOW SURFACE</div>
       </div>
@@ -72,12 +66,12 @@
     <div class="option">
       <div class="stage" id="stage2"></div>
       <div class="meta">
-        <h2>B2 — WEAVE</h2>
-        <div class="tag">OVER · UNDER · OVER</div>
-        <p>Solid letterforms, and the current weaves them — passing in front
-           of the T, behind the W, and in front of the S, where it rides
-           exactly along the S's middle stroke before exiting. The weave
-           gives the flat mark physical depth.</p>
+        <h2>R3-B — APEX</h2>
+        <div class="tag">THE WIN INSIDE THE W</div>
+        <p>The FedEx move: heavy beveled letterforms cut with 45° chamfers,
+           and a single yellow chevron living in the W's counter — an
+           upward arrow hidden at the center of the company's own name.
+           One accent, nothing else. The most corporate of the three.</p>
         <div class="previews" id="prev2"></div>
         <div class="cap">LIGHT / YELLOW SURFACE</div>
       </div>
@@ -86,12 +80,12 @@
     <div class="option">
       <div class="stage" id="stage3"></div>
       <div class="meta">
-        <h2>B3 — STEP-UP</h2>
-        <div class="tag">THE WINNING TRAJECTORY, INSIDE THE MARK</div>
-        <p>Each letter is split at a different height — low through the T,
-           mid through the W, high through the S — and the sequence
-           staircases upward through all three, exiting above where it
-           entered. Winning, built into the monogram.</p>
+        <h2>R3-C — SEGMENT</h2>
+        <div class="tag">SCOREBOARD HERITAGE, RISING</div>
+        <p>Letters assembled from chamfered scoreboard segments with true
+           LED gaps. Three segments burn yellow — low in the T, the W's
+           center post, the S's full top bar — a diagonal climb across the
+           mark that exits high with the arrow. Sports timing-board DNA.</p>
         <div class="previews" id="prev3"></div>
         <div class="cap">LIGHT / YELLOW SURFACE</div>
       </div>
@@ -104,112 +98,138 @@
     const YELLOW = '#FFDA03';
     const WHITE = '#F7F7F2';
     const BLACK = '#0B0B0C';
-
-    // ═══ Custom letterforms — drawn geometry, no font ═══
-    // Cap height 96. Stroke 17, butt caps, miter joins.
-    // T: bar + stem. W: splayed with a flat-notched center plateau.
-    // S: angular five-segment Z-stack.
-    // Letters at x = 44 (T), 142 (W), 240 (S); each 76 wide.
-    const LSTROKE = 17;
-    function letterPaths(ox, oy) {
-      const T = `M${ox + 0},${oy + 8.5} L${ox + 76},${oy + 8.5} M${ox + 38},${oy + 8.5} L${ox + 38},${oy + 96}`;
-      const W = `M${ox + 100},${oy + 0} L${ox + 114},${oy + 96} L${ox + 129},${oy + 34} L${ox + 143},${oy + 34} L${ox + 158},${oy + 96} L${ox + 172},${oy + 0}`;
-      const S = `M${ox + 270},${oy + 8.5} L${ox + 204.5},${oy + 8.5} L${ox + 204.5},${oy + 48} L${ox + 263.5},${oy + 48} L${ox + 263.5},${oy + 87.5} L${ox + 198},${oy + 87.5}`;
-      return { T, W, S };
-    }
-    function lettersGroup(ox, oy, ink) {
-      const { T, W, S } = letterPaths(ox, oy);
-      return `<path d="${T} ${W} ${S}" fill="none" stroke="${ink}"
-        stroke-width="${LSTROKE}" stroke-linecap="butt" stroke-linejoin="miter"/>`;
-    }
-    // Letter x-extents (with stroke) relative to ox: T 0..76, W 91..181, S 189..278.5
-    const EXT = { T: [-2, 78], W: [89, 183], S: [187, 280] };
-
-    const node = (x, y, c) =>
-      `<rect x="${x - 5}" y="${y - 5}" width="10" height="10" fill="${c}" transform="rotate(45 ${x} ${y})"/>`;
-    const arrow = (x, y, c) =>
-      `<path d="M${x},${y - 7} L${x + 15},${y} L${x},${y + 7} Z" fill="${c}"/>`;
-    const tick = (x, y, c) =>
-      `<rect x="${x - 1.75}" y="${y - 7}" width="3.5" height="14" fill="${c}"/>`;
-
-    // Surfaces: [stage bg, ink, accent]
     const SURFACES = {
       dark:   { bg: '#0a0a0b', ink: WHITE, accent: YELLOW },
       light:  { bg: '#ffffff', ink: BLACK, accent: YELLOW },
       yellow: { bg: YELLOW,    ink: BLACK, accent: WHITE },
     };
+    const OX = 42, OY = 46;   // mark origin in 360x252
+    const rect = (x, y, w, h, c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`;
+    const arrow = (x, y, c) => `<path d="M${x},${y - 7} L${x + 15},${y} L${x},${y + 7} Z" fill="${c}"/>`;
+    const tick = (x, y, c) => `<rect x="${x - 1.75}" y="${y - 7}" width="3.5" height="14" fill="${c}"/>`;
+    const wordmark = (ink) => `<text x="180" y="216" font-family="'Share Tech Mono', monospace" font-size="11.5"
+      fill="${ink}" opacity="0.55" text-anchor="middle" letter-spacing="6">THE WINNING SEQUENCE</text>`;
 
-    const OX = 42, OY = 44;   // letters origin in the 360x252 viewBox
-
-    // ═══ B1 — CHANNEL ═══
+    // ═══════════ R3-A — SCANLINE ═══════════
+    // Letters exist only as 6 stacked rows; row 3 is the winning row.
     function svg1(surface) {
-      const { bg, ink, accent } = SURFACES[surface];
-      const ty = OY + 70;  // thread height
+      const { ink, accent } = SURFACES[surface];
+      const ROWS = [0, 17.2, 34.4, 51.6, 68.8, 86];   // row tops, h=10
+      const H = 10, WIN = 3;
+      // Per-letter segments per row: [x, w] in letter-local space
+      const T = r => r === 0 ? [[0, 76]] : [[28, 20]];
+      const W = r => {
+        // True W anatomy sliced into rows: four diagonal strokes
+        // A(2,0)→B(20,96), B→C(38,10), C→D(56,96), D→E(74,0)
+        const yc = ROWS[r] + H / 2;
+        const strokes = [
+          [2, 0, 20, 96], [38, 10, 20, 96], [38, 10, 56, 96], [74, 0, 56, 96],
+        ];
+        const segs = [];
+        for (const [xa, ya, xb, yb] of strokes) {
+          const lo = Math.min(ya, yb), hi = Math.max(ya, yb);
+          if (yc < lo || yc > hi) continue;
+          const xc = xa + (xb - xa) * (yc - ya) / (yb - ya);
+          segs.push([xc - 7.5, 15]);
+        }
+        // Merge overlapping slices (strokes meet at the vertices)
+        segs.sort((p, q) => p[0] - q[0]);
+        const merged = [];
+        for (const [x, w] of segs) {
+          const last = merged[merged.length - 1];
+          if (last && x <= last[0] + last[1] + 1) {
+            last[1] = Math.max(last[1], x + w - last[0]);
+          } else merged.push([x, w]);
+        }
+        return merged;
+      };
+      const S = r => [
+        [[2, 74]], [[2, 20]], [[2, 72]], [[54, 22]], [[54, 22]], [[0, 74]],
+      ][r];
+      const LX = { T: OX, W: OX + 100, S: OX + 200 };
+      let bars = '';
+      for (let r = 0; r < 6; r++) {
+        const y = OY + ROWS[r];
+        const c = r === WIN ? accent : ink;
+        for (const [name, fn] of [['T', T], ['W', W], ['S', S]]) {
+          for (const [x, w] of fn(r)) bars += rect(LX[name] + x, y, w, H, c);
+        }
+      }
+      const ty = OY + ROWS[WIN] + H / 2;
       return `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 252">
-  <g>
-    ${lettersGroup(OX, OY, ink)}
-    <!-- channel carved through the letters -->
-    <rect x="${OX - 6}" y="${ty - 5.5}" width="292" height="11" fill="${bg}"/>
-    <!-- the sequence -->
-    <line x1="26" y1="${ty}" x2="330" y2="${ty}" stroke="${accent}" stroke-width="3.4"/>
-    ${tick(26, ty, accent)}
-    ${node(OX + 84, ty, accent)}
-    ${node(OX + 185, ty, accent)}
-    ${arrow(330, ty, accent)}
-  </g>
-  <text x="180" y="216" font-family="'Share Tech Mono', monospace" font-size="11.5"
-        fill="${ink}" opacity="0.55" text-anchor="middle" letter-spacing="6">THE WINNING SEQUENCE</text>
+  <line x1="26" y1="${ty}" x2="330" y2="${ty}" stroke="${accent}" stroke-width="2.6"/>
+  ${bars}
+  ${tick(26, ty, accent)}
+  ${arrow(330, ty, accent)}
+  ${wordmark(SURFACES[surface].ink)}
 </svg>`;
     }
 
-    // ═══ B2 — WEAVE ═══
+    // ═══════════ R3-B — APEX ═══════════
+    // Heavy bevel-joined strokes; yellow chevron in the W's counter.
     function svg2(surface) {
-      const { bg, ink, accent } = SURFACES[surface];
-      const ty = OY + 48;  // rides the S mid bar
+      const { ink, accent } = SURFACES[surface];
+      const o = (x, y) => `${OX + x},${OY + y}`;
       return `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 252">
-  <g>
-    <!-- behind everything -->
-    <line x1="26" y1="${ty}" x2="330" y2="${ty}" stroke="${accent}" stroke-width="3.4"/>
-    ${lettersGroup(OX, OY, ink)}
-    <!-- over the T -->
-    <line x1="26" y1="${ty}" x2="${OX + EXT.T[1]}" y2="${ty}" stroke="${accent}" stroke-width="3.4"/>
-    <!-- over the S — riding its middle stroke -->
-    <line x1="${OX + EXT.S[0]}" y1="${ty}" x2="330" y2="${ty}" stroke="${accent}" stroke-width="3.4"/>
-    ${tick(26, ty, accent)}
-    ${node(OX + 84, ty, accent)}
-    ${node(OX + 185, ty, accent)}
-    ${arrow(330, ty, accent)}
+  <g stroke="${ink}" stroke-width="22" fill="none" stroke-linecap="butt" stroke-linejoin="bevel">
+    <!-- T -->
+    <path d="M${o(0, 11)} L${o(76, 11)}"/>
+    <path d="M${o(38, 22)} L${o(38, 96)}"/>
+    <!-- W — full-height apex, bevel joins chamfer the peaks -->
+    <path d="M${o(102, 2)} L${o(120, 96)} L${o(144, 10)} L${o(168, 96)} L${o(186, 2)}"/>
+    <!-- S — angular Z-stack -->
+    <path d="M${o(278, 11)} L${o(215, 11)} L${o(215, 48)} L${o(269, 48)} L${o(269, 85)} L${o(206, 85)}"/>
   </g>
-  <text x="180" y="216" font-family="'Share Tech Mono', monospace" font-size="11.5"
-        fill="${ink}" opacity="0.55" text-anchor="middle" letter-spacing="6">THE WINNING SEQUENCE</text>
+  <!-- The win: a single chevron in the W's counter -->
+  <path d="M${o(130, 58)} L${o(144, 32)} L${o(158, 58)}"
+        stroke="${accent}" stroke-width="9" fill="none" stroke-linecap="butt" stroke-linejoin="miter"/>
+  ${wordmark(ink)}
 </svg>`;
     }
 
-    // ═══ B3 — STEP-UP ═══
+    // ═══════════ R3-C — SEGMENT ═══════════
+    // Chamfered scoreboard segments with LED gaps; ascending yellow.
     function svg3(surface) {
-      const { bg, ink, accent } = SURFACES[surface];
-      const yT = OY + 76, yW = OY + 52, yS = OY + 28;
-      const s1 = OX + 84, s2 = OX + 185;   // step x positions (letter gaps)
+      const { ink, accent } = SURFACES[surface];
+      // Chamfered segment: hexagon, short ends taper to points
+      const hseg = (x, y, w, h, c) => {
+        const ch = h / 2;
+        return `<path d="M${x},${y + ch} L${x + ch},${y} L${x + w - ch},${y} L${x + w},${y + ch} L${x + w - ch},${y + h} L${x + ch},${y + h} Z" fill="${c}"/>`;
+      };
+      const vseg = (x, y, w, h, c) => {
+        const ch = w / 2;
+        return `<path d="M${x + ch},${y} L${x + w},${y + ch} L${x + w},${y + h - ch} L${x + ch},${y + h} L${x},${y + h - ch} L${x},${y + ch} Z" fill="${c}"/>`;
+      };
+      const LX = { T: OX, W: OX + 100, S: OX + 200 };
+      let s = '';
+      // T — top bar + two stem segments (lower one wins)
+      s += hseg(LX.T + 0, OY + 0, 76, 13, ink);
+      s += vseg(LX.T + 31.5, OY + 17, 13, 36, ink);
+      s += vseg(LX.T + 31.5, OY + 57, 13, 39, accent);          // WIN — low
+      // W — four diagonal segments (true W anatomy) with LED gaps
+      // at the vertices; the second stroke burns yellow
+      const dseg = (x1, y1, x2, y2, c) => {
+        const hw = 6.5;
+        return `<path d="M${x1 - hw},${y1} L${x1 + hw},${y1} L${x2 + hw},${y2} L${x2 - hw},${y2} Z" fill="${c}"/>`;
+      };
+      const wo = LX.W;
+      s += dseg(wo + 9.5, OY + 0,  wo + 24, OY + 92, ink);
+      s += dseg(wo + 26, OY + 88, wo + 37, OY + 16, accent);    // WIN — mid
+      s += dseg(wo + 41, OY + 16, wo + 52, OY + 88, ink);
+      s += dseg(wo + 54, OY + 92, wo + 68.5, OY + 0, ink);
+      // S — five segments (top bar wins)
+      s += hseg(LX.S + 2, OY + 0, 74, 13, accent);              // WIN — high
+      s += vseg(LX.S + 2, OY + 17, 13, 20.5, ink);
+      s += hseg(LX.S + 2, OY + 41.5, 74, 13, ink);
+      s += vseg(LX.S + 61, OY + 58, 13, 21, ink);
+      s += hseg(LX.S + 2, OY + 83, 74, 13, ink);
       return `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 252">
-  <g>
-    ${lettersGroup(OX, OY, ink)}
-    <!-- per-letter channels at ascending heights -->
-    <rect x="${OX + EXT.T[0] - 3}" y="${yT - 5.5}" width="${EXT.T[1] - EXT.T[0] + 6}" height="11" fill="${bg}"/>
-    <rect x="${OX + EXT.W[0] - 3}" y="${yW - 5.5}" width="${EXT.W[1] - EXT.W[0] + 6}" height="11" fill="${bg}"/>
-    <rect x="${OX + EXT.S[0] - 3}" y="${yS - 5.5}" width="${EXT.S[1] - EXT.S[0] + 6}" height="11" fill="${bg}"/>
-    <!-- the rising sequence -->
-    <path d="M26,${yT} L${s1},${yT} L${s1},${yW} L${s2},${yW} L${s2},${yS} L330,${yS}"
-          fill="none" stroke="${accent}" stroke-width="3.4" stroke-linejoin="miter"/>
-    ${tick(26, yT, accent)}
-    ${node(s1, (yT + yW) / 2, accent)}
-    ${node(s2, (yW + yS) / 2, accent)}
-    ${arrow(330, yS, accent)}
-  </g>
-  <text x="180" y="216" font-family="'Share Tech Mono', monospace" font-size="11.5"
-        fill="${ink}" opacity="0.55" text-anchor="middle" letter-spacing="6">THE WINNING SEQUENCE</text>
+  ${s}
+  ${arrow(OX + 284, OY + 6.5, accent)}
+  ${wordmark(ink)}
 </svg>`;
     }
 
@@ -217,10 +237,10 @@
     for (const [n, fn] of [[1, svg1], [2, svg2], [3, svg3]]) {
       document.getElementById('stage' + n).innerHTML = fn('dark');
       const prev = document.getElementById('prev' + n);
-      for (const s of ['light', 'yellow']) {
+      for (const sName of ['light', 'yellow']) {
         const chip = document.createElement('div');
-        chip.className = 'chip ' + s;
-        chip.innerHTML = fn(s);
+        chip.className = 'chip ' + sName;
+        chip.innerHTML = fn(sName);
         prev.appendChild(chip);
       }
     }
