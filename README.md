@@ -15,7 +15,7 @@ Pin to a release tag — installs are then reproducible and upgrades are
 deliberate:
 
 ```bash
-npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.3.0
+npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.4.0
 ```
 
 The package builds itself on install (`prepare` script). ESM and CJS both
@@ -56,6 +56,9 @@ collapses the glow system to a single cheap pass.
 | **Typography** | 7 fixed type roles (Orbitron/Rajdhani/Share Tech Mono), CSS classes + canvas helpers |
 | **Icons** | 40 hand-built HUD icons + aliases, palette-tinted, `drawIcon`/`drawFramedIcon` |
 | **Instruments** | Panels, segmented bar gauges, radial gauges, radar with phosphor sweep, charts |
+| **Overlays** | Modal dialogs/confirms, toasts, loading screens — themed, a11y-aware, SSR-safe |
+| **Controls** | Canvas-drawn buttons with states + hit testing (for pure-canvas UIs) |
+| **Motion** | Approved easing curves (no bounce), animate/approach helpers, shared durations |
 | **Effects** | Ambient particles, scan lines, corner flourishes, canvas bloom |
 | **Engine** | PixelBuffer ops, Gaussian blur, Sobel edges, bloom, particles, sprite pipeline |
 | **A11y/perf** | `prefers-reduced-motion` respected, keyboard focus states, low-power glow mode, HiDPI helper |
@@ -73,6 +76,7 @@ collapses the glow system to a single cheap pass.
 
 ```bash
 npm run test:brand      # living brand guide — palettes, type, icons, components
+npm run test:components # interactive lab — dialogs, toasts, loading, canvas buttons
 npm run test:homepage   # complete fake game home page built from the engine
 npm run test:iconreview # icon library review board
 npm run test:hud        # animated command-center dashboard
@@ -83,7 +87,7 @@ npm run test:hud        # animated command-center dashboard
 ```bash
 npm install
 npm run typecheck
-npm test                 # 185 unit tests
+npm test                 # 196 unit tests
 npm run test:integration # consumer-surface integration tests
 npm run build
 ```

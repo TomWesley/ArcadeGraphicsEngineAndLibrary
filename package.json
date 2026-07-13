@@ -1,6 +1,6 @@
 {
   "name": "@tomwesley/arcade-graphics-engine",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Sleek futuristic graphics engine and UI style library for browser arcade games",
   "type": "module",
   "main": "dist/index.cjs",
@@ -58,6 +58,7 @@
     "test:iconlib": "npx http-server tests/icon-library -p 8092 -o",
     "test:iconreview": "npx http-server . -p 8095 -o /tests/icon-review/index.html",
     "test:brand": "npx http-server . -p 8096 -o /tests/brand-guide/index.html",
+    "test:components": "npx http-server . -p 8098 -o /tests/components-lab/index.html",
     "test:favicon": "npx http-server tests/favicon -p 8093 -o",
     "test:homepage": "npx http-server . -p 8094 -o /tests/fake-game-home/index.html",
     "typecheck": "tsc --noEmit",

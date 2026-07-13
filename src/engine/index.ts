@@ -5,3 +5,4 @@ export * from './sprites';
 export * from './analysis';
 export * from './pixelart';
 export * from './canvas-utils';
+export * from './motion';

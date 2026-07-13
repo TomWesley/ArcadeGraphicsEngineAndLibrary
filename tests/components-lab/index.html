@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Components Lab — Arcade Graphics Engine</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { padding: 32px 40px 80px; }
+    .page { max-width: 1080px; margin: 0 auto; }
+    header { margin-bottom: 34px; }
+    header .sub { color: var(--arcade-primary-dim); margin-top: 6px; }
+    section { margin-bottom: 40px; }
+    .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+    .note { color: #8a8a96; max-width: 72ch; margin-top: 6px; }
+    canvas { display: block; }
+  </style>
+</head>
+<body class="arcade-theme">
+  <div class="page">
+    <header>
+      <div class="arcade-title arcade-glow">Components Lab</div>
+      <div class="arcade-micro sub">TIER-3 UNIVERSAL COMPONENTS // DIALOG · TOAST · LOADING · CANVAS BUTTON · MOTION</div>
+    </header>
+
+    <section>
+      <div class="arcade-heading">01 // Dialogs</div>
+      <p class="arcade-body note">Modal confirm/alert. Enter confirms, Escape or backdrop cancels, focus is trapped and restored.</p>
+      <div class="row">
+        <button class="arcade-btn" id="btnConfirm">Confirm Dialog</button>
+        <button class="arcade-btn" id="btnDanger">Danger Dialog</button>
+        <button class="arcade-btn" id="btnAlert">Alert</button>
+        <span class="arcade-data" id="dialogResult"></span>
+      </div>
+    </section>
+
+    <section>
+      <div class="arcade-heading">02 // Toasts</div>
+      <p class="arcade-body note">Transient notifications — stack top-right, auto-dismiss, click to dismiss. Stack caps at 5.</p>
+      <div class="row">
+        <button class="arcade-btn" id="btnToastInfo">Info</button>
+        <button class="arcade-btn" id="btnToastSuccess">Success</button>
+        <button class="arcade-btn" id="btnToastWarning">Warning</button>
+        <button class="arcade-btn" id="btnToastError">Error</button>
+        <button class="arcade-btn" id="btnToastSticky">Sticky</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="arcade-heading">03 // Loading</div>
+      <p class="arcade-body note">Boot overlay with spinner + determinate progress, and the in-game canvas spinner primitive.</p>
+      <div class="row">
+        <button class="arcade-btn" id="btnLoading">Simulate 3s Load</button>
+        <canvas id="spinnerCanvas" width="140" height="70" style="width:140px;height:70px"></canvas>
+      </div>
+    </section>
+
+    <section>
+      <div class="arcade-heading">04 // Canvas Buttons + Motion</div>
+      <p class="arcade-body note">
+        Pure-canvas controls with idle/hover/active/disabled states and hit testing — plus the
+        motion module easing a gauge to a new value on every click (EASE.outCubic, no bounce).
+      </p>
+      <canvas id="buttonCanvas" width="1000" height="240" style="width:100%;max-width:1000px"></canvas>
+    </section>
+  </div>
+
+  <script type="module">
+    import {
+      ThemeProvider,
+      showDialog, showAlert, showToast, showLoading, drawLoadingArc,
+      drawCanvasButton, isPointInButton,
+      drawBarGauge,
+      animate, EASE, MOTION,
+      setupHiDPICanvas,
+    } from '/dist/index.js';
+
+    const provider = ThemeProvider.create('ELECTRIC_OCEAN');
+    provider.injectCSS();
+    const theme = provider.theme;
+
+    // ═══ 01 Dialogs ═══
+    const result = document.getElementById('dialogResult');
+    document.getElementById('btnConfirm').addEventListener('click', async () => {
+      const ok = await showDialog({
+        title: 'End Turn',
+        body: 'Two units still have movement remaining. End the turn anyway?',
+        confirmLabel: 'END TURN',
+      });
+      result.textContent = ok ? '// CONFIRMED' : '// CANCELLED';
+    });
+    document.getElementById('btnDanger').addEventListener('click', async () => {
+      const ok = await showDialog({
+        title: 'Abandon Run',
+        body: 'All progress in this sector will be lost. This cannot be undone.',
+        confirmLabel: 'ABANDON',
+        danger: true,
+      });
+      result.textContent = ok ? '// ABANDONED' : '// KEPT PLAYING';
+    });
+    document.getElementById('btnAlert').addEventListener('click', async () => {
+      await showAlert('Research complete: Robotics. New units available at the foundry.', 'Research');
+      result.textContent = '// ACKNOWLEDGED';
+    });
+
+    // ═══ 02 Toasts ═══
+    document.getElementById('btnToastInfo').addEventListener('click', () =>
+      showToast('Autosave complete // SECTOR 7', { kind: 'info' }));
+    document.getElementById('btnToastSuccess').addEventListener('click', () =>
+      showToast('Research complete: Robotics', { kind: 'success', title: 'Research' }));
+    document.getElementById('btnToastWarning').addEventListener('click', () =>
+      showToast('Fuel reserves below 20%', { kind: 'warning' }));
+    document.getElementById('btnToastError').addEventListener('click', () =>
+      showToast('Uplink lost — reconnecting', { kind: 'error', title: 'Comms' }));
+    document.getElementById('btnToastSticky').addEventListener('click', () =>
+      showToast('Enemy fleet detected in Epsilon Reach (click to dismiss)', { kind: 'warning', duration: 0 }));
+
+    // ═══ 03 Loading ═══
+    document.getElementById('btnLoading').addEventListener('click', () => {
+      const loader = showLoading({ label: 'Loading sector', progress: true });
+      let p = 0;
+      const iv = setInterval(() => {
+        p += 0.34;
+        loader.setProgress(p);
+        if (p >= 0.66) loader.setLabel('Compiling shaders');
+        if (p >= 1) { clearInterval(iv); loader.done(); }
+      }, 1000);
+    });
+
+    // In-game canvas spinner
+    const sp = setupHiDPICanvas(document.getElementById('spinnerCanvas'), 140, 70);
+    function spinnerFrame(now) {
+      sp.ctx.clearRect(0, 0, sp.width, sp.height);
+      drawLoadingArc(sp.ctx, theme, { cx: 35, cy: 35, radius: 20, t: now / 1000 });
+      drawLoadingArc(sp.ctx, theme, { cx: 100, cy: 35, radius: 12, t: now / 1000, color: provider.palette.secondary.core });
+      requestAnimationFrame(spinnerFrame);
+    }
+    requestAnimationFrame(spinnerFrame);
+
+    // ═══ 04 Canvas buttons + motion ═══
+    const bc = setupHiDPICanvas(document.getElementById('buttonCanvas'), 1000, 240);
+    const buttons = [
+      { x: 20,  y: 24, width: 210, height: 46, label: 'Launch Mission', accent: true, id: 'launch' },
+      { x: 250, y: 24, width: 170, height: 46, label: 'Loadout', id: 'loadout' },
+      { x: 440, y: 24, width: 170, height: 46, label: 'Settings', id: 'settings' },
+      { x: 630, y: 24, width: 170, height: 46, label: 'Disabled', id: 'off', disabled: true },
+    ];
+    let mouse = { x: -1, y: -1, down: false };
+    let gauge = 0.35;
+
+    function drawScene() {
+      bc.ctx.clearRect(0, 0, bc.width, bc.height);
+      for (const b of buttons) {
+        const state = b.disabled ? 'disabled'
+          : isPointInButton(b, mouse.x, mouse.y) ? (mouse.down ? 'active' : 'hover')
+          : 'idle';
+        drawCanvasButton(bc.ctx, theme, { ...b, state });
+      }
+      drawBarGauge(bc.ctx, theme, {
+        x: 20, y: 120, width: 780, height: 26,
+        value: gauge, label: 'MOTION TARGET', showValue: true,
+      });
+      bc.ctx.font = '12px "Share Tech Mono", monospace';
+      bc.ctx.fillStyle = 'rgba(150,160,175,0.7)';
+      bc.ctx.textAlign = 'left';
+      bc.ctx.fillText('CLICK ANY BUTTON — THE GAUGE EASES TO A NEW VALUE (EASE.outCubic, ' + MOTION.state + 'MS × 3)', 20, 180);
+    }
+    drawScene();
+
+    const el = document.getElementById('buttonCanvas');
+    el.addEventListener('mousemove', (e) => {
+      const r = el.getBoundingClientRect();
+      mouse.x = (e.clientX - r.left); mouse.y = (e.clientY - r.top);
+      drawScene();
+    });
+    el.addEventListener('mouseleave', () => { mouse.x = -1; mouse.y = -1; drawScene(); });
+    el.addEventListener('mousedown', () => { mouse.down = true; drawScene(); });
+    el.addEventListener('mouseup', () => {
+      mouse.down = false;
+      const hit = buttons.find(b => !b.disabled && isPointInButton(b, mouse.x, mouse.y));
+      if (hit) {
+        showToast(`${hit.label} pressed`, { kind: 'info', duration: 1500 });
+        animate({
+          from: gauge, to: 0.15 + Math.random() * 0.8,
+          duration: MOTION.state * 3, ease: EASE.outCubic,
+          onUpdate: (v) => { gauge = v; drawScene(); },
+        });
+      }
+      drawScene();
+    });
+  </script>
+</body>
+</html>

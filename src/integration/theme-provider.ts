@@ -345,4 +345,134 @@ body.arcade-theme {
 .arcade-success { color: #44ff44; text-shadow: 0 0 6px rgba(68, 255, 68, 0.5); }
 .arcade-warning { color: #ffaa44; text-shadow: 0 0 6px rgba(255, 170, 68, 0.5); }
 .arcade-error { color: #ff4444; text-shadow: 0 0 6px rgba(255, 68, 68, 0.5); }
+
+/* ── Dialogs ── */
+.arcade-dialog-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(2, 3, 6, 0.72);
+  backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+  animation: arcade-fade-in 0.18s ease-out;
+}
+.arcade-dialog {
+  background: rgba(12, 13, 20, 0.97);
+  border: 1px solid var(--arcade-primary-dim);
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.6), 0 0 12px var(--arcade-primary-glow);
+  padding: 22px 26px;
+  min-width: 320px; max-width: min(480px, 88vw);
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+  animation: arcade-rise-in 0.22s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.arcade-dialog-title {
+  font-family: var(--arcade-font-display);
+  font-weight: 600; font-size: 13px; letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--arcade-primary);
+  text-shadow: 0 0 6px var(--arcade-primary-glow);
+  padding-bottom: 10px; margin-bottom: 12px;
+  border-bottom: 1px solid var(--arcade-primary-dim);
+}
+.arcade-dialog-body {
+  font-family: var(--arcade-font-body);
+  font-size: 15px; line-height: 1.5;
+  color: var(--arcade-primary);
+  opacity: 0.85;
+  margin-bottom: 18px;
+}
+.arcade-dialog-actions {
+  display: flex; gap: 12px; justify-content: flex-end;
+}
+.arcade-btn-danger {
+  border-color: var(--arcade-danger-dim);
+  color: var(--arcade-danger);
+}
+.arcade-btn-danger::before {
+  background: linear-gradient(180deg, transparent, var(--arcade-danger), transparent);
+}
+.arcade-btn-danger:hover {
+  border-color: var(--arcade-danger);
+  box-shadow: 0 0 10px var(--arcade-danger-glow), inset 0 0 12px var(--arcade-danger-glow);
+}
+
+/* ── Toasts ── */
+#arcade-toast-container {
+  position: fixed; top: 16px; right: 16px; z-index: 1100;
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
+}
+.arcade-toast {
+  pointer-events: auto;
+  cursor: pointer;
+  background: rgba(12, 13, 20, 0.96);
+  border: 1px solid var(--arcade-primary-dim);
+  border-left: 3px solid var(--arcade-primary);
+  padding: 10px 16px 10px 13px;
+  min-width: 240px; max-width: 360px;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  animation: arcade-slide-in 0.22s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: opacity 0.22s ease-out, transform 0.22s ease-out;
+}
+.arcade-toast--leaving { opacity: 0; transform: translateX(14px); }
+.arcade-toast-title {
+  font-family: var(--arcade-font-body);
+  font-weight: 600; font-size: 13px; letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--arcade-primary);
+  margin-bottom: 2px;
+}
+.arcade-toast-body {
+  font-family: var(--arcade-font-mono);
+  font-size: 12px; letter-spacing: 0.06em;
+  color: var(--arcade-primary);
+  opacity: 0.85;
+}
+.arcade-toast--success { border-left-color: #44ff44; }
+.arcade-toast--success .arcade-toast-body { color: #9cf59c; }
+.arcade-toast--warning { border-left-color: #ffaa44; }
+.arcade-toast--warning .arcade-toast-body { color: #ffd9a8; }
+.arcade-toast--error { border-left-color: #ff4444; }
+.arcade-toast--error .arcade-toast-body { color: #ffb0b0; }
+
+/* ── Loading ── */
+.arcade-loading-backdrop {
+  position: fixed; inset: 0; z-index: 1200;
+  background: var(--arcade-bg);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.26s ease-out;
+}
+.arcade-loading--leaving { opacity: 0; }
+.arcade-loading {
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+.arcade-loading-spinner { animation: arcade-spin 1.6s linear infinite; }
+.arcade-loading-label {
+  font-family: var(--arcade-font-mono);
+  font-size: 12px; letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--arcade-primary);
+  opacity: 0.8;
+}
+.arcade-loading-bar {
+  width: 220px; height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--arcade-primary-dim);
+}
+.arcade-loading-bar-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--arcade-primary-dim), var(--arcade-primary));
+  box-shadow: 0 0 6px var(--arcade-primary-glow);
+  transition: width 0.2s ease-out;
+}
+
+@keyframes arcade-fade-in { from { opacity: 0; } }
+@keyframes arcade-rise-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes arcade-slide-in { from { opacity: 0; transform: translateX(18px); } }
+@keyframes arcade-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .arcade-dialog-backdrop, .arcade-dialog, .arcade-toast { animation: none; }
+  .arcade-toast, .arcade-loading-backdrop, .arcade-loading-bar-fill { transition: none; }
+  /* Spinner slows rather than freezes — it is the "still working" signal */
+  .arcade-loading-spinner { animation-duration: 4s; }
+}
 `;

@@ -3,6 +3,26 @@
 All notable changes to the Arcade Graphics Engine.
 Consumers should pin installs to a tag: `github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.3.0`.
 
+## v0.4.0 — 2026-07-12
+
+### Added — Tier-3 universal components
+- **Dialogs**: showDialog / showAlert — modal overlays with keyboard
+  handling (Enter/Escape), focus management, backdrop dismiss, and a
+  danger variant. Styled by injected theme CSS.
+- **Toasts**: showToast — top-right stack (cap 5), info/success/warning/
+  error kinds, auto- or click-dismiss, sticky option, aria roles.
+- **Loading**: showLoading overlay (spinner + determinate progress bar,
+  fade-out) and drawLoadingArc canvas spinner primitive.
+- **Canvas buttons**: drawCanvasButton (idle/hover/active/disabled,
+  accent treatment, typography-kit label) + isPointInButton hit test —
+  the themed control for pure-canvas UIs.
+- **Motion module**: EASE curves (deliberately no bounce/overshoot),
+  MOTION duration constants, animate(), lerp/clamp01, and approach()
+  frame-rate-independent smoothing. BRANDING.md §7 as code.
+- Components lab page: npm run test:components.
+- All overlays SSR-safe; reduced-motion honored (spinner slows, slides
+  and fades disabled).
+
 ## v0.3.0 — 2026-07-12
 
 ### Added
