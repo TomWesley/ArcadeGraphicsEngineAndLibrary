@@ -30,8 +30,11 @@ export const FONT_STYLESHEET_URL =
  * Inject the Google Fonts stylesheet into the document head.
  * Call once at startup (ThemeProvider.injectCSS does this automatically).
  * Safe to call multiple times — deduplicates by id.
+ * No-op outside a browser (SSR/build-time safe).
  */
-export function injectFonts(doc: Document = document): void {
+export function injectFonts(doc?: Document): void {
+  if (!doc && typeof document === 'undefined') return;
+  doc = doc ?? document;
   const ID = 'arcade-engine-fonts';
   if (doc.getElementById(ID)) return;
   const link = doc.createElement('link');
