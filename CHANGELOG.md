@@ -1,7 +1,7 @@
 # Changelog
 
 All notable changes to the Arcade Graphics Engine.
-Consumers should pin installs to a tag: `github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.3.0`.
+Consumers should pin installs to a tag: `github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.4.0`.
 
 ## v0.4.0 — 2026-07-12
 
