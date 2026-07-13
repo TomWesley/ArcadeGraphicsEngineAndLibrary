@@ -3,3 +3,4 @@ export * from './panels';
 export * from './menu';
 export * from './effects';
 export * from './icons';
+export * from './canvas-button';

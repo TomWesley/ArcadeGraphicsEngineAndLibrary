@@ -229,6 +229,51 @@ test('main index re-exports integration', () => {
   assert(typeof main.ThemeProvider === 'function');
 });
 
+// ── Test 6.5: Tier-3 universal components ──
+console.log('\nTIER-3 COMPONENTS:');
+
+test('exports motion module', () => {
+  assert(typeof main.animate === 'function');
+  assert(typeof main.approach === 'function');
+  assert(typeof main.lerp === 'function');
+  assert(main.EASE && typeof main.EASE.outCubic === 'function');
+  assert(main.MOTION && main.MOTION.state > 0);
+  // Brand rule: no easing overshoots
+  for (const fn of Object.values(main.EASE)) {
+    for (let i = 0; i <= 20; i++) {
+      const v = fn(i / 20);
+      assert(v >= -1e9 && v <= 1 + 1e-9, 'easing must not overshoot');
+    }
+  }
+});
+
+test('exports canvas button', () => {
+  assert(typeof main.drawCanvasButton === 'function');
+  assert(typeof main.isPointInButton === 'function');
+  assert(main.isPointInButton({ x: 0, y: 0, width: 10, height: 10 }, 5, 5) === true);
+});
+
+test('exports overlays (dialog/toast/loading), SSR-safe in Node', async () => {
+  assert(typeof main.showDialog === 'function');
+  assert(typeof main.showAlert === 'function');
+  assert(typeof main.showToast === 'function');
+  assert(typeof main.showLoading === 'function');
+  assert(typeof main.drawLoadingArc === 'function');
+  // Node has no document: toast/loading no-op, dialog rejects cleanly
+  const dismiss = main.showToast('x');
+  dismiss();
+  const handle = main.showLoading();
+  handle.setProgress(0.5); handle.done();
+  await main.showDialog({}).then(
+    () => { throw new Error('should reject without a browser'); },
+    () => {},
+  );
+});
+
+test('exports setupHiDPICanvas', () => {
+  assert(typeof main.setupHiDPICanvas === 'function');
+});
+
 // ── Test 7: End-to-end workflow ──
 console.log('\nEND-TO-END WORKFLOW:');
 

@@ -14,7 +14,7 @@ Living specimen page: `npm run test:brand`.
 Always pin to a release tag (see CHANGELOG.md for versions) — unpinned
 installs float to whatever `main` is on the day of the install:
 ```bash
-npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.3.0
+npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.4.0
 ```
 The package builds itself on install (`prepare` script). Import from
 `@tomwesley/arcade-graphics-engine` (root) or the subpaths `/style`, `/engine`,
@@ -45,7 +45,33 @@ const theme = provider.theme;
 drawIcon(ctx, 'target', 50, 50, 64, provider.palette.primary.core);
 drawBarGauge(ctx, theme, { x: 10, y: 10, width: 200, height: 24, value: 0.7, label: 'HULL' });
 ```
-See `tests/fake-game-home/index.html` for a complete home page built this way.
+See `tests/fake-game-home/index.html` for a complete home page built this way,
+and `tests/components-lab/index.html` (npm run test:components) for the
+interactive component reference.
+
+### Universal game components
+```javascript
+// Modal dialogs (HTML overlay; Enter confirms, Escape cancels, focus managed)
+const ok = await showDialog({ title: 'End Turn', body: '...', confirmLabel: 'END TURN', danger: false });
+await showAlert('Research complete: Robotics');
+
+// Toasts — stack top-right, auto-dismiss, click to dismiss
+showToast('Research complete', { kind: 'success', title: 'Research' });  // info|success|warning|error
+const dismiss = showToast('Enemy detected', { kind: 'warning', duration: 0 });  // sticky
+
+// Loading — boot overlay + in-game canvas spinner
+const loader = showLoading({ label: 'Loading sector', progress: true });
+loader.setProgress(0.5); loader.setLabel('Compiling'); loader.done();
+drawLoadingArc(ctx, theme, { cx, cy, radius: 20, t: elapsedSeconds });
+
+// Canvas buttons — for pure-canvas UIs; game owns input, engine draws
+const state = isPointInButton(btn, mx, my) ? (down ? 'active' : 'hover') : 'idle';
+drawCanvasButton(ctx, theme, { ...btn, label: 'Launch Mission', state, accent: true });
+
+// Motion — the brand's motion rules as code (no bounce easings exist)
+animate({ from: v, to: target, duration: MOTION.state, ease: EASE.outCubic, onUpdate: ... });
+value = approach(value, target, dtMs, 90);  // frame-rate-independent smoothing
+```
 
 ## Fonts
 `ThemeProvider.injectCSS()` loads these automatically. For pages not using the

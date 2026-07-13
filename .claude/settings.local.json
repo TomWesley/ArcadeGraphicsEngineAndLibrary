@@ -54,7 +54,8 @@
       "Bash(grep -n \"coin: \\(d, cx, cy\\)\\\\|info: \\(d, cx, cy\\)\\\\|^      },$\\\\|const REWORKS\\\\|const PORTED\" tests/icon-review/index.html)",
       "Bash(awk *)",
       "Bash(node -e ' *)",
-      "Bash(git tag *)"
+      "Bash(git tag *)",
+      "Bash(.', '#v0.4.0)"
     ]
   }
 }
