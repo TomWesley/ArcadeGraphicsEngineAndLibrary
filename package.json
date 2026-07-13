@@ -1,6 +1,6 @@
 {
   "name": "@tomwesley/arcade-graphics-engine",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Sleek futuristic graphics engine and UI style library for browser arcade games",
   "type": "module",
   "main": "dist/index.cjs",

@@ -36,6 +36,16 @@ const PALETTE_MAP: Record<PaletteName, ColorPalette> = {
   SOLAR_STORM: PALETTE_SOLAR_STORM,
 };
 
+/** Theme overrides derived from provider options. */
+function themeOverrides(options?: { lowPower?: boolean }):
+  Parameters<typeof createTheme>[2] {
+  if (!options?.lowPower) return undefined;
+  return {
+    glow: { passes: 1, innerRadius: 0, outerRadius: 4, intensity: 0.4 },
+    animation: { glowPulseAmplitude: 0 },
+  };
+}
+
 export class ThemeProvider {
   public readonly theme: ArcadeTheme;
   public readonly palette: ColorPalette;
@@ -46,8 +56,19 @@ export class ThemeProvider {
     this.palette = theme.palette;
   }
 
-  /** Create a theme provider with a built-in palette. For custom colors use ThemeProvider.custom(). */
-  static create(paletteName: PaletteName = 'NEON_INFERNO'): ThemeProvider {
+  /**
+   * Create a theme provider with a built-in palette.
+   * For custom colors use ThemeProvider.custom().
+   *
+   * options.lowPower collapses the glow system to a single cheap pass —
+   * shadowBlur is the most expensive Canvas2D operation, so use this for
+   * weak hardware, battery-saver modes, or scenes dense with glowing
+   * components.
+   */
+  static create(
+    paletteName: PaletteName = 'NEON_INFERNO',
+    options?: { lowPower?: boolean },
+  ): ThemeProvider {
     const palette = PALETTE_MAP[paletteName];
     if (!palette) {
       throw new Error(
@@ -55,7 +76,7 @@ export class ThemeProvider {
         'For custom colors use ThemeProvider.custom(name, primaryHue, secondaryHue, tertiaryHue, dangerHue).'
       );
     }
-    return new ThemeProvider(createTheme(paletteName, palette));
+    return new ThemeProvider(createTheme(paletteName, palette, themeOverrides(options)));
   }
 
   /** Create a theme provider with custom hues */
@@ -65,9 +86,10 @@ export class ThemeProvider {
     secondaryHue: number,
     tertiaryHue: number,
     dangerHue: number,
+    options?: { lowPower?: boolean },
   ): ThemeProvider {
     const palette = createPalette(name, primaryHue, secondaryHue, tertiaryHue, dangerHue);
-    return new ThemeProvider(createTheme(name, palette));
+    return new ThemeProvider(createTheme(name, palette, themeOverrides(options)));
   }
 
   /** Build the full CSS variable map — single source for injectCSS and getCSSVariables. */
@@ -105,6 +127,8 @@ export class ThemeProvider {
    * the component classes (.arcade-btn etc.) work on any element regardless.
    */
   injectCSS(): void {
+    // SSR/build-time safe: no-op outside a browser
+    if (typeof document === 'undefined') return;
     if (this.cssInjected) return;
 
     injectFonts();
@@ -124,6 +148,7 @@ export class ThemeProvider {
 
   /** Remove injected CSS */
   removeCSS(): void {
+    if (typeof document === 'undefined') return;
     document.getElementById('arcade-engine-theme')?.remove();
     this.cssInjected = false;
   }
@@ -246,6 +271,22 @@ body.arcade-theme {
 .arcade-btn:hover::before { opacity: 1; }
 .arcade-btn:active {
   transform: scale(0.97);
+}
+/* Keyboard focus — visible, on-brand, never removed */
+.arcade-btn:focus-visible, .arcade-input:focus-visible {
+  outline: 2px solid var(--arcade-secondary);
+  outline-offset: 2px;
+  box-shadow: 0 0 10px var(--arcade-secondary-glow);
+}
+
+/* Respect reduced-motion preferences: state changes stay, motion goes */
+@media (prefers-reduced-motion: reduce) {
+  .arcade-btn, .arcade-input, .arcade-btn::before, .arcade-btn::after {
+    transition: none;
+  }
+  .arcade-btn:active {
+    transform: none;
+  }
 }
 
 /* Panel container */

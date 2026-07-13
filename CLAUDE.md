@@ -11,8 +11,10 @@ integration manual; when generating anything user-visible, follow BRANDING.md.
 Living specimen page: `npm run test:brand`.
 
 ## Installation
+Always pin to a release tag (see CHANGELOG.md for versions) — unpinned
+installs float to whatever `main` is on the day of the install:
 ```bash
-npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary
+npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.3.0
 ```
 The package builds itself on install (`prepare` script). Import from
 `@tomwesley/arcade-graphics-engine` (root) or the subpaths `/style`, `/engine`,
