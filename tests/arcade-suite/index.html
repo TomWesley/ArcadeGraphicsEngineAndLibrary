@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OUTPOST ARCADE</title>
+  <!-- Everything below renders from /dist — fonts arrive via ThemeProvider.injectCSS() -->
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body { position: relative; overflow-x: hidden; }
+
+    #bgCanvas { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; }
+
+    .page {
+      position: relative; z-index: 1;
+      max-width: 1240px; margin: 0 auto;
+      padding: 26px 36px 90px;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex; align-items: baseline; gap: 22px;
+      padding-bottom: 16px; margin-bottom: 24px;
+      border-bottom: 1px solid var(--arcade-primary-dim);
+    }
+    header .brand { flex: 1; }
+    header .brand .arcade-display { font-size: 34px; }
+    header .clock { text-align: right; }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid; grid-template-columns: 1fr 320px; gap: 22px;
+    }
+
+    /* Game cards */
+    .games { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-content: start; }
+    .game-card { display: flex; flex-direction: column; gap: 10px; }
+    .game-card .head { display: flex; align-items: center; gap: 12px; }
+    .game-card canvas.gicon { width: 54px; height: 54px; flex: none; }
+    .game-card .arcade-heading { border: none; margin: 0; padding: 0; }
+    .game-card .status { margin-top: -6px; }
+    .game-card .desc { min-height: 44px; opacity: 0.8; }
+    .game-card .stats { display: flex; gap: 16px; }
+    .game-card .actions { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+    .game-card .actions .arcade-btn { flex: 1; }
+
+    /* Sidebar */
+    .side { display: flex; flex-direction: column; gap: 18px; }
+    .side canvas { display: block; width: 100%; }
+    .pilot { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+    .pilot canvas { width: 56px; height: 56px; flex: none; }
+    .ranks { display: flex; flex-direction: column; gap: 8px; }
+    .rank-row { display: flex; align-items: baseline; gap: 10px; }
+    .rank-row .pos { width: 26px; }
+    .rank-row .name { flex: 1; }
+    .rank-row.me .name, .rank-row.me .score { color: var(--arcade-secondary); text-shadow: 0 0 6px var(--arcade-secondary-glow); }
+
+    /* Dock + footer */
+    .dock {
+      display: flex; justify-content: center; gap: 12px;
+      margin: 30px 0 14px;
+    }
+    .dock canvas { width: 46px; height: 46px; cursor: pointer; transition: transform 0.18s, filter 0.18s; }
+    .dock canvas:hover { transform: translateY(-3px); filter: brightness(1.3) drop-shadow(0 0 8px var(--arcade-primary-glow)); }
+    .footer {
+      display: flex; justify-content: space-between;
+      padding-top: 12px; border-top: 1px solid var(--arcade-primary-dim);
+      color: var(--arcade-primary-dim);
+    }
+    .footer .live { color: var(--arcade-secondary); text-shadow: 0 0 6px var(--arcade-secondary-glow); }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .games { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="arcade-theme">
+  <canvas id="bgCanvas"></canvas>
+
+  <div class="page">
+    <header>
+      <div class="brand">
+        <div class="arcade-display arcade-glow">Outpost Arcade</div>
+        <div class="arcade-micro" style="color:var(--arcade-primary-dim); margin-top:4px">
+          GAME SUITE // FOUR TITLES ONLINE // ENGINE ARCADE-GFX v0.4.0
+        </div>
+      </div>
+      <div class="clock">
+        <div class="arcade-data" id="clock">--:--:--</div>
+        <div class="arcade-micro" style="color:var(--arcade-primary-dim)">STATION TIME</div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- ═══ Game library ═══ -->
+      <main class="games" id="games"></main>
+
+      <!-- ═══ Pilot sidebar ═══ -->
+      <aside class="side">
+        <div class="arcade-panel">
+          <div class="arcade-panel-title">Pilot</div>
+          <div class="pilot">
+            <canvas id="pilotIcon" width="112" height="112"></canvas>
+            <div>
+              <div class="arcade-label" style="color:var(--arcade-primary)">Vesper-9</div>
+              <div class="arcade-micro" style="color:var(--arcade-secondary)">COMMANDER // TIER IV</div>
+            </div>
+          </div>
+          <canvas id="pilotStats" width="512" height="200"></canvas>
+        </div>
+
+        <div class="arcade-panel">
+          <div class="arcade-panel-title">Sector Traffic</div>
+          <canvas id="radar" width="512" height="420"></canvas>
+        </div>
+
+        <div class="arcade-panel">
+          <div class="arcade-panel-title">Top Pilots</div>
+          <div class="ranks" id="ranks"></div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- ═══ Icon dock ═══ -->
+    <div class="dock" id="dock"></div>
+
+    <div class="footer">
+      <span class="arcade-micro">OUTPOST ARCADE v2.1.0 // ARCADE-GFX v0.4.0 // PALETTE: MINT CIRCUIT</span>
+      <span class="arcade-micro"><span class="live">◉ UPLINK STABLE</span> // 4 GAMES // 12,408 PILOTS ONLINE</span>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      ThemeProvider,
+      drawIcon, drawBarGauge, drawRadialGauge, drawRadarDisplay,
+      drawAmbientParticles, drawLoadingArc,
+      showDialog, showAlert, showToast, showLoading,
+      animate, approach, EASE, MOTION,
+      setupHiDPICanvas, rgbaToCss, withAlpha,
+    } from '/dist/index.js';
+
+    // ═══ Palette: MINT CIRCUIT — mint primary, orange secondary, black field ═══
+    const provider = ThemeProvider.custom('MINT_CIRCUIT', 158, 28, 180, 6);
+    provider.injectCSS();
+    const theme = provider.theme;
+    const MINT = provider.palette.primary.core;
+    const ORANGE = provider.palette.secondary.core;
+
+    // ═══ Boot sequence — the loading overlay, for real ═══
+    const boot = showLoading({ label: 'Linking outpost', progress: true });
+    const bootSteps = ['Linking outpost', 'Syncing pilot record', 'Waking game cores'];
+    let bp = 0;
+    const bootIv = setInterval(() => {
+      bp += 0.25;
+      boot.setProgress(bp);
+      boot.setLabel(bootSteps[Math.min(2, Math.floor(bp * 3))]);
+      if (bp >= 1) {
+        clearInterval(bootIv);
+        boot.done();
+        showToast('Welcome back, Commander', { kind: 'success', title: 'Vesper-9' });
+      }
+    }, 450);
+
+    // ═══ Station clock ═══
+    const clock = document.getElementById('clock');
+    setInterval(() => {
+      clock.textContent = new Date().toLocaleTimeString('en-GB');
+    }, 1000);
+
+    // ═══ Ambient background ═══
+    const bg = document.getElementById('bgCanvas');
+    const bctx = bg.getContext('2d');
+    function sizeBg() { bg.width = innerWidth; bg.height = innerHeight; }
+    sizeBg(); addEventListener('resize', sizeBg);
+    const stars = Array.from({ length: 160 }, (_, i) => {
+      const h = (i * 2654435761) >>> 0;
+      return { x: (h % 10000) / 10000, y: ((h >>> 8) % 10000) / 10000, z: 0.25 + ((h >>> 16) % 70) / 100, tw: (h % 628) / 100 };
+    });
+    function drawBg(t) {
+      const w = bg.width, h = bg.height;
+      const g = bctx.createRadialGradient(w / 2, h * 0.3, 0, w / 2, h * 0.3, Math.max(w, h) * 0.8);
+      g.addColorStop(0, '#0b1410');
+      g.addColorStop(0.55, '#070c09');
+      g.addColorStop(1, '#030504');
+      bctx.fillStyle = g;
+      bctx.fillRect(0, 0, w, h);
+      for (const s of stars) {
+        const x = ((s.x * w + t * 3 * s.z) % w + w) % w;
+        const a = 0.2 + 0.4 * s.z * (0.7 + 0.3 * Math.sin(t * 1.6 + s.tw));
+        bctx.fillStyle = `rgba(190, 235, 215, ${a * 0.5})`;
+        bctx.beginPath(); bctx.arc(x, s.y * h, s.z * 1.2, 0, Math.PI * 2); bctx.fill();
+      }
+      drawAmbientParticles(bctx, w, h, MINT, 20, t, 11);
+    }
+
+    // ═══ Game library ═══
+    const GAMES = [
+      { icon: 'target', name: 'Helios Protocol', tag: 'INTERDICTION', desc: 'Deep-range fighter interdiction across the Epsilon Reach.', best: '48,220', hours: '31 H', ready: true },
+      { icon: 'map',    name: 'Void Sector',     tag: 'EXPLORATION',  desc: 'Chart dead space. Whatever is out there charts you back.', best: '12 SYSTEMS', hours: '9 H', ready: true },
+      { icon: 'energy', name: 'Mirror Array',    tag: 'PUZZLE',       desc: 'Bend lasers through mirror lattices to charge the core.', best: 'SECTOR 7', hours: '14 H', ready: true },
+      { icon: 'skull',  name: 'Ember Drift',     tag: 'SURVIVAL',     desc: 'Hold the line against the drift. The drift always wins.', best: 'WAVE 23', hours: '6 H', ready: false },
+    ];
+
+    const gamesEl = document.getElementById('games');
+    for (const game of GAMES) {
+      const card = document.createElement('div');
+      card.className = 'arcade-panel game-card';
+      card.innerHTML = `
+        <div class="head">
+          <canvas class="gicon" width="108" height="108"></canvas>
+          <div>
+            <div class="arcade-heading">${game.name}</div>
+            <div class="arcade-micro status" style="color:var(--arcade-secondary)">${game.tag}${game.ready ? '' : ' // UPDATING'}</div>
+          </div>
+        </div>
+        <div class="arcade-body desc">${game.desc}</div>
+        <div class="stats">
+          <span class="arcade-data">BEST ${game.best}</span>
+          <span class="arcade-data" style="opacity:0.6">${game.hours} LOGGED</span>
+        </div>
+        <div class="actions">
+          <button class="arcade-btn play">${game.ready ? 'Launch' : 'Update'}</button>
+          <button class="arcade-btn reset" style="flex:0 0 auto" title="Reset progress">Reset</button>
+        </div>`;
+      gamesEl.appendChild(card);
+
+      const ic = card.querySelector('.gicon').getContext('2d');
+      drawIcon(ic, game.icon, 54, 54, 76, MINT);
+
+      card.querySelector('.play').addEventListener('click', () => {
+        if (!game.ready) {
+          showToast(`${game.name} is updating — 4 minutes remaining`, { kind: 'warning', title: 'Updater' });
+          return;
+        }
+        const loader = showLoading({ label: `Launching ${game.name}`, progress: true });
+        let p = 0;
+        const iv = setInterval(() => {
+          p += 0.34; loader.setProgress(p);
+          if (p >= 1) {
+            clearInterval(iv); loader.done();
+            showToast(`${game.name} ready — good hunting`, { kind: 'success', title: 'Launcher' });
+          }
+        }, 500);
+      });
+
+      card.querySelector('.reset').addEventListener('click', async () => {
+        const ok = await showDialog({
+          title: 'Reset Progress',
+          body: `All saved progress in ${game.name} (best: ${game.best}) will be permanently erased.`,
+          confirmLabel: 'ERASE',
+          danger: true,
+        });
+        showToast(ok ? `${game.name} progress erased` : 'Reset cancelled',
+                  { kind: ok ? 'error' : 'info', title: game.name });
+      });
+    }
+
+    // ═══ Pilot panel ═══
+    const pi = document.getElementById('pilotIcon').getContext('2d');
+    drawIcon(pi, 'crown', 56, 56, 78, ORANGE);
+
+    const ps = setupHiDPICanvas(document.getElementById('pilotStats'), 256, 100);
+    // Live values ease toward targets with approach() — frame-rate independent
+    const stats = { xp: { v: 0, target: 0.72 }, sync: { v: 0, target: 0.4 } };
+    setInterval(() => { stats.sync.target = 0.3 + Math.random() * 0.5; }, 4200);
+
+    // ═══ Radar ═══
+    const rd = setupHiDPICanvas(document.getElementById('radar'), 256, 210);
+
+    // ═══ Leaderboard ═══
+    const ranks = [
+      { pos: '01', name: 'HALCYON', score: '61,004' },
+      { pos: '02', name: 'VESPER-9', score: '48,220', me: true },
+      { pos: '03', name: 'REDSHIFT', score: '44,876' },
+      { pos: '04', name: 'NULLWAKE', score: '39,110' },
+    ];
+    document.getElementById('ranks').innerHTML = ranks.map(r => `
+      <div class="rank-row${r.me ? ' me' : ''}">
+        <span class="arcade-data pos" style="opacity:0.55">${r.pos}</span>
+        <span class="arcade-label name" style="font-size:13px">${r.name}</span>
+        <span class="arcade-data score">${r.score}</span>
+      </div>`).join('');
+
+    // ═══ Icon dock ═══
+    const dock = document.getElementById('dock');
+    const dockIcons = ['leaderboard', 'inventory', 'craft', 'comms', 'settings', 'info'];
+    for (const name of dockIcons) {
+      const cv = document.createElement('canvas');
+      cv.width = 92; cv.height = 92; cv.title = name;
+      drawIcon(cv.getContext('2d'), name, 46, 46, 64, MINT);
+      cv.addEventListener('click', async () => {
+        if (name === 'settings') {
+          const ok = await showDialog({
+            title: 'Station Settings',
+            body: 'Low-power rendering mode reduces glow for weak hardware. Apply and reload?',
+            confirmLabel: 'APPLY',
+          });
+          if (ok) showToast('Low-power mode saved — applies on reload', { kind: 'info', title: 'Settings' });
+        } else if (name === 'comms') {
+          showToast('No new transmissions', { kind: 'info', title: 'Comms' });
+        } else if (name === 'info') {
+          await showAlert('Outpost Arcade v2.1.0 — built on arcade-gfx v0.4.0. Palette MINT CIRCUIT (158/28/180/6).', 'About');
+        } else {
+          showToast(`${name.toUpperCase()} module opening…`, { kind: 'info' });
+        }
+      });
+      dock.appendChild(cv);
+    }
+
+    // ═══ Animation loop ═══
+    let last = performance.now();
+    function frame(now) {
+      const t = now / 1000;
+      const dt = Math.min(64, now - last);
+      last = now;
+
+      drawBg(t);
+
+      // Pilot stats — gauges chase their targets, instrument-smooth
+      stats.xp.v = approach(stats.xp.v, stats.xp.target, dt, 260);
+      stats.sync.v = approach(stats.sync.v, stats.sync.target, dt, 260);
+      ps.ctx.clearRect(0, 0, ps.width, ps.height);
+      drawBarGauge(ps.ctx, theme, { x: 4, y: 8, width: 248, height: 18, value: stats.xp.v, label: 'TIER IV XP', showValue: true });
+      drawBarGauge(ps.ctx, theme, { x: 4, y: 44, width: 248, height: 18, value: stats.sync.v, label: 'NEURAL SYNC', showValue: true, color: ORANGE });
+      drawLoadingArc(ps.ctx, theme, { cx: 26, cy: 84, radius: 10, t });
+      ps.ctx.font = '10px "Share Tech Mono", monospace';
+      ps.ctx.fillStyle = rgbaToCss(withAlpha(MINT, 0.55));
+      ps.ctx.textAlign = 'left';
+      ps.ctx.fillText('MATCHMAKING // QUEUE 0:42', 46, 88);
+
+      // Radar
+      rd.ctx.clearRect(0, 0, rd.width, rd.height);
+      drawRadarDisplay(rd.ctx, theme, {
+        x: 40, y: 16, size: 176, rings: 3, sweepAngle: t * 1.1,
+        blips: [
+          { x: Math.cos(t * 0.3) * 0.55, y: Math.sin(t * 0.3) * 0.55, color: ORANGE },
+          { x: Math.cos(t * 0.18 + 2.4) * 0.75, y: Math.sin(t * 0.18 + 2.4) * 0.75, color: ORANGE },
+          { x: 0.15, y: -0.3, color: MINT, size: 2.5 },
+        ],
+      });
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
