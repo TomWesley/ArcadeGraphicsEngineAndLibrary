@@ -59,6 +59,7 @@
     "test:iconreview": "npx http-server . -p 8095 -o /tests/icon-review/index.html",
     "test:brand": "npx http-server . -p 8096 -o /tests/brand-guide/index.html",
     "test:components": "npx http-server . -p 8098 -o /tests/components-lab/index.html",
+    "test:suite": "npx http-server . -p 8099 -o /tests/arcade-suite/index.html",
     "test:favicon": "npx http-server tests/favicon -p 8093 -o",
     "test:homepage": "npx http-server . -p 8094 -o /tests/fake-game-home/index.html",
     "typecheck": "tsc --noEmit",
