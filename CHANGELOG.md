@@ -1,7 +1,26 @@
 # Changelog
 
 All notable changes to the Arcade Graphics Engine.
-Consumers should pin installs to a tag: `github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.4.0`.
+Consumers should pin installs to a tag: `github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.5.0`.
+
+## v0.5.0 — 2026-07-22
+
+Production-hardening release for user-facing deployment.
+
+### Added
+- `ENGINE_VERSION` export (kept in sync with package.json by a unit test) —
+  log it in game diagnostics so bug reports pin to an exact engine release.
+- Console warning (once) when showDialog/showToast/showLoading run before
+  `ThemeProvider.injectCSS()` — unstyled overlays now explain themselves.
+- README browser-support matrix.
+- `npm run release:verify` — typecheck + build + unit + integration in one gate.
+- `"sideEffects": false` so bundlers can tree-shake unused engine modules.
+
+### Fixed
+- Radar sweep crashed Safari < 16.2 (`createConicGradient` unsupported) —
+  now feature-detected with a stepped-wedge fallback.
+- `NaN`/`Infinity` gauge values slipped through the 0–1 clamps and rendered
+  garbage (including a "NaN%" readout) — inputs are now sanitized to 0.
 
 ## v0.4.0 — 2026-07-12
 

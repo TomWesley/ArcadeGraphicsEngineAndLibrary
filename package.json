@@ -1,6 +1,6 @@
 {
   "name": "@tomwesley/arcade-graphics-engine",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Sleek futuristic graphics engine and UI style library for browser arcade games",
   "type": "module",
   "main": "dist/index.cjs",
@@ -66,7 +66,8 @@
     "test:integration": "node tests/integration-test/test-integration.mjs",
     "test:integration-browser": "npx http-server . -p 9000 -o /tests/integration-test/index.html",
     "eval": "npx tsx src/eval/capture-and-eval.ts",
-    "eval:favicon": "npx tsx src/eval/capture-and-eval.ts tests/favicon/favicon.svg favicon 'Capital W in hexagonal HUD frame with neon glow'"
+    "eval:favicon": "npx tsx src/eval/capture-and-eval.ts tests/favicon/favicon.svg favicon 'Capital W in hexagonal HUD frame with neon glow'",
+    "release:verify": "npm run typecheck && npm run build && npm test && npm run test:integration"
   },
   "files": [
     "dist",
@@ -91,5 +92,6 @@
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
-  }
+  },
+  "sideEffects": false
 }

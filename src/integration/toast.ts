@@ -7,6 +7,8 @@
  *   const dismiss = showToast('Enemy fleet detected', { kind: 'warning', duration: 0 }); // sticky
  */
 
+import { warnIfThemeCSSMissing } from './css-check';
+
 export type ToastKind = 'info' | 'success' | 'warning' | 'error';
 
 export interface ToastOptions {
@@ -25,6 +27,7 @@ const MAX_STACK = 5;
  */
 export function showToast(message: string, options: ToastOptions = {}): () => void {
   if (typeof document === 'undefined') return () => {};
+  warnIfThemeCSSMissing('showToast');
 
   const kind = options.kind ?? 'info';
   const duration = options.duration ?? 3500;

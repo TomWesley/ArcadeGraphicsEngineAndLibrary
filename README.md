@@ -15,11 +15,26 @@ Pin to a release tag — installs are then reproducible and upgrades are
 deliberate:
 
 ```bash
-npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.4.0
+npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.5.0
 ```
 
 The package builds itself on install (`prepare` script). ESM and CJS both
 supported, TypeScript types included.
+
+## Browser support
+
+| Browser | Minimum | Notes |
+|---|---|---|
+| Chrome / Edge | 99+ | Full support |
+| Firefox | 110+ | Full support |
+| Safari | 16.4+ | Full support |
+| Safari | 15.x–16.3 | Supported — radar sweep uses a stepped-wedge fallback instead of a conic gradient |
+
+No polyfills required. Server-side rendering is safe: CSS/font injection and
+overlays (dialogs, toasts, loading) no-op or reject cleanly when `document`
+is undefined, so importing the engine in Node/SSR never throws at module load.
+Gauge inputs are sanitized — a `NaN` or `Infinity` value renders as empty,
+not garbage.
 
 ## Quickstart
 

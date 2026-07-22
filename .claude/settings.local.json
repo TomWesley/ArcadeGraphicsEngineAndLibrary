@@ -58,7 +58,8 @@
       "Bash(.', '#v0.4.0)",
       "Bash(grep -n \"v0.3.0\\\\`\" CHANGELOG.md)",
       "Bash(git commit -m 'CHANGELOG: pin example updated to v0.4.0 *)",
-      "Bash(git commit -m 'Suite: fix game-card title/tag collision \\(-6px margin → 4px gap\\) *)"
+      "Bash(git commit -m 'Suite: fix game-card title/tag collision \\(-6px margin → 4px gap\\) *)",
+      "Bash(git commit -m 'v0.5.0: production hardening for user-facing deployment *)"
     ]
   }
 }
