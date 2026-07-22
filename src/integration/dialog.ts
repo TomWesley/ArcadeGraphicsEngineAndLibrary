@@ -7,6 +7,8 @@
  *   await showAlert('Research complete: Robotics');
  */
 
+import { warnIfThemeCSSMissing } from './css-check';
+
 export interface DialogOptions {
   title?: string;
   body?: string;
@@ -27,6 +29,7 @@ export function showDialog(options: DialogOptions = {}): Promise<boolean> {
   if (typeof document === 'undefined') {
     return Promise.reject(new Error('showDialog requires a browser environment'));
   }
+  warnIfThemeCSSMissing('showDialog');
 
   return new Promise<boolean>((resolve) => {
     const previousFocus = document.activeElement as HTMLElement | null;

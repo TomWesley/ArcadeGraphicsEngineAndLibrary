@@ -14,7 +14,7 @@ Living specimen page: `npm run test:brand`.
 Always pin to a release tag (see CHANGELOG.md for versions) — unpinned
 installs float to whatever `main` is on the day of the install:
 ```bash
-npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.4.0
+npm install github:TomWesley/ArcadeGraphicsEngineAndLibrary#v0.5.0
 ```
 The package builds itself on install (`prepare` script). Import from
 `@tomwesley/arcade-graphics-engine` (root) or the subpaths `/style`, `/engine`,

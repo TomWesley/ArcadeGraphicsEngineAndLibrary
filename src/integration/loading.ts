@@ -21,6 +21,8 @@ export interface LoadingHandle {
   done(): void;
 }
 
+import { warnIfThemeCSSMissing } from './css-check';
+
 export interface LoadingOptions {
   label?: string;
   /** Show a determinate progress bar under the spinner */
@@ -31,6 +33,7 @@ export function showLoading(options: LoadingOptions = {}): LoadingHandle {
   if (typeof document === 'undefined') {
     return { setProgress: () => {}, setLabel: () => {}, done: () => {} };
   }
+  warnIfThemeCSSMissing('showLoading');
 
   const backdrop = document.createElement('div');
   backdrop.className = 'arcade-loading-backdrop';

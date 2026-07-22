@@ -7,6 +7,11 @@ import { rgbaToCss, withAlpha, lerpColor } from '../style/colors';
  * Each function is self-contained — pass a context and theme, get a gauge.
  */
 
+/** Clamp to [0,1]; non-finite input (NaN/Infinity from live game data) renders as 0, not garbage. */
+function sane01(v: number): number {
+  return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0;
+}
+
 export interface GaugeOptions {
   x: number;
   y: number;
@@ -25,7 +30,8 @@ export function drawBarGauge(
   theme: ArcadeTheme,
   opts: GaugeOptions,
 ): void {
-  const { x, y, width, height, value } = opts;
+  const { x, y, width, height } = opts;
+  const value = sane01(opts.value);
   const color = opts.color ?? theme.palette.primary.core;
   const glow = theme.glow;
 
@@ -61,7 +67,7 @@ export function drawBarGauge(
   ctx.stroke();
 
   // Fill bar — segmented like an energy readout
-  const fillWidth = width * Math.max(0, Math.min(1, value));
+  const fillWidth = width * value;
   if (fillWidth > 0) {
     ctx.shadowColor = rgbaToCss(withAlpha(color, glow.intensity));
     ctx.shadowBlur = glow.outerRadius;
@@ -162,7 +168,8 @@ export function drawRadialGauge(
   theme: ArcadeTheme,
   opts: RadialGaugeOptions,
 ): void {
-  const { cx, cy, radius, value } = opts;
+  const { cx, cy, radius } = opts;
+  const value = sane01(opts.value);
   const color = opts.color ?? theme.palette.primary.core;
   const glow = theme.glow;
   const startAngle = opts.startAngle ?? -Math.PI * 0.75;
@@ -181,7 +188,7 @@ export function drawRadialGauge(
   ctx.stroke();
 
   // Value arc
-  const valueAngle = startAngle + totalAngle * Math.max(0, Math.min(1, value));
+  const valueAngle = startAngle + totalAngle * value;
   ctx.shadowColor = rgbaToCss(withAlpha(color, glow.intensity));
   ctx.shadowBlur = glow.outerRadius;
   ctx.beginPath();
@@ -226,7 +233,7 @@ export function drawRadialGauge(
   ctx.stroke();
 
   // Needle — bright tip for a crisp instrument read
-  const needleAngle = startAngle + totalAngle * Math.max(0, Math.min(1, value));
+  const needleAngle = startAngle + totalAngle * value;
   const needleLen = radius * 0.7;
   const nx = cx + Math.cos(needleAngle) * needleLen;
   const ny = cy + Math.sin(needleAngle) * needleLen;
@@ -467,17 +474,31 @@ export function drawRadarDisplay(
 
   // Sweep beam — bright leading edge + long phosphor trail
   if (opts.sweepAngle !== undefined) {
-    const sweepGrad = ctx.createConicGradient(opts.sweepAngle - TAU, cx, cy);
-    // Trail decays behind the leading edge (conic gradient runs "behind" the beam)
-    sweepGrad.addColorStop(0, rgbaToCss(withAlpha(color, 0)));
-    sweepGrad.addColorStop(0.55, rgbaToCss(withAlpha(color, 0.015)));
-    sweepGrad.addColorStop(0.85, rgbaToCss(withAlpha(color, 0.06)));
-    sweepGrad.addColorStop(0.985, rgbaToCss(withAlpha(color, 0.16)));
-    sweepGrad.addColorStop(1, rgbaToCss(withAlpha(color, 0.3)));
-    ctx.fillStyle = sweepGrad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, TAU);
-    ctx.fill();
+    if (typeof ctx.createConicGradient === 'function') {
+      const sweepGrad = ctx.createConicGradient(opts.sweepAngle - TAU, cx, cy);
+      // Trail decays behind the leading edge (conic gradient runs "behind" the beam)
+      sweepGrad.addColorStop(0, rgbaToCss(withAlpha(color, 0)));
+      sweepGrad.addColorStop(0.55, rgbaToCss(withAlpha(color, 0.015)));
+      sweepGrad.addColorStop(0.85, rgbaToCss(withAlpha(color, 0.06)));
+      sweepGrad.addColorStop(0.985, rgbaToCss(withAlpha(color, 0.16)));
+      sweepGrad.addColorStop(1, rgbaToCss(withAlpha(color, 0.3)));
+      ctx.fillStyle = sweepGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, TAU);
+      ctx.fill();
+    } else {
+      // Fallback for engines without conic gradients (Safari < 16.2):
+      // a stepped trail of wedges approximating the phosphor decay
+      for (let i = 0; i < 4; i++) {
+        const span = Math.PI * (0.08 + i * 0.09);
+        ctx.fillStyle = rgbaToCss(withAlpha(color, 0.16 / (i + 1)));
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, opts.sweepAngle - span, opts.sweepAngle);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
 
     // Crisp leading-edge line
     ctx.beginPath();
