@@ -360,5 +360,4 @@ See `tests/convert/index.html` for the conversion pipeline and `src/style/valida
 - `npm run test:iconlib` — icon review/approve workflow (design source for the built-in set)
 - `npm run test:convert` — Asset conversion pipeline
 - `npm run test:space` — Animated space scene
-- `npm run test:style-match` — Reference image style comparison
 - `npm run test:hud` — HUD dashboard with charts and gauges
