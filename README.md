@@ -9,6 +9,26 @@ so every game built on it looks like it belongs in the same universe.
 Dark fields, thin glowing lines, gradient fills, clipped corners.
 Not pixel art, not retro, not cute.
 
+> **Scope**: this is the house style engine behind my own arcade games, published
+> so the work is readable and so my games can install it by tag. It's not a
+> supported package — there's no roadmap, no issue triage, and the API changes
+> when my games need it to. Fork it freely; just don't depend on it staying put.
+
+![A game home screen built entirely from the engine](docs/images/game-home.png)
+
+*`tests/fake-game-home` — title, menu, pilot-status panel, gauges, radar and icon
+rail, all drawn by the engine from a single palette pick.*
+
+## In production
+
+| Where | What the engine does |
+|---|---|
+| **[wesleyarcade.com](https://wesleyarcade.com/)** | The arcade hub — landing page and shell, on a vendored engine build |
+| **[wesleyarcade.com/reflections](https://wesleyarcade.com/reflections/)** | *Reflections*, a laser-defense puzzle game — HUD, icons, and theme ([source](https://github.com/TomWesley/ReflectionsPhaser)) |
+
+Both vendor a built copy of `dist/` rather than installing from git, so a site
+deploy never depends on this repo being reachable.
+
 ## Install
 
 Pin to a release tag — installs are then reproducible and upgrades are
@@ -78,6 +98,25 @@ collapses the glow system to a single cheap pass.
 | **Engine** | PixelBuffer ops, Gaussian blur, Sobel edges, bloom, particles, sprite pipeline |
 | **A11y/perf** | `prefers-reduced-motion` respected, keyboard focus states, low-power glow mode, HiDPI helper |
 
+## Screens
+
+Same components, different palettes — the whole point of the library.
+
+![Game suite screen in the mint palette](docs/images/arcade-suite.png)
+
+*A four-title game suite: cards, XP meters, sector radar, leaderboard. One
+custom palette, no per-screen color decisions.*
+
+![Command-center dashboard](docs/images/hud-dashboard.png)
+
+*The instrument set pushed hard — line charts, segmented bars, radial gauges
+with danger arcs, and a radar whose sweep reveals contacts with phosphor decay.*
+
+![Brand guide specimen page](docs/images/brand-guide.png)
+
+*`npm run test:brand` renders the brand guide from `dist/` — the palettes and
+type scale are a living specimen, not a static document.*
+
 ## Documentation
 
 - **[BRANDING.md](BRANDING.md)** — the definitive brand guide: identity,
@@ -102,7 +141,7 @@ npm run test:hud        # animated command-center dashboard
 ```bash
 npm install
 npm run typecheck
-npm test                 # 196 unit tests
+npm test                 # 198 unit tests
 npm run test:integration # consumer-surface integration tests
 npm run build
 ```
@@ -111,4 +150,5 @@ CI runs typecheck, build, and both test suites on every push.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) — covers the code. The sample renders in `tests/convert` are
+generic 3D assets with no third-party IP.
